@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+
+minimumReleaseAgeExclude:
+  - giget@3.3.1
+
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true

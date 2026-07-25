@@ -1,0 +1,5 @@
+{
+  "name": "@wppsync/config",
+  "type": "module",
+  "private": true
+}
