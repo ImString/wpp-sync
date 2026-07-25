@@ -708,6 +708,14 @@ html.dark .checkbox-label a {
 	font-weight: 800;
 }
 
+.auth-toast.is-error {
+	border-color: color-mix(in srgb, var(--auth-danger) 35%, var(--auth-border));
+}
+
+.auth-toast.is-error .auth-toast__icon {
+	background: var(--auth-danger);
+}
+
 body.auth-page :where(a, button, [tabindex]):focus-visible {
 	outline: 3px solid rgba(37, 211, 102, 0.45);
 	outline-offset: 2px;

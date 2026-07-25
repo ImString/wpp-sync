@@ -1,7 +1,9 @@
 import { Form, Formik } from 'formik';
+import type { FormikHelpers } from 'formik';
 import { MdLockOutline, MdOutlineBusiness, MdOutlineEmail, MdOutlinePerson } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
-import type { InferType } from 'yup';
+
+import { authAPI, getResponseErrors, getResponseMessage } from '@/utils/api';
 
 import { Button } from '@/components/buttons';
 import { TextInput } from '@/components/inputs';
@@ -10,6 +12,7 @@ import { AuthToast } from '../../feedback';
 import { AuthSwitchLink } from '../../form';
 import { useAuthToast } from '../../hooks';
 import { RegisterFormSchema } from '../model/schema';
+import type { RegisterFormData } from '../model/types';
 import { RegisterNote } from './Note';
 import { RegisterTerms } from './Terms';
 
@@ -17,15 +20,39 @@ export const RegisterForm: React.FC = () => {
 	const navigate = useNavigate();
 	const toast = useAuthToast();
 
-	const handleSubmit = async () => {
-		toast.showToast('Conta criada. Agora faça seu login.');
-		await new Promise(resolve => window.setTimeout(resolve, 900));
-		navigate('/auth/login');
+	const handleSubmit = async (values: RegisterFormData, helpers: FormikHelpers<RegisterFormData>) => {
+		try {
+			const response = await authAPI.register({
+				name: values.name,
+				company: values.company || undefined,
+				email: values.email,
+				password: values.password
+			});
+
+			if (!response.success) {
+				const errors = getResponseErrors(response);
+				helpers.setErrors({
+					name: errors.name,
+					company: errors.company,
+					email: errors.email,
+					password: errors.password,
+					confirmPassword: errors.confirmPassword
+				});
+				toast.showToast(getResponseMessage(response, 'Não foi possível criar sua conta.'), 'error');
+				return;
+			}
+
+			toast.showToast('Conta criada. Agora faça seu login.');
+			await new Promise(resolve => window.setTimeout(resolve, 650));
+			navigate('/auth/login', { replace: true, state: { registeredEmail: values.email } });
+		} catch {
+			toast.showToast('Não foi possível conectar ao servidor. Tente novamente.', 'error');
+		}
 	};
 
 	return (
 		<>
-			<Formik<InferType<ReturnType<typeof RegisterFormSchema>>>
+			<Formik<RegisterFormData>
 				initialValues={{
 					name: '',
 					company: '',
@@ -96,7 +123,7 @@ export const RegisterForm: React.FC = () => {
 
 			<RegisterNote />
 			<AuthSwitchLink message="Já possui uma conta?" label="Entrar" to="/auth/login" />
-			<AuthToast message={toast.message} isVisible={toast.isVisible} />
+			<AuthToast message={toast.message} isVisible={toast.isVisible} variant={toast.variant} />
 		</>
 	);
 };

@@ -2,16 +2,20 @@ import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { Interface } from '@/components/interface';
+import { Loading } from '@/components/loading';
+import { AuthenticationProvider } from '@/components/middlewares';
 import router from '@/router';
 
 export const App: React.FC = () => {
 	return (
 		<Interface>
-			<div className="min-h-screen w-full">
-				<Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
-					<RouterProvider router={router} />
-				</Suspense>
-			</div>
+			<AuthenticationProvider>
+				<div className="min-h-screen w-full">
+					<Suspense fallback={<Loading label="Carregando página..." />}>
+						<RouterProvider router={router} />
+					</Suspense>
+				</div>
+			</AuthenticationProvider>
 		</Interface>
 	);
 };

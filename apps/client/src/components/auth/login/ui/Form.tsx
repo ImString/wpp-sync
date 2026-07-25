@@ -1,31 +1,76 @@
 import { Form, Formik } from 'formik';
+import type { FormikHelpers } from 'formik';
 import { MdLockOutline, MdOutlineEmail } from 'react-icons/md';
-import { useNavigate } from 'react-router-dom';
-import type { InferType } from 'yup';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+import { authAPI, getResponseErrors, getResponseMessage, renewAuthToken } from '@/utils/api';
 
 import { Button } from '@/components/buttons';
 import { TextInput } from '@/components/inputs';
+import { useAuthenticationStore } from '@/stores';
 
 import { AuthToast } from '../../feedback';
 import { AuthDivider, AuthGoogleButton, AuthSwitchLink } from '../../form';
 import { useAuthToast } from '../../hooks';
 import { LoginFormSchema } from '../model/schema';
+import type { LoginFormData } from '../model/types';
 import { LoginOptions } from './Options';
+
+interface LoginLocationState {
+	from?: string;
+	registeredEmail?: string;
+}
 
 export const LoginForm: React.FC = () => {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const toast = useAuthToast();
+	const setCurrentUser = useAuthenticationStore(state => state.setCurrentUser);
+	const clearAuthentication = useAuthenticationStore(state => state.clearAuthentication);
+	const locationState = location.state as LoginLocationState | null;
 
-	const handleSubmit = async () => {
-		toast.showToast('Login realizado com sucesso.');
-		await new Promise(resolve => window.setTimeout(resolve, 900));
-		navigate('/');
+	const handleSubmit = async (values: LoginFormData, helpers: FormikHelpers<LoginFormData>) => {
+		try {
+			const response = await authAPI.login({ email: values.email, password: values.password });
+
+			if (!response.success || !response.data?.refreshToken) {
+				const errors = getResponseErrors(response);
+				helpers.setErrors({ email: errors.email, password: errors.password });
+				toast.showToast(getResponseMessage(response, 'E-mail ou senha inválidos.'), 'error');
+				return;
+			}
+
+			const authToken = await renewAuthToken({
+				refreshToken: response.data.refreshToken,
+				remember: values.remember
+			});
+
+			if (!authToken) {
+				toast.showToast('Não foi possível iniciar sua sessão. Tente novamente.', 'error');
+				return;
+			}
+
+			const userResponse = await authAPI.me();
+
+			if (!userResponse.success || !userResponse.data) {
+				clearAuthentication();
+				toast.showToast(getResponseMessage(userResponse, 'Não foi possível carregar seu usuário.'), 'error');
+				return;
+			}
+
+			setCurrentUser(userResponse.data);
+			toast.showToast('Login realizado com sucesso.');
+			navigate(locationState?.from || '/', { replace: true });
+		} catch {
+			clearAuthentication();
+			toast.showToast('Não foi possível conectar ao servidor. Tente novamente.', 'error');
+		}
 	};
 
 	return (
 		<>
-			<Formik<InferType<ReturnType<typeof LoginFormSchema>>>
-				initialValues={{ email: '', password: '', remember: false }}
+			<Formik<LoginFormData>
+				initialValues={{ email: locationState?.registeredEmail || '', password: '', remember: false }}
 				validationSchema={LoginFormSchema()}
 				validateOnChange={false}
 				onSubmit={handleSubmit}>
@@ -60,7 +105,7 @@ export const LoginForm: React.FC = () => {
 			<AuthDivider>ou continue com</AuthDivider>
 			<AuthGoogleButton>Entrar com Google</AuthGoogleButton>
 			<AuthSwitchLink message="Ainda não possui uma conta?" label="Criar conta" to="/auth/register" />
-			<AuthToast message={toast.message} isVisible={toast.isVisible} />
+			<AuthToast message={toast.message} isVisible={toast.isVisible} variant={toast.variant} />
 		</>
 	);
 };
