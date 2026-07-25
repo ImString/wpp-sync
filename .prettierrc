@@ -18,10 +18,11 @@
 		"^@/utils/?(.*)$",
 		"^@/entities/?(.*)$",
 		"^@/config/?(.*)$",
+		"^@/(.*)$",
 		"^[./]"
 	],
 	"importOrderSeparation": true,
-	"importOrderParserPlugins": ["typescript", "decorators-legacy"],
+	"importOrderParserPlugins": ["typescript", "jsx", "decorators-legacy"],
 
 	"plugins": ["@trivago/prettier-plugin-sort-imports"]
 }
