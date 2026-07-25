@@ -1,0 +1,49 @@
+import { MdArrowBack, MdMoreVert, MdOutlinePerson } from 'react-icons/md';
+import { twMerge } from 'tailwind-merge';
+
+import { Button } from '@/components/buttons';
+
+import { conversations } from '../data';
+import { useChatStore } from '../store';
+
+export const ChatHeader: React.FC = () => {
+	const selectedConversationId = useChatStore(state => state.selectedConversationId);
+	const setMobileView = useChatStore(state => state.setMobileView);
+	const openContactPanel = useChatStore(state => state.openContactPanel);
+	const conversation = conversations.find(item => item.id === selectedConversationId) || conversations[0];
+
+	return (
+		<header className="flex min-w-0 items-center gap-2.5 border-b border-slate-200 px-3.5 dark:border-[#223138]">
+			<Button
+				theme="ghost"
+				type="button"
+				aria-label="Voltar para conversas"
+				className="icon-button mobile:hidden"
+				onClick={() => setMobileView('conversations')}>
+				<MdArrowBack aria-hidden="true" />
+			</Button>
+
+			<span className={twMerge('avatar bg-linear-to-br', conversation.avatarClassName)}>
+				{conversation.initials}
+			</span>
+			<div className="flex min-w-0 flex-1 flex-col">
+				<strong className="truncate text-sm">{conversation.name}</strong>
+				<span className="mt-0.5 flex items-center gap-1 text-[10px] text-brand-600 dark:text-brand-500">
+					<i className="size-1.5 rounded-full bg-brand-500" /> Cliente
+				</span>
+			</div>
+
+			<Button
+				theme="ghost"
+				type="button"
+				aria-label="Abrir dados do contato"
+				className="icon-button wide:hidden"
+				onClick={openContactPanel}>
+				<MdOutlinePerson aria-hidden="true" />
+			</Button>
+			<Button theme="ghost" type="button" aria-label="Mais opções" className="icon-button">
+				<MdMoreVert aria-hidden="true" />
+			</Button>
+		</header>
+	);
+};

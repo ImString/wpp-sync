@@ -9,9 +9,14 @@
 		"start": "dotenvx run -f ../../.env -- vite preview --host 0.0.0.0"
 	},
 	"dependencies": {
+		"formik": "^2.4.9",
 		"react": "^19.2.8",
 		"react-dom": "^19.2.8",
-		"react-router-dom": "^7.18.1"
+		"react-icons": "^5.7.0",
+		"react-router-dom": "^7.18.1",
+		"tailwind-merge": "^3.6.0",
+		"yup": "^1.7.1",
+		"zustand": "^5.0.14"
 	},
 	"devDependencies": {
 		"@dotenvx/dotenvx": "^1.75.1",
