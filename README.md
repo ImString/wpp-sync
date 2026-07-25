@@ -28,7 +28,7 @@ Antes de começar, instale:
 1. Clone o repositório e acesse a pasta do projeto:
 
 ```bash
-git clone <https://github.com/ImString/wpp-sync>
+git clone https://github.com/ImString/wpp-sync
 cd wpp-sync
 ```
 
