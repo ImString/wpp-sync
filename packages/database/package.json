@@ -16,6 +16,7 @@
 	],
 	"scripts": {
 		"build": "dotenvx run -f ../../.env -- prisma generate && tsc -p tsconfig.json",
+		"build:dev": "dotenvx run -f ../../.env.development -- prisma generate && tsc -p tsconfig.json",
 		"check-types": "tsc -p tsconfig.json --noEmit",
 		"db:generate": "dotenvx run -f ../../.env -- prisma generate",
 		"db:push": "dotenvx run -f ../../.env -- prisma db push",

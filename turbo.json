@@ -1,10 +1,14 @@
 {
 	"$schema": "https://turborepo.dev/schema.json",
-	"globalDependencies": ["**/.env.*local"],
+	"globalDependencies": [".env", ".env.development", ".env.production", "**/.env.*local"],
 	"tasks": {
 		"build": {
 			"outputs": ["dist/**"],
 			"dependsOn": ["^build"]
+		},
+		"build:dev": {
+			"outputs": ["dist/**"],
+			"dependsOn": ["^build:dev"]
 		},
 		"start": {
 			"cache": false,
@@ -16,7 +20,7 @@
 		"dev": {
 			"cache": false,
 			"persistent": true,
-			"dependsOn": ["^build"],
+			"dependsOn": ["^build:dev"],
 			"inputs": ["$TURBO_DEFAULT$", ".env.local", ".env.development"],
 			"passThroughEnv": ["PORT", "SERVER_FULL_URL"]
 		},

@@ -4,9 +4,11 @@ import fastifyMultipart from '@fastify/multipart';
 import { config, Terminal } from '@wppsync/shared';
 import ansicolor from 'ansicolor';
 import fastify, { type FastifyError, type FastifyInstance } from 'fastify';
+import { fileURLToPath } from 'node:url';
 
-import { BaseModule } from '../Base.js';
-import { ServerError, ServerResponse } from './models/index.js';
+import { BaseModule } from '@/modules/Base.js';
+import { ServerError, ServerResponse } from '@/modules/fastify/models/index.js';
+import routes from '@/modules/fastify/plugins/routes.js';
 
 export class ServerModuleBase extends BaseModule {
 	server?: FastifyInstance;
@@ -56,7 +58,12 @@ export class ServerModuleBase extends BaseModule {
 				methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS']
 			})
 			.register(fastifyHelmet, {})
-			.register(fastifyMultipart, { limits: { fileSize: 55e6 } });
+			.register(fastifyMultipart, { limits: { fileSize: 55e6 } })
+			.register(routes, {
+				loader: {
+					path: fileURLToPath(new URL('../../router/controllers', import.meta.url))
+				}
+			});
 
 		this.initHandlers();
 

@@ -1,3 +1,9 @@
-import { Core } from './Core.js';
+import 'reflect-metadata';
 
-await new Core().init();
+const init = async () => {
+	const core = new (await import('./Core.js')).Core();
+
+	core.init();
+};
+
+init();

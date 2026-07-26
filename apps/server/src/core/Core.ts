@@ -4,6 +4,8 @@ import type { BaseModule } from '../modules/Base.js';
 import * as modules from '../modules/modules.js';
 
 export class Core {
+	readonly storage = new Map<string, unknown>();
+
 	private async initModules() {
 		const sortedModules = (Object.values(modules) as BaseModule[]).sort((a, b) => {
 			if (a.dependencies?.includes(b)) return 1;
