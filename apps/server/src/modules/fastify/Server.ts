@@ -9,8 +9,11 @@ import { fileURLToPath } from 'node:url';
 import type { Core } from '@/core/Core.js';
 
 import { BaseModule } from '@/modules/Base.js';
+import { mapApplicationError } from '@/modules/fastify/ApplicationErrorMapper.js';
 import { ServerError, ServerResponse } from '@/modules/fastify/models/index.js';
 import routes from '@/modules/fastify/plugins/routes.js';
+
+import { ApplicationError } from '@/entities/errors/index.js';
 
 export class ServerModuleBase extends BaseModule {
 	server?: FastifyInstance;
@@ -27,6 +30,11 @@ export class ServerModuleBase extends BaseModule {
 		});
 
 		this.server.setErrorHandler((error, request, reply) => {
+			if (error instanceof ApplicationError) {
+				const response = mapApplicationError(error);
+				return reply.status(response.status).send(response.toObject());
+			}
+
 			if (error instanceof ServerError) return reply.status(error.status).send(error.toJSON());
 			if (error instanceof ServerResponse) return reply.status(error.status).send(error.toObject());
 

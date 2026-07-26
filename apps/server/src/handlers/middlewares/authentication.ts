@@ -1,30 +1,24 @@
 import { Inject } from '@/core/index.js';
 
-import { HttpResponse, Middleware, RouterMiddleware, type RouterMiddlewareContext } from '@/modules/router/index.js';
+import { Middleware, RouterMiddleware, type RouterMiddlewareContext } from '@/modules/router/index.js';
 
 import { AuthenticationService } from '@/services/index.js';
 
-export interface AuthMiddlewareOptions {
-	secretKey: string;
-}
+import { InvalidTokenError } from '@/entities/errors/authentication/index.js';
 
 @Middleware()
 export class AuthenticationMiddleware extends RouterMiddleware {
-	static options: AuthMiddlewareOptions;
-
 	constructor(@Inject(AuthenticationService) private readonly authService: AuthenticationService) {
 		super();
 	}
 
-	async execute(context: RouterMiddlewareContext, options: AuthMiddlewareOptions) {
+	async execute(context: RouterMiddlewareContext) {
 		const authHeader = context.request.headers['authorization'];
 		const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
-		const tokenPayload = token ? this.authService.verifyToken(token, 'auth') : null;
 
-		if (!tokenPayload) {
-			return HttpResponse.error(401, 'INVALID_TOKEN', { message: 'Invalid or missing authorization token' });
-		}
+		if (!token) throw new InvalidTokenError('Invalid or missing authorization token.');
 
+		const tokenPayload = this.authService.verifyToken(token, 'auth');
 		context.state.userId = tokenPayload.id;
 	}
 }

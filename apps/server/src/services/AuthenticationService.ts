@@ -4,8 +4,12 @@ import jwt, { type SignOptions } from 'jsonwebtoken';
 
 import { Provider } from '@/core/index.js';
 
-import { HttpResponse } from '@/modules/index.js';
-
+import {
+	InvalidCredentialsError,
+	InvalidTokenError,
+	SocialLoginRequiredError
+} from '@/entities/errors/authentication/index.js';
+import { UserEmailAlreadyExistsError } from '@/entities/errors/user/index.js';
 import type { AuthenticationTokenPayload, AuthenticationTokenType } from '@/entities/types/authentication.js';
 
 @Provider()
@@ -20,27 +24,16 @@ export class AuthenticationService {
 			}
 		});
 
-		if (!userFromEmail) {
-			return HttpResponse.error(401, 'USER_OR_PASSWORD_INCORRECT', { message: 'User or password incorrect.' });
-		}
-
-		if (userFromEmail.password === null) {
-			return HttpResponse.error(400, 'USER_NO_PASSWORD_USE_SOCIAL_LOGIN', {
-				message: 'User does not have a password, use social login.'
-			});
-		}
+		if (!userFromEmail) throw new InvalidCredentialsError();
+		if (userFromEmail.password === null) throw new SocialLoginRequiredError();
 
 		const isPasswordValid = await bcrypt.compare(document.password, userFromEmail.password);
-		if (!isPasswordValid) {
-			return HttpResponse.error(401, 'USER_OR_PASSWORD_INCORRECT', {
-				message: 'User or password incorrect.'
-			});
-		}
+		if (!isPasswordValid) throw new InvalidCredentialsError();
 
-		return HttpResponse.success({
+		return {
 			token: this.generateToken(userFromEmail.id, 'auth'),
 			refreshToken: this.generateToken(userFromEmail.id, 'refresh')
-		});
+		};
 	}
 
 	async register(document: { name: string; email: string; phone?: string; password: string }) {
@@ -51,47 +44,59 @@ export class AuthenticationService {
 			}
 		});
 
-		if (userWithSameEmail) {
-			return HttpResponse.error(400, 'USER_EMAIL_ALREADY_EXISTS', {
-				message: 'User with same e-mail already exists.'
-			});
-		}
+		if (userWithSameEmail) throw new UserEmailAlreadyExistsError();
 
 		const passwordHash = await bcrypt.hash(document.password, this.bcryptCost);
 
-		const newUserId = await prisma.user.create({
+		return prisma.user.create({
 			data: {
 				name: name,
 				email: document.email,
 				phone: document.phone,
 				password: passwordHash
+			},
+			select: {
+				id: true,
+				name: true,
+				email: true,
+				phone: true,
+				createdAt: true,
+				updatedAt: true
 			}
 		});
-
-		if (!newUserId) {
-			return HttpResponse.error(500, 'USER_COULD_NOT_BE_CREATED', {
-				message: 'User could not be created.'
-			});
-		}
-
-		return HttpResponse.success({});
 	}
 
-	verifyToken(token: string, expectedTokenType?: AuthenticationTokenType): AuthenticationTokenPayload | null {
+	verifyToken(token: string, expectedTokenType?: AuthenticationTokenType): AuthenticationTokenPayload {
+		let payload: unknown;
+
 		try {
-			const payload = jwt.verify(token, this.secretToken, {
+			payload = jwt.verify(token, this.secretToken, {
 				algorithms: ['HS256'],
 				issuer: process.env.JWT_ISSUER,
 				audience: process.env.JWT_AUDIENCE
 			});
-
-			if (!this.isAuthenticationTokenPayload(payload)) return null;
-			if (expectedTokenType && payload.tokenType !== expectedTokenType) return null;
-
-			return payload;
 		} catch {
-			return null;
+			throw new InvalidTokenError();
 		}
+
+		if (!this.isAuthenticationTokenPayload(payload)) throw new InvalidTokenError();
+		if (expectedTokenType && payload.tokenType !== expectedTokenType) throw new InvalidTokenError();
+
+		return payload;
+	}
+
+	refreshToken(refreshToken: string) {
+		const actualToken = this.verifyToken(refreshToken, 'refresh');
+		const token = this.generateToken(actualToken.id, 'auth');
+		const refreshThreshold = 7 * 24 * 60 * 60 * 1000;
+		const shouldRotateRefreshToken = Date.now() > actualToken.exp * 1000 - refreshThreshold;
+
+		return {
+			token,
+			...(shouldRotateRefreshToken && {
+				refreshToken: this.generateToken(actualToken.id, 'refresh')
+			})
+		};
 	}
 
 	generateToken(userId: string, tokenType: AuthenticationTokenType): string {

@@ -4,6 +4,8 @@ import { Controller, Get, HttpResponse, type RouterMiddlewareContext } from '@/m
 
 import { UserService } from '@/services/index.js';
 
+import { InvalidTokenError } from '@/entities/errors/authentication/index.js';
+
 import { AuthenticationMiddleware } from '../middlewares/authentication.js';
 
 @Controller({
@@ -17,20 +19,9 @@ export class UserController {
 	async getProfile(context: RouterMiddlewareContext) {
 		const userId = context.state.userId;
 
-		if (!userId) {
-			return HttpResponse.error(401, 'INVALID_TOKEN', {
-				message: 'Invalid or missing authorization token.'
-			});
-		}
+		if (!userId) throw new InvalidTokenError('Invalid or missing authorization token.');
 
-		const user = await this.userService.findById(userId);
-
-		if (!user) {
-			return HttpResponse.error(404, 'USER_NOT_FOUND', {
-				message: 'User not found.'
-			});
-		}
-
+		const user = await this.userService.getById(userId);
 		return HttpResponse.success(user);
 	}
 }

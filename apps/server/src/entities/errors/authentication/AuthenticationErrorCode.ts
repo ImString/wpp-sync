@@ -1,0 +1,2 @@
+export type AuthenticationErrorCode =
+	'INVALID_TOKEN' | 'USER_NO_PASSWORD_USE_SOCIAL_LOGIN' | 'USER_OR_PASSWORD_INCORRECT';
