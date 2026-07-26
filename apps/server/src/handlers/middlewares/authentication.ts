@@ -2,7 +2,7 @@ import { Inject } from '@/core/index.js';
 
 import { HttpResponse, Middleware, RouterMiddleware, type RouterMiddlewareContext } from '@/modules/router/index.js';
 
-import { AuthenticationService } from '@/services/AuthenticationService.js';
+import { AuthenticationService } from '@/services/index.js';
 
 export interface AuthMiddlewareOptions {
 	secretKey: string;
@@ -25,6 +25,6 @@ export class AuthenticationMiddleware extends RouterMiddleware {
 			return HttpResponse.error(401, 'INVALID_TOKEN', { message: 'Invalid or missing authorization token' });
 		}
 
-		context.state.authentication = tokenPayload;
+		context.state.userId = tokenPayload.id;
 	}
 }

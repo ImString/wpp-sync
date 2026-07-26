@@ -31,7 +31,7 @@ export const authAPI = {
 	},
 
 	me: async (signal?: AbortSignal) => {
-		const response = await mainAPI.get<ServerResponse<AuthUser>>('/auth/me', { signal });
+		const response = await mainAPI.get<ServerResponse<AuthUser>>('/user/me', { signal });
 		return response.data;
 	},
 

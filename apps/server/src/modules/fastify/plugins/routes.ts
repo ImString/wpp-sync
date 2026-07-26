@@ -10,10 +10,8 @@ import type { DefinedController } from '@/modules/router/types/controller.js';
 import type { MountedMiddleware, RouterMiddlewareContext } from '@/modules/router/types/middleware.js';
 import type { MountedRoute } from '@/modules/router/types/route.js';
 
-import type { AuthenticationTokenPayload } from '@/entities/types/authentication.js';
-
 export interface RouterState extends Record<PropertyKey, unknown> {
-	authentication?: AuthenticationTokenPayload;
+	userId?: string;
 }
 
 declare module '@/modules/router/components/RouteSchema.js' {

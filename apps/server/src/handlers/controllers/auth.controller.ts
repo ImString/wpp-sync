@@ -1,6 +1,6 @@
 import { Controller, HttpResponse, Post } from '@/modules/index.js';
 
-import { AuthenticationService } from '@/services/AuthenticationService.js';
+import { AuthenticationService } from '@/services/index.js';
 
 import { AuthenticationDTO } from '@/entities/dtos/authentication.dto.js';
 
@@ -14,16 +14,14 @@ export class AuthController {
 	async login(context: typeof AuthenticationDTO.Login.context) {
 		const { email, password } = context.body;
 
-		const response = await this.authenticationService.login({ email, password });
-		return HttpResponse.success(response);
+		return await this.authenticationService.login({ email, password });
 	}
 
 	@Post('/register', AuthenticationDTO.Register)
 	async register(context: typeof AuthenticationDTO.Register.context) {
 		const { name, email, phone, password } = context.body;
 
-		const response = await this.authenticationService.register({ name, email, phone, password });
-		return HttpResponse.success(response);
+		return await this.authenticationService.register({ name, email, phone, password });
 	}
 
 	@Post('/refresh-token', AuthenticationDTO.Refresh)
