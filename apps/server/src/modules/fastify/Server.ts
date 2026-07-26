@@ -6,6 +6,8 @@ import ansicolor from 'ansicolor';
 import fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import { fileURLToPath } from 'node:url';
 
+import type { Core } from '@/core/Core.js';
+
 import { BaseModule } from '@/modules/Base.js';
 import { ServerError, ServerResponse } from '@/modules/fastify/models/index.js';
 import routes from '@/modules/fastify/plugins/routes.js';
@@ -45,7 +47,7 @@ export class ServerModuleBase extends BaseModule {
 		});
 	}
 
-	async init() {
+	async init(core: Core) {
 		this.server = fastify({
 			logger: false
 		});
@@ -60,8 +62,9 @@ export class ServerModuleBase extends BaseModule {
 			.register(fastifyHelmet, {})
 			.register(fastifyMultipart, { limits: { fileSize: 55e6 } })
 			.register(routes, {
+				providers: core.providers,
 				loader: {
-					path: fileURLToPath(new URL('../../router/controllers', import.meta.url))
+					path: fileURLToPath(new URL('../../handlers/controllers', import.meta.url))
 				}
 			});
 

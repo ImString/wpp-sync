@@ -35,7 +35,7 @@
 	"devDependencies": {
 		"@trivago/prettier-plugin-sort-imports": "^5.2.2",
 		"@types/node": "^26.1.1",
-		"tsx": "^4.23.1",
+		"@zyrohub/ts-runner": "^0.0.8",
 		"turbo": "^2.9.6",
 		"typescript": "^7.0.2"
 	}

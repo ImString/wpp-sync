@@ -1,6 +1,8 @@
 import { Validator } from '@wppsync/shared';
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply, FastifyRequest, FastifySchema } from 'fastify';
 
+import { ProvidersService } from '@/core/services/Providers.js';
+
 import { RouterModule, type RouterModuleOptions } from '@/modules/router/Module.js';
 import { HttpResponse } from '@/modules/router/components/HttpResponse.js';
 import type { AnyRouteSchema } from '@/modules/router/components/RouteSchema.js';
@@ -8,7 +10,11 @@ import type { DefinedController } from '@/modules/router/types/controller.js';
 import type { MountedMiddleware, RouterMiddlewareContext } from '@/modules/router/types/middleware.js';
 import type { MountedRoute } from '@/modules/router/types/route.js';
 
-export type RouterState = Record<PropertyKey, unknown>;
+import type { AuthenticationTokenPayload } from '@/entities/types/authentication.js';
+
+export interface RouterState extends Record<PropertyKey, unknown> {
+	authentication?: AuthenticationTokenPayload;
+}
 
 declare module '@/modules/router/components/RouteSchema.js' {
 	interface RouterGlobalInputs {
@@ -18,7 +24,9 @@ declare module '@/modules/router/components/RouteSchema.js' {
 	}
 }
 
-export interface FastifyRoutesOptions extends RouterModuleOptions {}
+export interface FastifyRoutesOptions extends RouterModuleOptions {
+	providers?: ProvidersService;
+}
 
 type ValidationSource = 'body' | 'query' | 'params';
 
@@ -82,10 +90,11 @@ async function validateRequest(
 async function executeMiddlewares(
 	middlewares: MountedMiddleware[],
 	context: RouterMiddlewareContext,
-	reply: FastifyReply
+	reply: FastifyReply,
+	providers: ProvidersService
 ): Promise<FastifyReply | undefined> {
 	for (const mountedMiddleware of middlewares) {
-		const middleware = new mountedMiddleware.constructor();
+		const middleware = providers.instantiate(mountedMiddleware.constructor);
 		const result = await middleware.execute(context, mountedMiddleware.options);
 
 		if (result instanceof HttpResponse) return sendHttpResponse(reply, result);
@@ -99,7 +108,8 @@ function registerRoute(
 	fastify: FastifyInstance,
 	controller: DefinedController,
 	controllerInstance: Record<PropertyKey, unknown>,
-	route: MountedRoute
+	route: MountedRoute,
+	providers: ProvidersService
 ) {
 	const ControllerConstructor = controller.data.constructor;
 	const handler = controllerInstance[route.handlerName];
@@ -127,7 +137,7 @@ function registerRoute(
 				const context = createContext(request, reply);
 				contexts.set(request, context);
 
-				return executeMiddlewares(middlewares, context, reply);
+				return executeMiddlewares(middlewares, context, reply, providers);
 			}
 		}),
 		handler: async (request, reply) => {
@@ -147,12 +157,13 @@ function registerRoute(
 export const routes: FastifyPluginAsync<FastifyRoutesOptions> = async (fastify, options) => {
 	const router = new RouterModule(options);
 	const controllers = await router.load();
+	const providers = options.providers ?? new ProvidersService();
 
 	for (const controller of controllers) {
-		const controllerInstance = new controller.data.constructor() as Record<PropertyKey, unknown>;
+		const controllerInstance = providers.instantiate(controller.data.constructor) as Record<PropertyKey, unknown>;
 
 		for (const route of controller.routes) {
-			registerRoute(fastify, controller, controllerInstance, route);
+			registerRoute(fastify, controller, controllerInstance, route, providers);
 		}
 	}
 };
