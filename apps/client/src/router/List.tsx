@@ -9,6 +9,7 @@ const WorkspacePage = lazy(() => import('@/components/workspaces').then(module =
 const WorkspaceChatRoute = lazy(() =>
 	import('@/components/workspaces').then(module => ({ default: module.WorkspaceChatRoute }))
 );
+const AccountPage = lazy(() => import('@/components/account').then(module => ({ default: module.AccountPage })));
 
 export const RouteList = () => {
 	return (
@@ -26,6 +27,14 @@ export const RouteList = () => {
 				element={
 					<AuthenticationMiddleware onlyLogged>
 						<WorkspaceChatRoute />
+					</AuthenticationMiddleware>
+				}
+			/>
+			<Route
+				path="/profile"
+				element={
+					<AuthenticationMiddleware onlyLogged>
+						<AccountPage />
 					</AuthenticationMiddleware>
 				}
 			/>
