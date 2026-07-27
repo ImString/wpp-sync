@@ -1,5 +1,3 @@
-import { Inject } from '@/core/index.js';
-
 import { Middleware, RouterMiddleware, type RouterMiddlewareContext } from '@/modules/router/index.js';
 
 import { AuthenticationService } from '@/services/index.js';
@@ -8,7 +6,7 @@ import { InvalidTokenError } from '@/entities/errors/authentication/index.js';
 
 @Middleware()
 export class AuthenticationMiddleware extends RouterMiddleware {
-	constructor(@Inject(AuthenticationService) private readonly authService: AuthenticationService) {
+	constructor(private readonly authService: AuthenticationService) {
 		super();
 	}
 

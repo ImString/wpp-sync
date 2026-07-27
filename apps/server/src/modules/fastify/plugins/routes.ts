@@ -10,8 +10,15 @@ import type { DefinedController } from '@/modules/router/types/controller.js';
 import type { MountedMiddleware, RouterMiddlewareContext } from '@/modules/router/types/middleware.js';
 import type { MountedRoute } from '@/modules/router/types/route.js';
 
+import type { MemberEntity } from '@/entities/data/workspaces/members.entity.js';
+import type { WorkspaceEntity } from '@/entities/data/workspaces/workspace.entity.js';
+
 export interface RouterState extends Record<PropertyKey, unknown> {
 	userId: string;
+	workspaceAccess?: {
+		workspace: WorkspaceEntity;
+		membership: MemberEntity;
+	};
 }
 
 declare module '@/modules/router/components/RouteSchema.js' {

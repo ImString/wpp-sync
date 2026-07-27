@@ -1,5 +1,3 @@
-import { Inject } from '@/core/index.js';
-
 import { Controller, Get, HttpResponse, Put, type RouterMiddlewareContext } from '@/modules/index.js';
 
 import { UserService } from '@/services/index.js';
@@ -13,13 +11,13 @@ import { AuthenticationMiddleware } from '../middlewares/authentication.js';
 	middlewares: [AuthenticationMiddleware]
 })
 export class UserController {
-	constructor(@Inject(UserService) private readonly userService: UserService) {}
+	constructor(private readonly userService: UserService) {}
 
 	@Get('/me')
 	async getProfile(context: RouterMiddlewareContext) {
 		const userId = context.state.userId;
 
-		const user = await this.userService.getById(userId);
+		const user = await this.userService.get({ id: userId });
 		return HttpResponse.success(user);
 	}
 

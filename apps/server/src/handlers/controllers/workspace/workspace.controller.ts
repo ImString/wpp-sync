@@ -1,19 +1,29 @@
-import { Inject } from '@/core/index.js';
-
-import { Controller, Get, HttpResponse, Post } from '@/modules/index.js';
+import { Controller, Get, HttpResponse, Post, type RouterMiddlewareContext, UseMiddleware } from '@/modules/index.js';
 
 import { WorkspaceService } from '@/services/WorkspaceService.js';
 
 import { WorkspaceDTO } from '@/entities/dtos/workspace.dto.js';
+import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
 
-import { AuthenticationMiddleware } from '../middlewares/authentication.js';
+import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
+
+import { AuthenticationMiddleware } from '../../middlewares/authentication.js';
 
 @Controller({
 	path: '/workspace',
 	middlewares: [AuthenticationMiddleware]
 })
 export class WorkspaceController {
-	constructor(@Inject(WorkspaceService) private readonly workspaceService: WorkspaceService) {}
+	constructor(private readonly workspaceService: WorkspaceService) {}
+
+	@Get('/:uid')
+	@UseMiddleware(WorkspaceAccessMiddleware)
+	async get(context: RouterMiddlewareContext) {
+		const workspace = context.state.workspaceAccess?.workspace;
+		if (!workspace) throw new WorkspaceNotFoundError();
+
+		return HttpResponse.success(await workspace.toObject({ sign_files: true }));
+	}
 
 	@Post('/create', WorkspaceDTO.Create)
 	async create(context: typeof WorkspaceDTO.Create.context) {

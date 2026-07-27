@@ -6,6 +6,7 @@ import Sqids from 'sqids';
 
 import { Provider } from '@/core/index.js';
 
+import { MemberEntity } from '@/entities/data/workspaces/members.entity.js';
 import { WorkspaceEntity } from '@/entities/data/workspaces/workspace.entity.js';
 import type { WorkspaceDTO } from '@/entities/dtos/workspace.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/index.js';
@@ -89,6 +90,50 @@ export class WorkspaceService {
 		const workspaceEntity = new WorkspaceEntity(data);
 
 		return workspaceEntity;
+	}
+
+	async getUserMembership(userId: string, uid: string) {
+		const data = await prisma.workspace.findFirst({
+			where: {
+				uid,
+				disabled: false,
+				members: {
+					some: {
+						userId,
+						disabled: false
+					}
+				}
+			},
+			include: {
+				avatar: true,
+				owner: true,
+				members: {
+					where: {
+						userId,
+						disabled: false
+					},
+					include: {
+						user: {
+							include: {
+								avatar: true
+							}
+						}
+					},
+					take: 1
+				}
+			}
+		});
+
+		const membershipData = data?.members[0];
+
+		if (!data || !membershipData) throw new WorkspaceNotFoundError();
+
+		const { members: _members, ...workspaceData } = data;
+
+		return {
+			workspace: new WorkspaceEntity(workspaceData),
+			membership: new MemberEntity(membershipData)
+		};
 	}
 
 	async create(userId: string, document: WorkspaceDTO.CreateDocument, avatar?: MultipartFile) {
