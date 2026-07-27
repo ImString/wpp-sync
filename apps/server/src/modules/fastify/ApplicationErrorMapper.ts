@@ -7,7 +7,8 @@ const APPLICATION_ERROR_STATUS = {
 	USER_EMAIL_ALREADY_EXISTS: 400,
 	USER_NOT_FOUND: 404,
 	USER_NO_PASSWORD_USE_SOCIAL_LOGIN: 400,
-	USER_OR_PASSWORD_INCORRECT: 401
+	USER_OR_PASSWORD_INCORRECT: 401,
+	WORKSPACE_NOT_FOUND: 404
 } satisfies Record<ApplicationErrorCode, number>;
 
 export function mapApplicationError(error: ApplicationError): HttpResponse {

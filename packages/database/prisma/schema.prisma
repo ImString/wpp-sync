@@ -80,14 +80,14 @@ model Workspace {
     name      String
     slug      String
     avatar    Files?   @relation(fields: [filesId], references: [id])
-    owner     User     @relation(fields: [userId], references: [id])
+    owner     User     @relation(fields: [ownerId], references: [id])
     members   Member[]
     invites   Invite[]
     disabled  Boolean? @default(false)
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
     filesId   String?
-    userId    String
+    ownerId   String   @map("owner_id")
 
     @@map("workspaces")
 }

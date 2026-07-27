@@ -1,5 +1,5 @@
 import type { MultipartFile } from '@fastify/multipart';
-import { prisma } from '@wppsync/database';
+import { Prisma, prisma } from '@wppsync/database';
 import sharp from 'sharp';
 
 import { Provider } from '@/core/index.js';
@@ -10,29 +10,27 @@ import { UserNotFoundError } from '@/entities/errors/user/index.js';
 
 import { FilesService } from './FilesService.js';
 
+export type UserServiceWhereInput = Prisma.UserWhereInput;
+export type UserServiceWhereOptions = {
+	id?: string;
+
+	include?: Prisma.UserInclude;
+};
+
 @Provider()
 export class UserService {
-	private async getEntityById(id: string) {
-		const user = await prisma.user.findUnique({
-			where: { id },
-			include: {
-				avatar: true
-			}
-		});
-
-		if (!user) throw new UserNotFoundError();
-
-		return new UserEntity(user);
+	private mountWhere(options: UserServiceWhereOptions): UserServiceWhereInput {
+		return {
+			...(options.id && { id: options.id })
+		};
 	}
 
-	async getById(id: string) {
-		const user = await this.getEntityById(id);
-
-		return user.toObject({ sign_files: true });
+	async get(options: UserServiceWhereOptions): Promise<UserEntity> {
+		return await this.getEntity(options);
 	}
 
 	async updateProfile(id: string, document: UserDTO.UpdateProfileDocument, avatar?: MultipartFile) {
-		const user = await this.getEntityById(id);
+		const user = await this.get({ id });
 		const previousAvatar = user.entities.avatar;
 		let uploadedAvatar;
 
@@ -70,5 +68,18 @@ export class UserService {
 		}
 
 		return user.toObject({ sign_files: true });
+	}
+
+	private async getEntity(options: UserServiceWhereOptions) {
+		const data = await prisma.user.findFirst({
+			where: {
+				...this.mountWhere(options)
+			},
+			include: options.include
+		});
+
+		if (!data) throw new UserNotFoundError();
+
+		return new UserEntity(data);
 	}
 }

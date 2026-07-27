@@ -19,6 +19,8 @@ export class AuthenticationMiddleware extends RouterMiddleware {
 		if (!token) throw new InvalidTokenError('Invalid or missing authorization token.');
 
 		const tokenPayload = this.authService.verifyToken(token, 'auth');
+		if (!tokenPayload || !tokenPayload.id) throw new InvalidTokenError('Invalid or missing authorization token.');
+
 		context.state.userId = tokenPayload.id;
 	}
 }

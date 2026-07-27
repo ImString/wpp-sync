@@ -10,8 +10,9 @@ export namespace UserDTO {
 				.string()
 				.trim()
 				.regex(/^\+?[0-9]{10,15}$/)
+				.nullable()
 				.optional(),
-			enterprise: z.string().trim().min(1).max(128).optional()
+			enterprise: z.string().trim().min(1).max(128).nullable().optional()
 		})
 		.strict();
 

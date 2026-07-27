@@ -11,7 +11,7 @@ import type { MountedMiddleware, RouterMiddlewareContext } from '@/modules/route
 import type { MountedRoute } from '@/modules/router/types/route.js';
 
 export interface RouterState extends Record<PropertyKey, unknown> {
-	userId?: string;
+	userId: string;
 }
 
 declare module '@/modules/router/components/RouteSchema.js' {
@@ -41,7 +41,9 @@ function createContext(request: FastifyRequest, reply: FastifyReply): RouterMidd
 	return {
 		request,
 		response: reply,
-		state: {},
+		state: {
+			userId: ''
+		},
 		body: request.body,
 		query: request.query,
 		params: request.params
