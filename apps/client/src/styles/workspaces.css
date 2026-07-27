@@ -1,0 +1,78 @@
+:root {
+	--workspace-page: #edf3f0;
+	--workspace-surface: #ffffff;
+	--workspace-surface-muted: #f5f8f7;
+	--workspace-surface-hover: #eef5f2;
+	--workspace-text: #14201d;
+	--workspace-muted: #667570;
+	--workspace-soft: #8b9995;
+	--workspace-border: #dfe8e4;
+	--workspace-header: rgba(255, 255, 255, 0.88);
+	--workspace-shadow-app: 0 24px 70px rgba(13, 44, 35, 0.12);
+	--workspace-shadow-card: 0 12px 34px rgba(15, 38, 31, 0.08);
+}
+
+html.dark {
+	--workspace-page: #081116;
+	--workspace-surface: #0e181e;
+	--workspace-surface-muted: #131f26;
+	--workspace-surface-hover: #17262e;
+	--workspace-text: #edf5f2;
+	--workspace-muted: #a1b0ab;
+	--workspace-soft: #788983;
+	--workspace-border: #223138;
+	--workspace-header: rgba(8, 17, 22, 0.88);
+	--workspace-shadow-app: 0 26px 80px rgba(0, 0, 0, 0.42);
+	--workspace-shadow-card: 0 14px 34px rgba(0, 0, 0, 0.26);
+}
+
+body.workspace-page {
+	min-width: 320px;
+	min-height: 100dvh;
+	margin: 0;
+	overflow-x: hidden;
+	color: var(--workspace-text);
+	background: var(--workspace-page);
+	font-family: 'Inter', system-ui, sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+.workspace-app::before {
+	position: fixed;
+	z-index: 0;
+	top: 14%;
+	left: -110px;
+	width: clamp(300px, 30vw, 430px);
+	aspect-ratio: 1;
+	content: '';
+	background: radial-gradient(circle, rgba(37, 211, 102, 0.28) 0%, rgba(37, 211, 102, 0.12) 32%, transparent 70%);
+	border-radius: 50%;
+	filter: blur(58px);
+	pointer-events: none;
+	transform-origin: center;
+	animation: ambient-breathe 4.5s infinite ease-in-out;
+}
+
+@keyframes workspace-modal-in {
+	from {
+		opacity: 0;
+		transform: translateY(12px) scale(0.98);
+	}
+}
+
+body.workspace-page :where(a, button, input, select):focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--color-brand-500) 58%, transparent);
+	outline-offset: 2px;
+}
+
+body.workspace-page :where(input, select):focus-visible {
+	outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.workspace-app::before {
+		animation: none;
+		opacity: var(--ambient-glow-min-opacity);
+		transform: none;
+	}
+}

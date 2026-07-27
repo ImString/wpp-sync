@@ -46,7 +46,7 @@ body.auth-page {
 	margin: 0;
 	overflow-x: hidden;
 	color: var(--auth-text);
-	background: radial-gradient(circle at 10% 10%, rgba(37, 211, 102, 0.11), transparent 28rem), var(--auth-page);
+	background: var(--auth-page);
 	font-family:
 		'Inter',
 		system-ui,
@@ -114,10 +114,7 @@ body.auth-page a {
 	flex-direction: column;
 	overflow: hidden;
 	color: #f7fffb;
-	background:
-		radial-gradient(circle at 15% 5%, rgba(37, 211, 102, 0.31), transparent 24rem),
-		radial-gradient(circle at 90% 90%, rgba(37, 211, 102, 0.14), transparent 25rem),
-		linear-gradient(155deg, var(--auth-panel), var(--auth-panel-deep));
+	background: linear-gradient(155deg, var(--auth-panel), var(--auth-panel-deep));
 }
 
 .auth-showcase::before,
@@ -333,15 +330,58 @@ body.auth-page a {
 	padding: 34px clamp(34px, 5vw, 74px);
 	align-items: center;
 	justify-content: center;
+	overflow: hidden;
 	background: var(--auth-surface);
+	isolation: isolate;
+}
+
+.auth-breathing-glow {
+	position: absolute;
+	z-index: 0;
+	width: clamp(300px, 30vw, 420px);
+	aspect-ratio: 1;
+	background: radial-gradient(circle, rgba(37, 211, 102, 0.42) 0%, rgba(37, 211, 102, 0.16) 34%, transparent 70%);
+	border-radius: 50%;
+	filter: blur(52px);
+	pointer-events: none;
+	transform-origin: center;
+	animation: auth-glow-breathe 3.6s infinite ease-in-out;
+	will-change: transform, opacity;
+}
+
+.auth-breathing-glow--content {
+	right: -145px;
+	bottom: -125px;
+}
+
+.auth-breathing-glow--showcase {
+	top: -135px;
+	left: -115px;
+	background: radial-gradient(circle, rgba(37, 211, 102, 0.5) 0%, rgba(37, 211, 102, 0.18) 34%, transparent 70%);
+}
+
+@keyframes auth-glow-breathe {
+	0%,
+	100% {
+		opacity: 0.28;
+		transform: scale(0.86);
+	}
+
+	50% {
+		opacity: 0.78;
+		transform: scale(1.24);
+	}
 }
 
 .auth-content__inner {
+	position: relative;
+	z-index: 1;
 	width: min(430px, 100%);
 }
 
 .auth-theme-button {
 	position: absolute;
+	z-index: 2;
 	top: 24px;
 	right: 24px;
 	display: grid;
@@ -749,6 +789,7 @@ body.auth-page input:focus-visible {
 
 	.mobile-brand {
 		position: absolute;
+		z-index: 2;
 		top: 25px;
 		left: max(24px, calc((100vw - 480px) / 2));
 		display: inline-flex;
@@ -826,6 +867,12 @@ body.auth-page input:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.auth-breathing-glow {
+		animation: none;
+		opacity: 0.36;
+		transform: none;
+	}
+
 	body.auth-page *,
 	body.auth-page *::before,
 	body.auth-page *::after {

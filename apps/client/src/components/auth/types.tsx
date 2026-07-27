@@ -12,7 +12,6 @@ export interface AuthShowcaseContent {
 	title: ReactNode;
 	description: string;
 	previews: AuthPreview[];
-	footerLabel: string;
 }
 
 export interface AuthLayoutProps {

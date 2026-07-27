@@ -13,8 +13,7 @@ const showcase: AuthShowcaseContent = {
 	previews: [
 		{ initials: 'JC', name: 'Juliana Costa', message: 'Olá! Gostaria de saber mais...', time: '11:42' },
 		{ initials: 'LM', name: 'Lucas Mendes', message: 'Perfeito, obrigado pelo atendimento!', time: '11:28' }
-	],
-	footerLabel: 'Sistemas operacionais'
+	]
 };
 
 export const LoginPage: React.FC = () => {

@@ -1,8 +1,32 @@
 @import 'tailwindcss';
 @import './styles/auth.css';
 @import './styles/chat.css';
+@import './styles/workspaces.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+	--ambient-glow-min-opacity: 0.18;
+	--ambient-glow-max-opacity: 0.42;
+}
+
+html.dark {
+	--ambient-glow-min-opacity: 0.32;
+	--ambient-glow-max-opacity: 0.62;
+}
+
+@keyframes ambient-breathe {
+	0%,
+	100% {
+		opacity: var(--ambient-glow-min-opacity);
+		transform: scale(0.92);
+	}
+
+	50% {
+		opacity: var(--ambient-glow-max-opacity);
+		transform: scale(1.18);
+	}
+}
 
 @theme {
 	--font-sans: 'Inter', system-ui, sans-serif;

@@ -1,6 +1,5 @@
 import { AuthBrand } from '../brand';
 import type { AuthShowcaseContent } from '../types';
-import { AuthFooter } from './Footer';
 import { AuthPreviewCard } from './Preview';
 
 interface AuthShowcaseProps {
@@ -10,6 +9,7 @@ interface AuthShowcaseProps {
 export const AuthShowcase: React.FC<AuthShowcaseProps> = props => {
 	return (
 		<aside className="auth-showcase">
+			<span className="auth-breathing-glow auth-breathing-glow--showcase" aria-hidden="true" />
 			<AuthBrand />
 
 			<div className="showcase-copy">
@@ -25,8 +25,6 @@ export const AuthShowcase: React.FC<AuthShowcaseProps> = props => {
 					<AuthPreviewCard key={preview.name} preview={preview} />
 				))}
 			</div>
-
-			<AuthFooter label={props.content.footerLabel} />
 		</aside>
 	);
 };

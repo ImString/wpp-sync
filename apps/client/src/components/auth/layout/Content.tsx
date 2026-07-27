@@ -14,6 +14,7 @@ interface AuthContentProps extends PropsWithChildren {
 export const AuthContent: React.FC<AuthContentProps> = props => {
 	return (
 		<section className="auth-content">
+			<span className="auth-breathing-glow auth-breathing-glow--content" aria-hidden="true" />
 			<AuthBrand mobile />
 			<ThemeSwitcher className="auth-theme-button" />
 

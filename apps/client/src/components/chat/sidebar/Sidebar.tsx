@@ -1,8 +1,10 @@
 import { MdClose } from 'react-icons/md';
+import { Link } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
 
 import { Brand } from '@/components/brand';
 import { Button } from '@/components/buttons';
+import { useWorkspaceStore } from '@/stores';
 
 import { useChatStore } from '../store';
 import { SidebarNavigation } from './Navigation';
@@ -11,6 +13,9 @@ import { SidebarUser } from './User';
 export const Sidebar: React.FC = () => {
 	const sidebarOpen = useChatStore(state => state.sidebarOpen);
 	const closeSidebar = useChatStore(state => state.closeSidebar);
+	const activeWorkspace = useWorkspaceStore(state =>
+		state.workspaces.find(workspace => workspace.slug === state.activeWorkspaceSlug)
+	);
 
 	return (
 		<aside
@@ -19,8 +24,16 @@ export const Sidebar: React.FC = () => {
 				'sidebar-drawer fixed inset-y-0 left-0 z-40 flex w-[min(290px,86vw)] translate-x-[-105%] flex-col overflow-hidden rounded-r-2xl border border-white/5 bg-[radial-gradient(circle_at_0_0,rgba(37,211,102,.15),transparent_38%),linear-gradient(180deg,#073b32,#041f1b)] text-emerald-50 shadow-app transition-transform duration-200 drawer:static drawer:w-auto drawer:translate-x-0 drawer:rounded-l-2xl drawer:rounded-r-none',
 				sidebarOpen && 'is-open'
 			)}>
-			<header className="flex h-18 shrink-0 items-center justify-between px-4.5">
-				<Brand />
+			<header className="flex h-18 shrink-0 items-center justify-between gap-2 px-4.5">
+				<div className="flex min-w-0 flex-col gap-0.5">
+					<Brand />
+					<Link
+						to="/"
+						className="truncate pl-11 text-[9px] font-medium text-emerald-100/55 transition hover:text-emerald-100"
+						title="Trocar área de trabalho">
+						{activeWorkspace?.name || 'Trocar área de trabalho'}
+					</Link>
+				</div>
 				<Button
 					theme="ghost"
 					type="button"

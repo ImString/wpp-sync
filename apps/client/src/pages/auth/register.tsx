@@ -13,8 +13,7 @@ const showcase: AuthShowcaseContent = {
 	previews: [
 		{ initials: 'AP', name: 'Ana Paula', message: 'Vocês têm disponível na cor preta?', time: '10:57' },
 		{ initials: 'EA', name: 'Empresa Alpha', message: 'Podemos agendar uma reunião.', time: '10:45' }
-	],
-	footerLabel: 'Configuração segura'
+	]
 };
 
 export const RegisterPage: React.FC = () => {

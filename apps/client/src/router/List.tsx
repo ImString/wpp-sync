@@ -1,11 +1,14 @@
 import { lazy } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AuthenticationMiddleware } from '@/components/middlewares';
 
 import { AuthRoutes } from './routes/auth';
 
-const HomePage = lazy(() => import('@/pages').then(module => ({ default: module.HomePage })));
+const WorkspacePage = lazy(() => import('@/components/workspaces').then(module => ({ default: module.WorkspacePage })));
+const WorkspaceChatRoute = lazy(() =>
+	import('@/components/workspaces').then(module => ({ default: module.WorkspaceChatRoute }))
+);
 
 export const RouteList = () => {
 	return (
@@ -14,7 +17,15 @@ export const RouteList = () => {
 				path="/"
 				element={
 					<AuthenticationMiddleware onlyLogged>
-						<HomePage />
+						<WorkspacePage />
+					</AuthenticationMiddleware>
+				}
+			/>
+			<Route
+				path="/w/:slug"
+				element={
+					<AuthenticationMiddleware onlyLogged>
+						<WorkspaceChatRoute />
 					</AuthenticationMiddleware>
 				}
 			/>
@@ -26,6 +37,7 @@ export const RouteList = () => {
 					</AuthenticationMiddleware>
 				}
 			/>
+			<Route path="*" element={<Navigate to="/" replace />} />
 		</Routes>
 	);
 };
