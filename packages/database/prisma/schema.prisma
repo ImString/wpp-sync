@@ -7,16 +7,87 @@ datasource db {
     provider = "postgresql"
 }
 
+model Files {
+    id String @id @default(cuid())
+
+    name       String
+    key        String
+    mimeType   String?     @map("mime_type")
+    createdAt  DateTime    @default(now()) @map("created_at")
+    users      User[]
+    workspaces Workspace[]
+
+    @@map("files")
+}
+
 model User {
     id String @id @default(cuid())
 
-    name     String
-    email    String
-    phone    String?
-    password String  @map("password_hash")
+    name       String
+    email      String
+    avatar     Files?  @relation(fields: [filesId], references: [id])
+    phone      String?
+    enterprise String?
+    password   String  @map("password_hash")
 
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+    createdAt  DateTime    @default(now()) @map("created_at")
+    updatedAt  DateTime    @updatedAt @map("updated_at")
+    filesId    String?
+    members    Member[]
+    invites    Invite[]
+    workspaces Workspace[]
 
     @@map("users")
+}
+
+enum Role {
+    ADMIN
+    MEMBER
+}
+
+model Member {
+    id       String  @id @default(cuid())
+    role     Role    @default(MEMBER)
+    disabled Boolean @default(false)
+
+    user        User      @relation(fields: [userId], references: [id])
+    workspace   Workspace @relation(fields: [workspaceId], references: [id])
+    userId      String
+    workspaceId String
+
+    @@map("members")
+}
+
+model Invite {
+    id String @id @default(cuid())
+
+    email     String
+    role      Role
+    createdAt DateTime @default(now()) @map("created_at")
+
+    author      User?     @relation(fields: [userId], references: [id])
+    workspace   Workspace @relation(fields: [workspaceId], references: [id])
+    userId      String?
+    workspaceId String
+
+    @@map("invites")
+}
+
+model Workspace {
+    id String @id @default(cuid())
+
+    uid       String   @unique
+    name      String
+    slug      String
+    avatar    Files?   @relation(fields: [filesId], references: [id])
+    owner     User     @relation(fields: [userId], references: [id])
+    members   Member[]
+    invites   Invite[]
+    disabled  Boolean? @default(false)
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+    filesId   String?
+    userId    String
+
+    @@map("workspaces")
 }

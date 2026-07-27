@@ -2,6 +2,7 @@ import { MdArrowBack, MdMoreVert, MdOutlinePerson } from 'react-icons/md';
 import { twMerge } from 'tailwind-merge';
 
 import { Button } from '@/components/buttons';
+import { Image } from '@/components/shared/Image';
 
 import { conversations } from '../data';
 import { useChatStore } from '../store';
@@ -23,9 +24,14 @@ export const ChatHeader: React.FC = () => {
 				<MdArrowBack aria-hidden="true" />
 			</Button>
 
-			<span className={twMerge('avatar bg-linear-to-br', conversation.avatarClassName)}>
-				{conversation.initials}
-			</span>
+			<Image
+				className={twMerge(
+					'inline-grid w-10 h-10 flex-0 place-items-center rounded-full',
+					conversation.avatarClassName
+				)}
+				seed={conversation.initials}
+				collection="initials"
+			/>
 			<div className="flex min-w-0 flex-1 flex-col">
 				<strong className="truncate text-sm">{conversation.name}</strong>
 				<span className="mt-0.5 flex items-center gap-1 text-[10px] text-brand-600 dark:text-brand-500">

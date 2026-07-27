@@ -33,7 +33,6 @@ export const LoginForm: React.FC = () => {
 		try {
 			const response = await authAPI.login({ email: values.email, password: values.password });
 
-			console.log(response);
 			if (!response.success || !response.data?.refreshToken) {
 				const errors = getResponseErrors(response);
 				helpers.setErrors({ email: errors.email, password: errors.password });

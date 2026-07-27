@@ -66,6 +66,7 @@ async function validateRequest(
 
 	for (const [source, validator] of inputs) {
 		if (!validator) continue;
+		if (source === 'body' && schema.form && request.isMultipart()) continue;
 
 		const result = await Validator.validate(validator, request[source]);
 

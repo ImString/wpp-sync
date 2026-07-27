@@ -1,6 +1,7 @@
 import { twMerge } from 'tailwind-merge';
 
 import { Button } from '@/components/buttons';
+import { Image } from '@/components/shared/Image';
 
 import { useChatStore } from '../store';
 import type { Conversation } from '../types';
@@ -20,9 +21,14 @@ export const ConversationItem: React.FC<ConversationItemProps> = props => {
 			type="button"
 			className={twMerge('conversation', isActive ? 'conversation-active' : 'conversation-idle')}
 			onClick={() => selectConversation(props.conversation.id)}>
-			<span className={twMerge('avatar bg-linear-to-br', props.conversation.avatarClassName)}>
-				{props.conversation.initials}
-			</span>
+			<Image
+				className={twMerge(
+					'inline-grid w-10 h-10 flex-0 place-items-center rounded-full',
+					props.conversation.avatarClassName
+				)}
+				seed={props.conversation.initials}
+				collection="initials"
+			/>
 			<span className="flex min-w-0 flex-1 flex-col gap-1">
 				<span className="flex min-w-0 items-center gap-2">
 					<strong className="min-w-0 flex-1 truncate text-[13px]">

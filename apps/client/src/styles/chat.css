@@ -71,18 +71,6 @@ html.dark body.chat-page {
 	box-shadow: inset 3px 0 0 #25d366;
 }
 
-.avatar {
-	display: inline-grid;
-	width: 42px;
-	height: 42px;
-	flex: 0 0 auto;
-	place-items: center;
-	color: white;
-	border-radius: 999px;
-	font-size: 12px;
-	font-weight: 700;
-}
-
 .filter {
 	display: inline-flex;
 	min-height: 30px;

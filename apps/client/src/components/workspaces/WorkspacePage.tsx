@@ -24,6 +24,7 @@ import { useInterfaceStore } from '@/components/interface';
 import { useAuthenticationStore, useWorkspaceStore } from '@/stores';
 import type { CreateWorkspaceData, Workspace } from '@/stores';
 
+import { Image } from '../shared/Image';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
 import { WorkspaceCard } from './WorkspaceCard';
 import {
@@ -190,17 +191,12 @@ export const WorkspacePage: React.FC = () => {
 							aria-expanded={userMenuOpen}
 							aria-haspopup="menu"
 							onClick={() => setUserMenuOpen(isOpen => !isOpen)}>
-							{currentUser?.avatarUrl ? (
-								<img
-									className="grid size-8.5 shrink-0 place-items-center rounded-full bg-linear-to-br from-amber-700 to-slate-700 object-cover text-[11px] font-bold text-white"
-									src={currentUser.avatarUrl}
-									alt=""
-								/>
-							) : (
-								<span className="grid size-8.5 shrink-0 place-items-center rounded-full bg-linear-to-br from-amber-700 to-slate-700 text-[11px] font-bold text-white">
-									{getInitials(currentUser?.name)}
-								</span>
-							)}
+							<Image
+								className="grid size-8.5 shrink-0 place-items-center rounded-full"
+								src={currentUser?.avatarUrl || undefined}
+								seed={currentUser?.name}
+								collection="initials"
+							/>
 							<span className="flex min-w-0 flex-col text-left max-[680px]:hidden">
 								<strong className="max-w-35 truncate text-xs">{currentUser?.name || 'Usuário'}</strong>
 								<small className="text-[9px] text-(--workspace-muted)">
@@ -212,21 +208,11 @@ export const WorkspacePage: React.FC = () => {
 
 						{userMenuOpen && (
 							<div
-								className="absolute top-[calc(100%+8px)] right-0 w-50 rounded-[14px] border border-(--workspace-border) bg-(--workspace-surface) p-1.75 shadow-(--workspace-shadow-card) [&>button]:flex [&>button]:min-h-9.5 [&>button]:w-full [&>button]:items-center [&>button]:gap-2.25 [&>button]:rounded-[9px] [&>button]:bg-transparent [&>button]:px-2.75 [&>button]:text-left [&>button]:text-xs [&>button]:transition [&>button:hover]:bg-(--workspace-surface-hover) [&_svg]:size-4.25 [&_svg]:text-(--workspace-muted) [&>hr]:my-1.5 [&>hr]:border-0 [&>hr]:border-t [&>hr]:border-(--workspace-border)"
+								className="absolute top-[calc(100%+8px)] right-0 w-50 rounded-[14px] border border-(--workspace-border) bg-(--workspace-surface) p-1.75 shadow-(--workspace-shadow-card) [&>button]:cursor-pointer [&>button]:flex [&>button]:min-h-9.5 [&>button]:w-full [&>button]:items-center [&>button]:gap-2.25 [&>button]:rounded-[9px] [&>button]:bg-transparent [&>button]:px-2.75 [&>button]:text-left [&>button]:text-xs [&>button]:transition [&>button:hover]:bg-(--workspace-surface-hover) [&_svg]:size-4.25 [&_svg]:text-(--workspace-muted) [&>hr]:my-1.5 [&>hr]:border-0 [&>hr]:border-t [&>hr]:border-(--workspace-border)"
 								role="menu">
-								<button
-									type="button"
-									role="menuitem"
-									onClick={() => setToast('Minha conta estará disponível em breve.')}>
+								<button type="button" role="menuitem" onClick={() => navigate('/profile')}>
 									<MdOutlinePerson aria-hidden="true" />
 									Minha conta
-								</button>
-								<button
-									type="button"
-									role="menuitem"
-									onClick={() => setToast('Preferências estarão disponíveis em breve.')}>
-									<MdTune aria-hidden="true" />
-									Preferências
 								</button>
 								<hr />
 								<button type="button" role="menuitem" onClick={handleLogout}>
