@@ -14,7 +14,7 @@ import {
 	MdOutlinePerson,
 	MdPhone
 } from 'react-icons/md';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { getResponseErrors, getResponseMessage, userAPI } from '@/utils/api';
 
@@ -61,16 +61,17 @@ const getRoleLabel = (role?: string) => {
 };
 
 export const AccountPage: React.FC = () => {
-	const location = useLocation();
 	const navigate = useNavigate();
+	const { uid: routeWorkspaceUid } = useParams<{ uid: string }>();
 	const avatarInputRef = useRef<HTMLInputElement>(null);
 	const currentUser = useAuthenticationStore(state => state.currentUser);
 	const setCurrentUser = useAuthenticationStore(state => state.setCurrentUser);
-	const activeWorkspaceSlug = useWorkspaceStore(state => state.activeWorkspaceSlug);
+	const activeWorkspaceUid = useWorkspaceStore(state => state.activeWorkspaceUid);
+	const setActiveWorkspace = useWorkspaceStore(state => state.setActiveWorkspace);
 	const openSidebar = useChatStore(state => state.openSidebar);
 	const setActiveSection = useChatStore(state => state.setActiveSection);
-	const isWorkspaceContext =
-		new URLSearchParams(location.search).get('context') === 'workspace' && Boolean(activeWorkspaceSlug);
+	const isWorkspaceContext = Boolean(routeWorkspaceUid);
+	const workspaceUid = routeWorkspaceUid || activeWorkspaceUid;
 
 	const [form, setForm] = useState<AccountForm>({ name: '', phone: '', enterprise: '' });
 	const [avatar, setAvatar] = useState<File | null>(null);
@@ -79,6 +80,10 @@ export const AccountPage: React.FC = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const avatarPreviewUrl = useMemo(() => (avatar ? URL.createObjectURL(avatar) : null), [avatar]);
+
+	useEffect(() => {
+		if (routeWorkspaceUid) setActiveWorkspace(routeWorkspaceUid);
+	}, [routeWorkspaceUid, setActiveWorkspace]);
 
 	useEffect(() => {
 		if (!currentUser) return;
@@ -219,7 +224,7 @@ export const AccountPage: React.FC = () => {
 		}
 	};
 
-	const goBack = () => navigate(isWorkspaceContext && activeWorkspaceSlug ? `/w/${activeWorkspaceSlug}` : '/');
+	const goBack = () => navigate(isWorkspaceContext && workspaceUid ? `/w/${workspaceUid}` : '/');
 
 	return (
 		<div

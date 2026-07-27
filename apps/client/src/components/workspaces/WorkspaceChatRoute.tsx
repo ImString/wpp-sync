@@ -1,19 +1,42 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 
 import { ChatLayout } from '@/components/chat';
+import { Loading } from '@/components/loading';
 import { useWorkspaceStore } from '@/stores';
 
 export const WorkspaceChatRoute: React.FC = () => {
-	const { slug } = useParams<{ slug: string }>();
-	const workspace = useWorkspaceStore(state => state.workspaces.find(item => item.slug === slug));
-	const setActiveWorkspace = useWorkspaceStore(state => state.setActiveWorkspace);
+	const { uid } = useParams<{ uid: string }>();
+	const workspace = useWorkspaceStore(state => state.workspaces.find(item => item.uid === uid));
+	const getWorkspace = useWorkspaceStore(state => state.getWorkspace);
+	const [isLoading, setIsLoading] = useState(true);
+	const [hasError, setHasError] = useState(false);
 
 	useEffect(() => {
-		if (workspace) setActiveWorkspace(workspace.slug);
-	}, [setActiveWorkspace, workspace]);
+		if (!uid) {
+			setHasError(true);
+			setIsLoading(false);
+			return;
+		}
 
-	if (!workspace) return <Navigate to="/" replace state={{ workspaceNotFound: true }} />;
+		const controller = new AbortController();
+		setIsLoading(true);
+		setHasError(false);
+
+		void getWorkspace(uid, controller.signal)
+			.catch(() => {
+				if (!controller.signal.aborted) setHasError(true);
+			})
+			.finally(() => {
+				if (!controller.signal.aborted) setIsLoading(false);
+			});
+
+		return () => controller.abort();
+	}, [getWorkspace, uid]);
+
+	if (isLoading) return <Loading label="Carregando área de trabalho..." />;
+
+	if (hasError || !workspace) return <Navigate to="/" replace state={{ workspaceNotFound: true }} />;
 
 	return <ChatLayout />;
 };

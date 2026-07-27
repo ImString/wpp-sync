@@ -23,10 +23,18 @@ export const RouteList = () => {
 				}
 			/>
 			<Route
-				path="/w/:slug"
+				path="/w/:uid"
 				element={
 					<AuthenticationMiddleware onlyLogged>
 						<WorkspaceChatRoute />
+					</AuthenticationMiddleware>
+				}
+			/>
+			<Route
+				path="/w/:uid/my-profile"
+				element={
+					<AuthenticationMiddleware onlyLogged>
+						<AccountPage />
 					</AuthenticationMiddleware>
 				}
 			/>

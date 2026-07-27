@@ -14,7 +14,7 @@ export const Sidebar: React.FC = () => {
 	const sidebarOpen = useChatStore(state => state.sidebarOpen);
 	const closeSidebar = useChatStore(state => state.closeSidebar);
 	const activeWorkspace = useWorkspaceStore(state =>
-		state.workspaces.find(workspace => workspace.slug === state.activeWorkspaceSlug)
+		state.workspaces.find(workspace => workspace.uid === state.activeWorkspaceUid)
 	);
 
 	return (

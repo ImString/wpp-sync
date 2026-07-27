@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
-import { MdClose } from 'react-icons/md';
+import type { ChangeEvent, FormEvent } from 'react';
+import { MdClose, MdOutlineCameraAlt } from 'react-icons/md';
 
 import type { CreateWorkspaceData } from '@/stores';
 
@@ -14,28 +14,22 @@ import {
 
 interface CreateWorkspaceModalProps {
 	isOpen: boolean;
-	existingSlugs: string[];
 	onClose: () => void;
-	onCreate: (data: CreateWorkspaceData) => void;
+	onCreate: (data: CreateWorkspaceData) => Promise<void>;
 }
 
-export const normalizeWorkspaceSlug = (value: string) => {
-	return value
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '')
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '');
-};
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
+const SUPPORTED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props => {
 	const nameInputRef = useRef<HTMLInputElement>(null);
+	const avatarInputRef = useRef<HTMLInputElement>(null);
 	const [name, setName] = useState('');
-	const [slug, setSlug] = useState('');
-	const [segment, setSegment] = useState('Atendimento e suporte');
-	const [slugEdited, setSlugEdited] = useState(false);
+	const [avatar, setAvatar] = useState<File | null>(null);
 	const [nameError, setNameError] = useState('');
-	const [slugError, setSlugError] = useState('');
+	const [avatarError, setAvatarError] = useState('');
+	const [submitError, setSubmitError] = useState('');
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	useEffect(() => {
 		if (!props.isOpen) return;
@@ -46,42 +40,53 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props =
 
 	const resetAndClose = () => {
 		setName('');
-		setSlug('');
-		setSegment('Atendimento e suporte');
-		setSlugEdited(false);
+		setAvatar(null);
 		setNameError('');
-		setSlugError('');
+		setAvatarError('');
+		setSubmitError('');
 		props.onClose();
 	};
 
-	const handleNameChange = (value: string) => {
-		setName(value);
-		setNameError('');
-		if (!slugEdited) setSlug(normalizeWorkspaceSlug(value));
+	const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		event.target.value = '';
+
+		if (!file) return;
+
+		if (!SUPPORTED_AVATAR_TYPES.includes(file.type)) {
+			setAvatarError('Use uma imagem JPG, PNG ou WEBP.');
+			return;
+		}
+
+		if (file.size > MAX_AVATAR_SIZE) {
+			setAvatarError('A imagem deve ter no máximo 5 MB.');
+			return;
+		}
+
+		setAvatar(file);
+		setAvatarError('');
 	};
 
-	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const normalizedName = name.trim();
-		const normalizedSlug = normalizeWorkspaceSlug(slug);
+		setSubmitError('');
 
 		if (!normalizedName) {
 			setNameError('Informe o nome da área.');
 			return;
 		}
 
-		if (!normalizedSlug) {
-			setSlugError('Informe um identificador válido.');
-			return;
-		}
+		setIsSubmitting(true);
 
-		if (props.existingSlugs.includes(normalizedSlug)) {
-			setSlugError('Este identificador já está em uso.');
-			return;
+		try {
+			await props.onCreate({ name: normalizedName, avatar: avatar || undefined });
+			resetAndClose();
+		} catch (error) {
+			setSubmitError(error instanceof Error ? error.message : 'Não foi possível criar a área de trabalho.');
+		} finally {
+			setIsSubmitting(false);
 		}
-
-		props.onCreate({ name: normalizedName, slug: normalizedSlug, segment });
-		resetAndClose();
 	};
 
 	if (!props.isOpen) return null;
@@ -89,7 +94,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props =
 	return (
 		<div
 			className="fixed inset-0 z-60 grid place-items-center bg-black/60 p-5 backdrop-blur-[5px] max-[420px]:p-2.5"
-			onMouseDown={event => event.target === event.currentTarget && resetAndClose()}>
+			onMouseDown={event => event.target === event.currentTarget && !isSubmitting && resetAndClose()}>
 			<section
 				className="w-[min(480px,100%)] animate-[workspace-modal-in_170ms_ease-out] overflow-hidden rounded-[20px] border border-(--workspace-border) bg-(--workspace-surface) shadow-[0_30px_90px_rgba(0,0,0,.36)]"
 				role="dialog"
@@ -106,6 +111,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props =
 						className={workspaceIconButtonClassName}
 						type="button"
 						aria-label="Fechar"
+						disabled={isSubmitting}
 						onClick={resetAndClose}>
 						<MdClose aria-hidden="true" />
 					</button>
@@ -120,10 +126,13 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props =
 							type="text"
 							placeholder="Ex.: Minha empresa"
 							required
-							maxLength={42}
+							maxLength={128}
 							value={name}
 							aria-describedby={nameError ? 'workspace-name-error' : undefined}
-							onChange={event => handleNameChange(event.target.value)}
+							onChange={event => {
+								setName(event.target.value);
+								setNameError('');
+							}}
 						/>
 						{nameError && (
 							<small
@@ -134,26 +143,63 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props =
 						)}
 					</label>
 
-					<label className="grid gap-1.75 text-[11px] font-semibold text-(--workspace-text)">
-						<span>Segmento</span>
-						<select
-							className={workspaceFieldClassName}
-							value={segment}
-							onChange={event => setSegment(event.target.value)}>
-							<option>Atendimento e suporte</option>
-							<option>Vendas</option>
-							<option>Marketing</option>
-							<option>Agência</option>
-							<option>Outro</option>
-						</select>
-					</label>
+					<div className="grid gap-1.75 text-[11px] font-semibold text-(--workspace-text)">
+						<span>Imagem da área (opcional)</span>
+						<div className="flex items-center gap-2.5 rounded-[10px] border border-(--workspace-border) bg-(--workspace-surface-muted) p-2.5">
+							<span className="grid size-10 shrink-0 place-items-center rounded-[9px] bg-brand-50 text-brand-600 dark:bg-[rgba(37,211,102,.11)]">
+								<MdOutlineCameraAlt className="size-5" aria-hidden="true" />
+							</span>
+							<span className="min-w-0 flex-1">
+								<strong className="block truncate text-[10px]">
+									{avatar?.name || 'Nenhuma imagem selecionada'}
+								</strong>
+								<small className="text-[9px] font-normal text-(--workspace-muted)">
+									JPG, PNG ou WEBP · máximo de 5 MB
+								</small>
+							</span>
+							<button
+								className={workspaceSecondaryButtonClassName}
+								type="button"
+								disabled={isSubmitting}
+								onClick={() => avatarInputRef.current?.click()}>
+								Escolher
+							</button>
+							<input
+								ref={avatarInputRef}
+								className="sr-only"
+								type="file"
+								accept="image/jpeg,image/png,image/webp"
+								onChange={handleAvatarChange}
+							/>
+						</div>
+						{avatarError && (
+							<small className="text-[10px] font-medium text-red-600 dark:text-red-400">
+								{avatarError}
+							</small>
+						)}
+					</div>
+
+					{submitError && (
+						<p
+							className="rounded-[10px] bg-red-50 px-3 py-2.5 text-[10px] font-medium text-red-700 dark:bg-red-950/30 dark:text-red-300"
+							role="alert">
+							{submitError}
+						</p>
+					)}
 
 					<footer className="mt-1 flex justify-end gap-2.25">
-						<button className={workspaceSecondaryButtonClassName} type="button" onClick={resetAndClose}>
+						<button
+							className={workspaceSecondaryButtonClassName}
+							type="button"
+							disabled={isSubmitting}
+							onClick={resetAndClose}>
 							Cancelar
 						</button>
-						<button className={workspacePrimaryButtonClassName} type="submit">
-							Criar área
+						<button
+							className={workspacePrimaryButtonClassName}
+							type="submit"
+							disabled={isSubmitting}>
+							{isSubmitting ? 'Criando...' : 'Criar área'}
 						</button>
 					</footer>
 				</form>

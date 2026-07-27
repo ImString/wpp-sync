@@ -14,7 +14,7 @@ import { authAPI } from '@/utils/api';
 
 import { Button } from '@/components/buttons';
 import { Image } from '@/components/shared/Image';
-import { useAuthenticationStore } from '@/stores';
+import { useAuthenticationStore, useWorkspaceStore } from '@/stores';
 
 const getInitials = (name?: string) => {
 	return (name || 'Usuário')
@@ -38,6 +38,7 @@ export const SidebarUser: React.FC = () => {
 	const refreshToken = useAuthenticationStore(state => state.refreshToken);
 	const currentUser = useAuthenticationStore(state => state.currentUser);
 	const clearAuthentication = useAuthenticationStore(state => state.clearAuthentication);
+	const activeWorkspaceUid = useWorkspaceStore(state => state.activeWorkspaceUid);
 
 	const handleLogout = () => {
 		void authAPI.logout(refreshToken, authToken).catch(() => undefined);
@@ -51,7 +52,10 @@ export const SidebarUser: React.FC = () => {
 				<div
 					className="absolute bottom-[calc(100%-4px)] left-3 right-3 w-50 rounded-[14px] border border-white/10 bg-[#082c27] p-1.75 shadow-xl [&>button]:cursor-pointer [&>button]:flex [&>button]:min-h-9.5 [&>button]:w-full [&>button]:items-center [&>button]:gap-2.25 [&>button]:rounded-[9px] [&>button]:bg-transparent [&>button]:px-2.75 [&>button]:text-left [&>button]:text-xs [&>button]:transition [&>button:hover]:bg-[#0b3f38] [&_svg]:size-4.25 [&_svg]:text-(--workspace-muted) [&>hr]:my-1.5 [&>hr]:border-0 [&>hr]:border-t [&>hr]:border-white/10"
 					role="menu">
-					<button type="button" role="menuitem" onClick={() => navigate('/profile?context=workspace')}>
+					<button
+						type="button"
+						role="menuitem"
+						onClick={() => navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/my-profile` : '/profile')}>
 						<MdOutlinePerson aria-hidden="true" />
 						Minha conta
 					</button>

@@ -19,19 +19,19 @@ export const NavigationItem: React.FC<NavigationItemProps> = props => {
 	const navigate = useNavigate();
 	const activeSection = useChatStore(state => state.activeSection);
 	const setActiveSection = useChatStore(state => state.setActiveSection);
-	const activeWorkspaceSlug = useWorkspaceStore(state => state.activeWorkspaceSlug);
-	const isProfilePage = location.pathname === '/profile';
+	const activeWorkspaceUid = useWorkspaceStore(state => state.activeWorkspaceUid);
+	const isProfilePage = location.pathname === '/profile' || location.pathname.endsWith('/my-profile');
 	const isActive = props.section === 'settings' ? isProfilePage : !isProfilePage && activeSection === props.section;
 
 	const handleClick = () => {
 		setActiveSection(props.section);
 
 		if (props.section === 'settings') {
-			navigate('/profile?context=workspace');
+			navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/my-profile` : '/profile');
 			return;
 		}
 
-		if (isProfilePage) navigate(activeWorkspaceSlug ? `/w/${activeWorkspaceSlug}` : '/');
+		if (isProfilePage) navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}` : '/');
 	};
 
 	return (

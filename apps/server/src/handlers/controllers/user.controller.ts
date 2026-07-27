@@ -17,8 +17,8 @@ export class UserController {
 	async getProfile(context: RouterMiddlewareContext) {
 		const userId = context.state.userId;
 
-		const user = await this.userService.get({ id: userId });
-		return HttpResponse.success(user);
+		const user = await this.userService.get({ id: userId, include: { avatar: true } });
+		return HttpResponse.success(await user.toObject({ sign_files: true }));
 	}
 
 	@Put('/update', UserDTO.UpdateProfile)

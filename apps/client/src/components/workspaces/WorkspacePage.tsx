@@ -80,14 +80,31 @@ export const WorkspacePage: React.FC = () => {
 	const currentUser = useAuthenticationStore(state => state.currentUser);
 	const clearAuthentication = useAuthenticationStore(state => state.clearAuthentication);
 	const workspaces = useWorkspaceStore(state => state.workspaces);
+	const totalWorkspaces = useWorkspaceStore(state => state.total);
+	const listStatus = useWorkspaceStore(state => state.listStatus);
+	const listError = useWorkspaceStore(state => state.error);
+	const listWorkspaces = useWorkspaceStore(state => state.listWorkspaces);
 	const createWorkspace = useWorkspaceStore(state => state.createWorkspace);
 	const setActiveWorkspace = useWorkspaceStore(state => state.setActiveWorkspace);
+	const clearWorkspaces = useWorkspaceStore(state => state.clearWorkspaces);
 
 	const filteredWorkspaces = useMemo(() => {
 		const normalizedSearch = normalizeSearch(search);
 		if (!normalizedSearch) return workspaces;
 		return workspaces.filter(workspace => normalizeSearch(workspace.name).includes(normalizedSearch));
 	}, [search, workspaces]);
+
+	useEffect(() => {
+		const controller = new AbortController();
+
+		void listWorkspaces(controller.signal).catch(error => {
+			if (!controller.signal.aborted) {
+				setToast(error instanceof Error ? error.message : 'Não foi possível carregar as áreas de trabalho.');
+			}
+		});
+
+		return () => controller.abort();
+	}, [listWorkspaces]);
 
 	useEffect(() => {
 		const previousTitle = document.title;
@@ -139,17 +156,24 @@ export const WorkspacePage: React.FC = () => {
 	}, [createModalOpen]);
 
 	const selectWorkspace = (workspace: Workspace) => {
-		setActiveWorkspace(workspace.slug);
-		navigate(`/w/${workspace.slug}`);
+		setActiveWorkspace(workspace.uid);
+		navigate(`/w/${workspace.uid}`);
 	};
 
-	const handleCreateWorkspace = (data: CreateWorkspaceData) => {
-		createWorkspace(data);
+	const handleCreateWorkspace = async (data: CreateWorkspaceData) => {
+		await createWorkspace(data);
 		setToast(`A área “${data.name}” foi criada com sucesso.`);
+	};
+
+	const retryList = () => {
+		void listWorkspaces().catch(error => {
+			setToast(error instanceof Error ? error.message : 'Não foi possível carregar as áreas de trabalho.');
+		});
 	};
 
 	const handleLogout = () => {
 		void authAPI.logout(refreshToken, authToken).catch(() => undefined);
+		clearWorkspaces();
 		clearAuthentication();
 		navigate('/auth/login', { replace: true });
 	};
@@ -248,8 +272,8 @@ export const WorkspacePage: React.FC = () => {
 						<div>
 							<h2 className="m-0 text-[17px] font-bold tracking-[-.03em]">Suas áreas</h2>
 							<p className="mt-1 text-[11px] text-(--workspace-muted)">
-								{workspaces.length}{' '}
-								{workspaces.length === 1
+								{totalWorkspaces}{' '}
+								{totalWorkspaces === 1
 									? 'área de trabalho disponível'
 									: 'áreas de trabalho disponíveis'}
 							</p>
@@ -294,7 +318,22 @@ export const WorkspacePage: React.FC = () => {
 						</div>
 					</header>
 
-					{filteredWorkspaces.length > 0 ? (
+					{listStatus === 'loading' && workspaces.length === 0 ? (
+						<div className="grid min-h-70 place-items-center content-center p-10 text-center" role="status">
+							<span className="mb-3 size-8 animate-spin rounded-full border-3 border-brand-100 border-t-brand-600 dark:border-brand-950 dark:border-t-brand-400" />
+							<strong className="text-sm">Carregando áreas de trabalho...</strong>
+						</div>
+					) : listStatus === 'error' && workspaces.length === 0 ? (
+						<div className="grid min-h-70 place-items-center content-center p-10 text-center" role="alert">
+							<strong className="text-sm">Não foi possível carregar suas áreas</strong>
+							<p className="mt-1.5 text-[11px] text-(--workspace-muted)">
+								{listError || 'Verifique sua conexão e tente novamente.'}
+							</p>
+							<button className={workspaceSecondaryButtonClassName} type="button" onClick={retryList}>
+								Tentar novamente
+							</button>
+						</div>
+					) : filteredWorkspaces.length > 0 ? (
 						<div className="grid grid-cols-3 gap-4 p-6 max-[980px]:grid-cols-2 max-[680px]:grid-cols-1 max-[680px]:gap-2.75 max-[680px]:p-3.5">
 							{filteredWorkspaces.map(workspace => (
 								<WorkspaceCard key={workspace.id} workspace={workspace} onSelect={selectWorkspace} />
@@ -332,7 +371,6 @@ export const WorkspacePage: React.FC = () => {
 			{createModalOpen && (
 				<CreateWorkspaceModal
 					isOpen
-					existingSlugs={workspaces.map(workspace => workspace.slug)}
 					onClose={() => setCreateModalOpen(false)}
 					onCreate={handleCreateWorkspace}
 				/>

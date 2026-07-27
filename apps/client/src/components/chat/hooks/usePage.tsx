@@ -4,7 +4,7 @@ import { useWorkspaceStore } from '@/stores';
 
 export const useChatPage = () => {
 	const workspaceName = useWorkspaceStore(
-		state => state.workspaces.find(workspace => workspace.slug === state.activeWorkspaceSlug)?.name
+		state => state.workspaces.find(workspace => workspace.uid === state.activeWorkspaceUid)?.name
 	);
 
 	useEffect(() => {

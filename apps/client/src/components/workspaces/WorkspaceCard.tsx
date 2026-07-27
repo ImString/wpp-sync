@@ -9,13 +9,6 @@ interface WorkspaceCardProps {
 	onSelect: (workspace: Workspace) => void;
 }
 
-const getWorkspaceDetails = (workspace: Workspace) => {
-	const members = `${workspace.members} ${workspace.members === 1 ? 'membro' : 'membros'}`;
-	const channels = `${workspace.connectedChannels} ${workspace.connectedChannels === 1 ? 'canal' : 'canais'}`;
-
-	return `${members} · ${channels}`;
-};
-
 export const WorkspaceCard: React.FC<WorkspaceCardProps> = props => {
 	const { workspace } = props;
 
@@ -28,6 +21,7 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = props => {
 			<Image
 				className="block size-13.5 shrink-0 rounded-[14px] object-cover max-[420px]:size-12.5"
 				aria-hidden="true"
+				src={workspace.avatarUrl || undefined}
 				seed={workspace.name}
 				collection="initials"
 				size={256}
@@ -40,7 +34,7 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = props => {
 					<strong className="flex-1 truncate text-[13px] font-bold">{workspace.name}</strong>
 				</span>
 
-				<small className="mt-1.5 text-[10px] text-(--workspace-muted)">{getWorkspaceDetails(workspace)}</small>
+				<small className="mt-1.5 text-[10px] text-(--workspace-muted)">{workspace.slug}</small>
 			</span>
 
 			<span

@@ -3,7 +3,7 @@ import type { InternalAxiosRequestConfig } from 'axios';
 
 import { getAuthToken } from '@/utils/auth';
 
-import { useAuthenticationStore } from '@/stores';
+import { useAuthenticationStore } from '@/stores/auth';
 
 import { apiUrl } from './config';
 import { renewAuthToken } from './refresh';
