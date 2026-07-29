@@ -142,6 +142,12 @@ pnpm --filter @wppsync/server start
 
 Utilize uma instância PostgreSQL acessível pelo server e configure `DATABASE_URL`. Antes de uma implantação real, recomenda-se adotar migrations versionadas do Prisma no lugar de depender somente de `prisma db push`.
 
+## Nota sobre o desenvolvimento
+
+O front-end atual está sendo desenvolvido com o auxílio de ferramentas de inteligência artificial e funciona como uma implementação inicial da interface. Futuramente, ele será revisado e reescrito.
+
+Toda a arquitetura e a implementação do back-end foram desenvolvidas integralmente pelo autor do projeto, sem geração de código por inteligência artificial.
+
 ## Licença
 
 Este projeto está configurado sob a licença MIT.
