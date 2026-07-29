@@ -1,3 +1,4 @@
+import { useNavigate, useParams } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
 
 import { Button } from '@/components/buttons';
@@ -11,16 +12,24 @@ interface ConversationItemProps {
 }
 
 export const ConversationItem: React.FC<ConversationItemProps> = props => {
-	const selectedConversationId = useChatStore(state => state.selectedConversationId);
+	const navigate = useNavigate();
+	const { chatId, uid } = useParams<{ chatId: string; uid: string }>();
 	const selectConversation = useChatStore(state => state.selectConversation);
-	const isActive = selectedConversationId === props.conversation.id;
+	const isActive = chatId === props.conversation.id;
+
+	const handleSelect = () => {
+		if (!uid) return;
+
+		selectConversation(props.conversation.id);
+		navigate(`/w/${uid}/chats/${props.conversation.id}`);
+	};
 
 	return (
 		<Button
 			theme="unstyled"
 			type="button"
 			className={twMerge('conversation', isActive ? 'conversation-active' : 'conversation-idle')}
-			onClick={() => selectConversation(props.conversation.id)}>
+			onClick={handleSelect}>
 			<Image
 				className={twMerge(
 					'inline-grid w-10 h-10 flex-0 place-items-center rounded-full',

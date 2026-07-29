@@ -47,6 +47,21 @@ export class ServerModuleBase extends BaseModule {
 				return;
 			}
 
+			if (fastifyError?.code == 'P1001') {
+				Terminal.error('SERVER', [
+					'Has error in database:',
+					'\n----------------------',
+					fastifyError?.message,
+					'\n----------------------'
+				]);
+				reply.code(500).send({
+					success: false,
+					code: 'DATABASE_ERROR',
+					data: { message: 'A database error occurred.' }
+				});
+				return;
+			}
+
 			reply.status(500).send({
 				success: false,
 				code: fastifyError?.code || 'INTERNAL_SERVER_ERROR',

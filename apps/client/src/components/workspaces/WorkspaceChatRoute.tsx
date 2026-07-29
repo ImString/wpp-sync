@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, Outlet, useParams } from 'react-router-dom';
 
-import { ChatLayout } from '@/components/chat';
 import { Loading } from '@/components/loading';
 import { useWorkspaceStore } from '@/stores';
 
@@ -38,5 +37,5 @@ export const WorkspaceChatRoute: React.FC = () => {
 
 	if (hasError || !workspace) return <Navigate to="/" replace state={{ workspaceNotFound: true }} />;
 
-	return <ChatLayout />;
+	return <Outlet />;
 };

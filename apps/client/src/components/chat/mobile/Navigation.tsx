@@ -1,4 +1,5 @@
 import { MdAdd, MdCampaign, MdChatBubbleOutline, MdMenu, MdOutlineContacts } from 'react-icons/md';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { Button } from '@/components/buttons';
 
@@ -6,8 +7,9 @@ import { useChatStore } from '../store';
 import { MobileNavigationItem } from './NavigationItem';
 
 export const MobileNavigation: React.FC = () => {
+	const navigate = useNavigate();
+	const { uid } = useParams<{ uid: string }>();
 	const openSidebar = useChatStore(state => state.openSidebar);
-	const setMobileView = useChatStore(state => state.setMobileView);
 
 	return (
 		<nav
@@ -17,7 +19,7 @@ export const MobileNavigation: React.FC = () => {
 				icon={MdChatBubbleOutline}
 				label="Conversas"
 				active
-				onClick={() => setMobileView('conversations')}
+				onClick={() => navigate(uid ? `/w/${uid}/chats` : '/')}
 			/>
 			<MobileNavigationItem icon={MdOutlineContacts} label="Contatos" />
 			<Button

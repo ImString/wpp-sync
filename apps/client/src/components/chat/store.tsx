@@ -24,7 +24,8 @@ export const useChatStore = create<ChatStore>(set => ({
 	closeSidebar: () => set({ sidebarOpen: false }),
 	openContactPanel: () => set({ contactPanelOpen: true, mobileView: 'contact' }),
 	openSidebar: () => set({ sidebarOpen: true }),
-	selectConversation: selectedConversationId => set({ selectedConversationId, mobileView: 'chat' }),
+	selectConversation: selectedConversationId =>
+		set({ contactPanelOpen: false, selectedConversationId, mobileView: 'chat' }),
 	sendMessage: text => {
 		const messageId = `message-${Date.now()}`;
 

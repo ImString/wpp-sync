@@ -1,4 +1,5 @@
-import { MdArrowBack, MdMoreVert, MdOutlinePerson } from 'react-icons/md';
+import { MdArrowBack, MdMoreVert } from 'react-icons/md';
+import { useNavigate, useParams } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
 
 import { Button } from '@/components/buttons';
@@ -8,10 +9,14 @@ import { conversations } from '../data';
 import { useChatStore } from '../store';
 
 export const ChatHeader: React.FC = () => {
+	const navigate = useNavigate();
+	const { uid } = useParams<{ uid: string }>();
+	const contactPanelOpen = useChatStore(state => state.contactPanelOpen);
 	const selectedConversationId = useChatStore(state => state.selectedConversationId);
-	const setMobileView = useChatStore(state => state.setMobileView);
+	const closeContactPanel = useChatStore(state => state.closeContactPanel);
 	const openContactPanel = useChatStore(state => state.openContactPanel);
 	const conversation = conversations.find(item => item.id === selectedConversationId) || conversations[0];
+	const toggleContactPanel = () => (contactPanelOpen ? closeContactPanel() : openContactPanel());
 
 	return (
 		<header className="flex min-w-0 items-center gap-2.5 border-b border-slate-200 px-3.5 dark:border-[#223138]">
@@ -20,7 +25,7 @@ export const ChatHeader: React.FC = () => {
 				type="button"
 				aria-label="Voltar para conversas"
 				className="icon-button mobile:hidden"
-				onClick={() => setMobileView('conversations')}>
+				onClick={() => navigate(uid ? `/w/${uid}/chats` : '/')}>
 				<MdArrowBack aria-hidden="true" />
 			</Button>
 
@@ -42,12 +47,11 @@ export const ChatHeader: React.FC = () => {
 			<Button
 				theme="ghost"
 				type="button"
-				aria-label="Abrir dados do contato"
-				className="icon-button wide:hidden"
-				onClick={openContactPanel}>
-				<MdOutlinePerson aria-hidden="true" />
-			</Button>
-			<Button theme="ghost" type="button" aria-label="Mais opções" className="icon-button">
+				aria-label={contactPanelOpen ? 'Fechar dados do contato' : 'Abrir dados do contato'}
+				aria-controls="contact-details-panel"
+				aria-expanded={contactPanelOpen}
+				className="icon-button"
+				onClick={toggleContactPanel}>
 				<MdMoreVert aria-hidden="true" />
 			</Button>
 		</header>
