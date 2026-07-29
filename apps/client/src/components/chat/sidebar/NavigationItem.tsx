@@ -1,6 +1,7 @@
 import type { IconType } from 'react-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/buttons';
 import { useWorkspaceStore } from '@/stores';
@@ -17,17 +18,24 @@ interface NavigationItemProps {
 export const NavigationItem: React.FC<NavigationItemProps> = props => {
 	const location = useLocation();
 	const navigate = useNavigate();
-	const activeSection = useChatStore(state => state.activeSection);
-	const setActiveSection = useChatStore(state => state.setActiveSection);
+	const { activeSection, setActiveSection } = useChatStore(
+		useShallow(state => ({
+			activeSection: state.activeSection,
+			setActiveSection: state.setActiveSection
+		}))
+	);
 	const activeWorkspaceUid = useWorkspaceStore(state => state.activeWorkspaceUid);
-	const isProfilePage = location.pathname === '/profile' || location.pathname.endsWith('/my-profile');
+	const isProfilePage =
+		location.pathname === '/profile' ||
+		location.pathname.endsWith('/my-profile') ||
+		location.pathname.includes('/settings/');
 	const isActive = props.section === 'settings' ? isProfilePage : !isProfilePage && activeSection === props.section;
 
 	const handleClick = () => {
 		setActiveSection(props.section);
 
 		if (props.section === 'settings') {
-			navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/my-profile` : '/profile');
+			navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/settings/profile` : '/profile');
 			return;
 		}
 

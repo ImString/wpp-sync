@@ -1,4 +1,5 @@
 import { MdMenu, MdNotificationsNone, MdSync } from 'react-icons/md';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/buttons';
 import { SearchInput } from '@/components/inputs';
@@ -8,9 +9,13 @@ import { useChatStore } from '../store';
 import { ConnectionStatus } from './ConnectionStatus';
 
 export const Topbar: React.FC = () => {
-	const openSidebar = useChatStore(state => state.openSidebar);
-	const search = useChatStore(state => state.search);
-	const setSearch = useChatStore(state => state.setSearch);
+	const { openSidebar, search, setSearch } = useChatStore(
+		useShallow(state => ({
+			openSidebar: state.openSidebar,
+			search: state.search,
+			setSearch: state.setSearch
+		}))
+	);
 
 	return (
 		<header className="flex min-w-0 items-center justify-between gap-4 border-b border-slate-200 px-2.5 dark:border-[#223138] mobile:px-4">

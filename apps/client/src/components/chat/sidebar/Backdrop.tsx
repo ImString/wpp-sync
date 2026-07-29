@@ -1,12 +1,17 @@
 import { twMerge } from 'tailwind-merge';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/buttons';
 
 import { useChatStore } from '../store';
 
 export const SidebarBackdrop: React.FC = () => {
-	const sidebarOpen = useChatStore(state => state.sidebarOpen);
-	const closeSidebar = useChatStore(state => state.closeSidebar);
+	const { sidebarOpen, closeSidebar } = useChatStore(
+		useShallow(state => ({
+			sidebarOpen: state.sidebarOpen,
+			closeSidebar: state.closeSidebar
+		}))
+	);
 
 	return (
 		<Button

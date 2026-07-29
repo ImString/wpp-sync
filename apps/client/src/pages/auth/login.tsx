@@ -20,7 +20,6 @@ export const LoginPage: React.FC = () => {
 	return (
 		<AuthLayout
 			ariaLabel="Acesso ao WppSync"
-			pageTitle="Entrar"
 			eyebrow="Bem-vindo de volta"
 			title="Entre na sua conta"
 			description="Use suas credenciais para acessar a central de atendimento."

@@ -1,5 +1,6 @@
 import { MdDarkMode, MdLightMode } from 'react-icons/md';
 import { twMerge } from 'tailwind-merge';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/buttons';
 
@@ -11,8 +12,12 @@ interface ThemeSwitcherProps {
 }
 
 export const ThemeSwitcher: React.FC<ThemeSwitcherProps> = props => {
-	const theme = useInterfaceStore(state => state.theme);
-	const toggleTheme = useInterfaceStore(state => state.toggleTheme);
+	const { theme, toggleTheme } = useInterfaceStore(
+		useShallow(state => ({
+			theme: state.theme,
+			toggleTheme: state.toggleTheme
+		}))
+	);
 	const nextThemeLabel = theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro';
 
 	return (

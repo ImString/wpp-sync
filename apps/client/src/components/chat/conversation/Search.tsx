@@ -1,10 +1,16 @@
+import { useShallow } from 'zustand/react/shallow';
+
 import { SearchInput } from '@/components/inputs';
 
 import { useChatStore } from '../store';
 
 export const ConversationSearch: React.FC = () => {
-	const search = useChatStore(state => state.search);
-	const setSearch = useChatStore(state => state.setSearch);
+	const { search, setSearch } = useChatStore(
+		useShallow(state => ({
+			search: state.search,
+			setSearch: state.setSearch
+		}))
+	);
 
 	return (
 		<SearchInput

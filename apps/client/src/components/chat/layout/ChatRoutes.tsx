@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { MdChatBubbleOutline } from 'react-icons/md';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 
 import { ContactPanel } from '../contact';
 import { conversations } from '../data';
@@ -8,8 +9,12 @@ import { ChatPanel } from '../messages';
 import { useChatStore } from '../store';
 
 export const ChatEmptyRoute: React.FC = () => {
-	const closeContactPanel = useChatStore(state => state.closeContactPanel);
-	const setMobileView = useChatStore(state => state.setMobileView);
+	const { closeContactPanel, setMobileView } = useChatStore(
+		useShallow(state => ({
+			closeContactPanel: state.closeContactPanel,
+			setMobileView: state.setMobileView
+		}))
+	);
 
 	useEffect(() => {
 		closeContactPanel();
@@ -34,8 +39,12 @@ export const ChatEmptyRoute: React.FC = () => {
 export const ChatConversationRoute: React.FC = () => {
 	const { chatId, uid } = useParams<{ chatId: string; uid: string }>();
 
-	const selectedConversationId = useChatStore(state => state.selectedConversationId);
-	const selectConversation = useChatStore(state => state.selectConversation);
+	const { selectedConversationId, selectConversation } = useChatStore(
+		useShallow(state => ({
+			selectedConversationId: state.selectedConversationId,
+			selectConversation: state.selectConversation
+		}))
+	);
 	const conversationExists = conversations.some(conversation => conversation.id === chatId);
 
 	useEffect(() => {

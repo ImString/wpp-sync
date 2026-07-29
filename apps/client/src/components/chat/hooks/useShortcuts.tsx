@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useInterfaceStore } from '@/components/interface';
 
@@ -8,10 +9,14 @@ import { useChatStore } from '../store';
 export const useChatShortcuts = () => {
 	const navigate = useNavigate();
 	const { chatId, uid } = useParams<{ chatId: string; uid: string }>();
-	const contactPanelOpen = useChatStore(state => state.contactPanelOpen);
-	const sidebarOpen = useChatStore(state => state.sidebarOpen);
-	const closeContactPanel = useChatStore(state => state.closeContactPanel);
-	const closeSidebar = useChatStore(state => state.closeSidebar);
+	const { contactPanelOpen, sidebarOpen, closeContactPanel, closeSidebar } = useChatStore(
+		useShallow(state => ({
+			contactPanelOpen: state.contactPanelOpen,
+			sidebarOpen: state.sidebarOpen,
+			closeContactPanel: state.closeContactPanel,
+			closeSidebar: state.closeSidebar
+		}))
+	);
 	const toggleTheme = useInterfaceStore(state => state.toggleTheme);
 
 	useEffect(() => {

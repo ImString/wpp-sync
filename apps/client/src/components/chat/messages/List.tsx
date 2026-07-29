@@ -1,12 +1,18 @@
 import { useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useChatStore } from '../store';
 import { ChatFileMessage } from './FileMessage';
 import { ChatTextMessage } from './TextMessage';
 
 export const MessageList: React.FC = () => {
-	const selectedConversationId = useChatStore(state => state.selectedConversationId);
-	const messages = useChatStore(state => state.messages[selectedConversationId] || []);
+	const { selectedConversationId, messagesByConversation } = useChatStore(
+		useShallow(state => ({
+			selectedConversationId: state.selectedConversationId,
+			messagesByConversation: state.messages
+		}))
+	);
+	const messages = messagesByConversation[selectedConversationId] || [];
 	const listRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {

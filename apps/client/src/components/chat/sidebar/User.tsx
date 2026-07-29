@@ -9,21 +9,13 @@ import {
 } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
+import { useShallow } from 'zustand/react/shallow';
 
 import { authAPI } from '@/utils/api';
 
 import { Button } from '@/components/buttons';
 import { Image } from '@/components/shared/Image';
 import { useAuthenticationStore, useWorkspaceStore } from '@/stores';
-
-const getInitials = (name?: string) => {
-	return (name || 'Usuário')
-		.split(' ')
-		.slice(0, 2)
-		.map(part => part.charAt(0))
-		.join('')
-		.toUpperCase();
-};
 
 const getRoleLabel = (role?: string) => {
 	if (role === 'ADMIN') return 'Administrador';
@@ -34,10 +26,14 @@ const getRoleLabel = (role?: string) => {
 export const SidebarUser: React.FC = () => {
 	const [menuOpen, setMenuOpen] = useState(false);
 	const navigate = useNavigate();
-	const authToken = useAuthenticationStore(state => state.authToken);
-	const refreshToken = useAuthenticationStore(state => state.refreshToken);
-	const currentUser = useAuthenticationStore(state => state.currentUser);
-	const clearAuthentication = useAuthenticationStore(state => state.clearAuthentication);
+	const { authToken, refreshToken, currentUser, clearAuthentication } = useAuthenticationStore(
+		useShallow(state => ({
+			authToken: state.authToken,
+			refreshToken: state.refreshToken,
+			currentUser: state.currentUser,
+			clearAuthentication: state.clearAuthentication
+		}))
+	);
 	const activeWorkspaceUid = useWorkspaceStore(state => state.activeWorkspaceUid);
 
 	const handleLogout = () => {
@@ -55,9 +51,11 @@ export const SidebarUser: React.FC = () => {
 					<button
 						type="button"
 						role="menuitem"
-						onClick={() => navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/my-profile` : '/profile')}>
+						onClick={() =>
+							navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/settings/profile` : '/profile')
+						}>
 						<MdOutlinePerson aria-hidden="true" />
-						Minha conta
+						Meu perfil
 					</button>
 					<hr />
 					<button type="button" role="menuitem" onClick={() => navigate('/')}>

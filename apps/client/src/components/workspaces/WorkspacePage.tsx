@@ -16,6 +16,7 @@ import {
 } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
+import { useShallow } from 'zustand/react/shallow';
 
 import { authAPI } from '@/utils/api';
 
@@ -73,20 +74,38 @@ export const WorkspacePage: React.FC = () => {
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [toast, setToast] = useState(locationState?.workspaceNotFound ? 'A área solicitada não foi encontrada.' : '');
 
-	const theme = useInterfaceStore(state => state.theme);
-	const toggleTheme = useInterfaceStore(state => state.toggleTheme);
-	const authToken = useAuthenticationStore(state => state.authToken);
-	const refreshToken = useAuthenticationStore(state => state.refreshToken);
-	const currentUser = useAuthenticationStore(state => state.currentUser);
-	const clearAuthentication = useAuthenticationStore(state => state.clearAuthentication);
-	const workspaces = useWorkspaceStore(state => state.workspaces);
-	const totalWorkspaces = useWorkspaceStore(state => state.total);
-	const listStatus = useWorkspaceStore(state => state.listStatus);
-	const listError = useWorkspaceStore(state => state.error);
-	const listWorkspaces = useWorkspaceStore(state => state.listWorkspaces);
-	const createWorkspace = useWorkspaceStore(state => state.createWorkspace);
-	const setActiveWorkspace = useWorkspaceStore(state => state.setActiveWorkspace);
-	const clearWorkspaces = useWorkspaceStore(state => state.clearWorkspaces);
+	const { theme, toggleTheme } = useInterfaceStore(
+		useShallow(state => ({ theme: state.theme, toggleTheme: state.toggleTheme }))
+	);
+	const { authToken, refreshToken, currentUser, clearAuthentication } = useAuthenticationStore(
+		useShallow(state => ({
+			authToken: state.authToken,
+			refreshToken: state.refreshToken,
+			currentUser: state.currentUser,
+			clearAuthentication: state.clearAuthentication
+		}))
+	);
+	const {
+		workspaces,
+		total: totalWorkspaces,
+		listStatus,
+		error: listError,
+		listWorkspaces,
+		createWorkspace,
+		setActiveWorkspace,
+		clearWorkspaces
+	} = useWorkspaceStore(
+		useShallow(state => ({
+			workspaces: state.workspaces,
+			total: state.total,
+			listStatus: state.listStatus,
+			error: state.error,
+			listWorkspaces: state.listWorkspaces,
+			createWorkspace: state.createWorkspace,
+			setActiveWorkspace: state.setActiveWorkspace,
+			clearWorkspaces: state.clearWorkspaces
+		}))
+	);
 
 	const filteredWorkspaces = useMemo(() => {
 		const normalizedSearch = normalizeSearch(search);
@@ -105,17 +124,6 @@ export const WorkspacePage: React.FC = () => {
 
 		return () => controller.abort();
 	}, [listWorkspaces]);
-
-	useEffect(() => {
-		const previousTitle = document.title;
-		document.title = 'Áreas de trabalho — WppSync';
-		document.body.classList.add('workspace-page');
-
-		return () => {
-			document.title = previousTitle;
-			document.body.classList.remove('workspace-page');
-		};
-	}, []);
 
 	useEffect(() => {
 		if (!toast) return;

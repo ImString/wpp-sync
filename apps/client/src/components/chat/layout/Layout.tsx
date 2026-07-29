@@ -1,9 +1,8 @@
-import { useChatPage, useChatShortcuts } from '../hooks';
+import { useChatShortcuts } from '../hooks';
 import { Sidebar, SidebarBackdrop } from '../sidebar';
 import { ChatWorkspace } from './Workspace';
 
 export const ChatLayout: React.FC = () => {
-	useChatPage();
 	useChatShortcuts();
 
 	return (

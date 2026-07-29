@@ -16,7 +16,6 @@ export interface AuthShowcaseContent {
 
 export interface AuthLayoutProps {
 	ariaLabel: string;
-	pageTitle: string;
 	eyebrow: string;
 	title: string;
 	description: string;

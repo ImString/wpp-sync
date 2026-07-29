@@ -1,12 +1,17 @@
 import { Outlet } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
+import { useShallow } from 'zustand/react/shallow';
 
 import { ConversationPanel } from '../conversation';
 import { useChatStore } from '../store';
 
 export const ChatDashboard: React.FC = () => {
-	const contactPanelOpen = useChatStore(state => state.contactPanelOpen);
-	const mobileView = useChatStore(state => state.mobileView);
+	const { contactPanelOpen, mobileView } = useChatStore(
+		useShallow(state => ({
+			contactPanelOpen: state.contactPanelOpen,
+			mobileView: state.mobileView
+		}))
+	);
 
 	return (
 		<div

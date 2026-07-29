@@ -1,11 +1,8 @@
-import { useAuthPage } from '../hooks';
 import { AuthShowcase } from '../showcase';
 import type { AuthLayoutProps } from '../types';
 import { AuthContent } from './Content';
 
 export const AuthLayout: React.FC<AuthLayoutProps> = props => {
-	useAuthPage(props.pageTitle);
-
 	return (
 		<main className="auth-shell">
 			<section className="auth-card" aria-label={props.ariaLabel}>

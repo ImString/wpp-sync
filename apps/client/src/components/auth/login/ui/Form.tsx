@@ -2,6 +2,7 @@ import { Form, Formik } from 'formik';
 import type { FormikHelpers } from 'formik';
 import { MdLockOutline, MdOutlineEmail } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 
 import { authAPI, getResponseErrors, getResponseMessage, renewAuthToken } from '@/utils/api';
 
@@ -25,8 +26,12 @@ export const LoginForm: React.FC = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const toast = useAuthToast();
-	const setCurrentUser = useAuthenticationStore(state => state.setCurrentUser);
-	const clearAuthentication = useAuthenticationStore(state => state.clearAuthentication);
+	const { setCurrentUser, clearAuthentication } = useAuthenticationStore(
+		useShallow(state => ({
+			setCurrentUser: state.setCurrentUser,
+			clearAuthentication: state.clearAuthentication
+		}))
+	);
 	const locationState = location.state as LoginLocationState | null;
 
 	const handleSubmit = async (values: LoginFormData, helpers: FormikHelpers<LoginFormData>) => {

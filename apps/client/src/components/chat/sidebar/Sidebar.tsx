@@ -1,6 +1,7 @@
 import { MdClose } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Brand } from '@/components/brand';
 import { Button } from '@/components/buttons';
@@ -11,8 +12,12 @@ import { SidebarNavigation } from './Navigation';
 import { SidebarUser } from './User';
 
 export const Sidebar: React.FC = () => {
-	const sidebarOpen = useChatStore(state => state.sidebarOpen);
-	const closeSidebar = useChatStore(state => state.closeSidebar);
+	const { sidebarOpen, closeSidebar } = useChatStore(
+		useShallow(state => ({
+			sidebarOpen: state.sidebarOpen,
+			closeSidebar: state.closeSidebar
+		}))
+	);
 	const activeWorkspace = useWorkspaceStore(state =>
 		state.workspaces.find(workspace => workspace.uid === state.activeWorkspaceUid)
 	);

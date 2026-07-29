@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Loading } from '@/components/loading';
 import { useAuthenticationStore } from '@/stores';
@@ -11,8 +12,12 @@ interface AuthenticationMiddlewareProps extends PropsWithChildren {
 
 export const AuthenticationMiddleware: React.FC<AuthenticationMiddlewareProps> = props => {
 	const location = useLocation();
-	const status = useAuthenticationStore(state => state.status);
-	const currentUser = useAuthenticationStore(state => state.currentUser);
+	const { status, currentUser } = useAuthenticationStore(
+		useShallow(state => ({
+			status: state.status,
+			currentUser: state.currentUser
+		}))
+	);
 	const isLogged = status === 'authenticated' && Boolean(currentUser);
 
 	if (status === 'idle' || status === 'checking') return <Loading />;

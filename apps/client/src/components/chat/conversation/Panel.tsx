@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { conversations } from '../data';
 import { useChatStore } from '../store';
@@ -17,8 +18,12 @@ const normalizeText = (value: string) => {
 };
 
 export const ConversationPanel: React.FC = () => {
-	const activeFilter = useChatStore(state => state.activeFilter);
-	const search = useChatStore(state => state.search);
+	const { activeFilter, search } = useChatStore(
+		useShallow(state => ({
+			activeFilter: state.activeFilter,
+			search: state.search
+		}))
+	);
 
 	const filteredConversations = useMemo(() => {
 		const normalizedSearch = normalizeText(search);

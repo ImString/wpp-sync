@@ -1,6 +1,7 @@
 import { MdArrowBack, MdMoreVert } from 'react-icons/md';
 import { useNavigate, useParams } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/buttons';
 import { Image } from '@/components/shared/Image';
@@ -11,10 +12,14 @@ import { useChatStore } from '../store';
 export const ChatHeader: React.FC = () => {
 	const navigate = useNavigate();
 	const { uid } = useParams<{ uid: string }>();
-	const contactPanelOpen = useChatStore(state => state.contactPanelOpen);
-	const selectedConversationId = useChatStore(state => state.selectedConversationId);
-	const closeContactPanel = useChatStore(state => state.closeContactPanel);
-	const openContactPanel = useChatStore(state => state.openContactPanel);
+	const { contactPanelOpen, selectedConversationId, closeContactPanel, openContactPanel } = useChatStore(
+		useShallow(state => ({
+			contactPanelOpen: state.contactPanelOpen,
+			selectedConversationId: state.selectedConversationId,
+			closeContactPanel: state.closeContactPanel,
+			openContactPanel: state.openContactPanel
+		}))
+	);
 	const conversation = conversations.find(item => item.id === selectedConversationId) || conversations[0];
 	const toggleContactPanel = () => (contactPanelOpen ? closeContactPanel() : openContactPanel());
 

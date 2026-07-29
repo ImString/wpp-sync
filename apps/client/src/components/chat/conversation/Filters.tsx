@@ -1,4 +1,5 @@
 import { twMerge } from 'tailwind-merge';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/buttons';
 
@@ -13,8 +14,12 @@ const filters: Array<{ id: ConversationFilter; label: string; count?: number }> 
 ];
 
 export const ConversationFilters: React.FC = () => {
-	const activeFilter = useChatStore(state => state.activeFilter);
-	const setActiveFilter = useChatStore(state => state.setActiveFilter);
+	const { activeFilter, setActiveFilter } = useChatStore(
+		useShallow(state => ({
+			activeFilter: state.activeFilter,
+			setActiveFilter: state.setActiveFilter
+		}))
+	);
 
 	return (
 		<div

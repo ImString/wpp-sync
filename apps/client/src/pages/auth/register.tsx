@@ -20,7 +20,6 @@ export const RegisterPage: React.FC = () => {
 	return (
 		<AuthLayout
 			ariaLabel="Cadastro no WppSync"
-			pageTitle="Criar conta"
 			eyebrow="Nova conta"
 			title="Crie seu espaço"
 			description="Cadastre seus dados para começar a configurar o WppSync."

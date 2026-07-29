@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useParams } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Loading } from '@/components/loading';
+import { RouteManagerRoute } from '@/components/routerManager';
 import { useWorkspaceStore } from '@/stores';
 
 export const WorkspaceChatRoute: React.FC = () => {
 	const { uid } = useParams<{ uid: string }>();
-	const workspace = useWorkspaceStore(state => state.workspaces.find(item => item.uid === uid));
-	const getWorkspace = useWorkspaceStore(state => state.getWorkspace);
+	const { workspace, getWorkspace } = useWorkspaceStore(
+		useShallow(state => ({
+			workspace: state.workspaces.find(item => item.uid === uid),
+			getWorkspace: state.getWorkspace
+		}))
+	);
 	const [isLoading, setIsLoading] = useState(true);
 	const [hasError, setHasError] = useState(false);
 
@@ -37,5 +43,9 @@ export const WorkspaceChatRoute: React.FC = () => {
 
 	if (hasError || !workspace) return <Navigate to="/" replace state={{ workspaceNotFound: true }} />;
 
-	return <Outlet />;
+	return (
+		<RouteManagerRoute title="Conversas" context={workspace.name} bodyClassName="chat-page">
+			<Outlet />
+		</RouteManagerRoute>
+	);
 };
