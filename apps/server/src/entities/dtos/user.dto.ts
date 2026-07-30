@@ -6,7 +6,7 @@ export namespace UserDTO {
 	export const UpdateProfileFields = z
 		.object({
 			name: z.string().trim().min(2).max(64).optional(),
-			phone: z
+			phone: z.coerce
 				.string()
 				.trim()
 				.regex(/^\+?[0-9]{10,15}$/)

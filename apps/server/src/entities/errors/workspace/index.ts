@@ -1,5 +1,15 @@
+import type { WorkspaceErrorCode } from './WorkspaceErrorCode.js';
 import type { WorkspaceNotFoundError } from './WorkspaceNotFoundError.js';
+import type { InviteNotFoundError } from './invites/InviteNotFoundError.js';
+import type { InviteWithSameEmailError } from './invites/InviteWithSameEmailError.js';
+
+export * from './invites/InviteNotFoundError.js';
+export * from './invites/InviteWithSameEmailError.js';
 
 export * from './WorkspaceNotFoundError.js';
 
-export type WorkspaceError = WorkspaceNotFoundError;
+export type WorkspaceError =
+	| WorkspaceErrorCode
+	| WorkspaceNotFoundError
+	| InviteNotFoundError
+	| InviteWithSameEmailError;

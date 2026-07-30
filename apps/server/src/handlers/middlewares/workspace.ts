@@ -1,6 +1,6 @@
 import { Middleware, RouterMiddleware, type RouterMiddlewareContext } from '@/modules/index.js';
 
-import { WorkspaceService } from '@/services/WorkspaceService.js';
+import { WorkspaceService } from '@/services/index.js';
 
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
 

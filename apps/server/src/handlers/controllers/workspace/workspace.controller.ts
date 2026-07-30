@@ -1,8 +1,8 @@
 import { Controller, Get, HttpResponse, Post, type RouterMiddlewareContext, UseMiddleware } from '@/modules/index.js';
 
-import { WorkspaceService } from '@/services/WorkspaceService.js';
+import { WorkspaceService } from '@/services/index.js';
 
-import { WorkspaceDTO } from '@/entities/dtos/workspace.dto.js';
+import { WorkspaceDTO } from '@/entities/dtos/workspace/workspace.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
 
 import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';

@@ -65,9 +65,9 @@ model Invite {
     role      Role
     createdAt DateTime @default(now()) @map("created_at")
 
-    author      User?     @relation(fields: [userId], references: [id])
+    author      User?     @relation(fields: [authorId], references: [id])
     workspace   Workspace @relation(fields: [workspaceId], references: [id])
-    userId      String?
+    authorId    String?
     workspaceId String
 
     @@map("invites")

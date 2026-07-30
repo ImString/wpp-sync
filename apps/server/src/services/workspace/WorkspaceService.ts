@@ -8,10 +8,10 @@ import { Provider } from '@/core/index.js';
 
 import { MemberEntity } from '@/entities/data/workspaces/members.entity.js';
 import { WorkspaceEntity } from '@/entities/data/workspaces/workspace.entity.js';
-import type { WorkspaceDTO } from '@/entities/dtos/workspace.dto.js';
+import type { WorkspaceDTO } from '@/entities/dtos/workspace/workspace.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/index.js';
 
-import { FilesService } from './FilesService.js';
+import { FilesService } from '../FilesService.js';
 
 export type WorkspaceServiceWhereInput = Prisma.WorkspaceWhereInput;
 export type WorkspaceServiceWhereOptions = {

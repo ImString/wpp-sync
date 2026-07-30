@@ -1,1 +1,1 @@
-export type WorkspaceErrorCode = 'WORKSPACE_NOT_FOUND';
+export type WorkspaceErrorCode = 'WORKSPACE_NOT_FOUND' | 'INVITE_NOT_FOUND' | 'INVITE_SAME_EMAIL';

@@ -1,15 +1,18 @@
-import { type Invite, type Prisma, type User } from '@wppsync/database';
+import { type Invite, type Prisma, type User, type Workspace } from '@wppsync/database';
 
 import { Entity } from '../Entity.js';
 import { EntityGroup } from '../Group.js';
 import { UserEntity, type UserEntityObject } from '../others/user.entity.js';
+import { WorkspaceEntity, type WorkspaceEntityObject } from './workspace.entity.js';
 
 export type InviteEntityRaw = Partial<Invite>;
 export type InviteEntityExtra = {
 	author?: User | string | null;
+	workspace?: Workspace | string;
 };
 export type InviteEntityEntities = {
 	author?: UserEntity;
+	workspace?: WorkspaceEntity;
 };
 
 export type InviteEntityPopulated = InviteEntityRaw & InviteEntityExtra;
@@ -19,6 +22,7 @@ export interface InviteEntityObject {
 	email?: string;
 	role?: Invite['role'];
 	author?: UserEntityObject;
+	workspace?: WorkspaceEntityObject;
 	createdAt?: Date;
 }
 
@@ -29,26 +33,35 @@ export interface InviteEntityObjectOptions {
 
 export class InviteEntity extends Entity<InviteEntityRaw, InviteEntityExtra, InviteEntityEntities> {
 	constructor(data: InviteEntityPopulated = {}, entities: InviteEntityEntities = {}) {
-		const { author, ...normalData } = data;
+		const { author, workspace, ...normalData } = data;
 		const dataEntities = { ...entities };
 
 		if (author && !dataEntities.author && typeof author === 'object') {
 			dataEntities.author = new UserEntity(author);
 		}
+		if (workspace && !dataEntities.workspace && typeof workspace === 'object') {
+			dataEntities.workspace = new WorkspaceEntity(workspace);
+		}
 
 		super({
 			data: normalData,
-			extra: { author },
+			extra: { author, workspace },
 			entities: dataEntities
 		});
 	}
 
 	async toObject(options: InviteEntityObjectOptions = {}): Promise<InviteEntityObject> {
+		const [author, workspace] = await Promise.all([
+			this.entities.author?.toObject(options),
+			this.entities.workspace?.toObject(options)
+		]);
+
 		return {
 			id: this.id,
 			email: this.data.email,
 			role: this.data.role,
-			author: await this.entities.author?.toObject(options),
+			author,
+			workspace,
 			createdAt: this.data.createdAt
 		};
 	}
