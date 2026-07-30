@@ -9,9 +9,9 @@ import {
 } from '@/modules/index.js';
 
 import { UserService } from '@/services/UserService.js';
-import { InvitesService } from '@/services/workspace/index.js';
+import { InviteService } from '@/services/workspace/index.js';
 
-import { WorkspaceInvitesDTO } from '@/entities/dtos/workspace/invites.dto.js';
+import { WorkspaceInviteDTO } from '@/entities/dtos/workspace/invite.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
 
 import { AuthenticationMiddleware } from '@/handlers/middlewares/authentication.js';
@@ -24,10 +24,10 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 export class WorkspaceInvitesController {
 	constructor(
 		private readonly userService: UserService,
-		private readonly invitesService: InvitesService
+		private readonly invitesService: InviteService
 	) {}
 
-	@Get('/', WorkspaceInvitesDTO.List)
+	@Get('/', WorkspaceInviteDTO.List)
 	async list(context: RouterMiddlewareContext) {
 		const user = await this.userService.get({ id: context.state.userId });
 
@@ -48,7 +48,7 @@ export class WorkspaceInvitesController {
 		return HttpResponse.success(invites);
 	}
 
-	@Post('/create', WorkspaceInvitesDTO.Create)
+	@Post('/create', WorkspaceInviteDTO.Create)
 	@UseMiddleware(WorkspaceAccessMiddleware)
 	async create(context: RouterMiddlewareContext) {
 		const workspace = context.state.workspaceAccess?.workspace;

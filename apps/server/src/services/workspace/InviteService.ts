@@ -19,7 +19,7 @@ export type InvitesServiceWhereOptions = {
 };
 
 @Provider()
-export class InvitesService {
+export class InviteService {
 	private mountWhere(options: InvitesServiceWhereOptions): InvitesServiceWhereInput {
 		return {
 			...(options.id && { id: options.id }),

@@ -1,9 +1,9 @@
 import { Role } from '@wppsync/database';
 import z from 'zod';
 
-import { RouteSchema } from '@/modules/router/components/RouteSchema.js';
+import { RouteSchema } from '@/modules/index.js';
 
-export namespace WorkspaceInvitesDTO {
+export namespace WorkspaceInviteDTO {
 	export const List = new RouteSchema({
 		query: z.object({
 			name: z.string().optional()

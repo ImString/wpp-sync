@@ -1,2 +1,2 @@
-export * from './InvitesService.js';
+export * from './InviteService.js';
 export * from './WorkspaceService.js';
