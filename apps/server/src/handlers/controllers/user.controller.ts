@@ -1,4 +1,4 @@
-import { Controller, Get, HttpResponse, Put, type RouterMiddlewareContext } from '@/modules/index.js';
+import { Controller, Get, HttpResponse, Put, type RouteSchemaContext } from '@/modules/index.js';
 
 import { UserService } from '@/services/index.js';
 
@@ -14,7 +14,7 @@ export class UserController {
 	constructor(private readonly userService: UserService) {}
 
 	@Get('/me')
-	async getProfile(context: RouterMiddlewareContext) {
+	async getProfile(context: RouteSchemaContext) {
 		const userId = context.state.userId;
 
 		const user = await this.userService.get({ id: userId, include: { avatar: true } });

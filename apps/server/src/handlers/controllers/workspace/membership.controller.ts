@@ -1,4 +1,4 @@
-import { Controller, Get, HttpResponse, type RouterMiddlewareContext } from '@/modules/index.js';
+import { Controller, Get, HttpResponse, type RouteSchemaContext } from '@/modules/index.js';
 
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
 
@@ -11,7 +11,7 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 })
 export class WorkspaceMembershipController {
 	@Get('/')
-	async get(context: RouterMiddlewareContext) {
+	async get(context: RouteSchemaContext) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		const membership = context.state.workspaceAccess?.membership;
 		if (!workspace || !membership) throw new WorkspaceNotFoundError();

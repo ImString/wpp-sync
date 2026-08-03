@@ -1,6 +1,6 @@
 import { PermissionsFlags } from '@wppsync/shared';
 
-import { Controller, HttpResponse, Patch, type RouterMiddlewareContext } from '@/modules/index.js';
+import { Controller, HttpResponse, Patch } from '@/modules/index.js';
 
 import { WorkspaceService } from '@/services/index.js';
 
@@ -24,7 +24,7 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 export class WorkspaceTransferController {
 	constructor(private readonly workspaceService: WorkspaceService) {}
 	@Patch('/', WorkspaceTransferDTO.Index)
-	async transfer(context: RouterMiddlewareContext) {
+	async transfer(context: typeof WorkspaceTransferDTO.Index.context) {
 		const { memberId } = context.body;
 
 		const workspace = context.state.workspaceAccess?.workspace;

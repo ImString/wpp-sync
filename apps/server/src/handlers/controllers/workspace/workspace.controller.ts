@@ -1,4 +1,4 @@
-import { Controller, Get, HttpResponse, Post, type RouterMiddlewareContext, UseMiddleware } from '@/modules/index.js';
+import { Controller, Get, HttpResponse, Post, type RouteSchemaContext, UseMiddleware } from '@/modules/index.js';
 
 import { WorkspaceService } from '@/services/index.js';
 
@@ -18,7 +18,7 @@ export class WorkspaceController {
 
 	@Get('/:uid')
 	@UseMiddleware(WorkspaceAccessMiddleware)
-	async get(context: RouterMiddlewareContext) {
+	async get(context: RouteSchemaContext) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();
 

@@ -1,14 +1,6 @@
 import { PermissionsFlags } from '@wppsync/shared';
 
-import {
-	Controller,
-	Delete,
-	Get,
-	HttpResponse,
-	Patch,
-	UseMiddleware,
-	type RouterMiddlewareContext
-} from '@/modules/index.js';
+import { Controller, Delete, Get, HttpResponse, Patch, UseMiddleware } from '@/modules/index.js';
 
 import { MemberService } from '@/services/workspace/MemberService.js';
 
@@ -38,7 +30,7 @@ export class WorkspaceMembersController {
 	};
 
 	@Get('', WorkspaceMemberDTO.List)
-	async list(context: RouterMiddlewareContext) {
+	async list(context: typeof WorkspaceMemberDTO.List.context) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();
 
@@ -53,7 +45,7 @@ export class WorkspaceMembersController {
 	}
 
 	@Get('/:memberId', WorkspaceMemberDTO.Get)
-	async get(context: RouterMiddlewareContext) {
+	async get(context: typeof WorkspaceMemberDTO.Get.context) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();
 
@@ -73,7 +65,7 @@ export class WorkspaceMembersController {
 
 	@Patch('/:memberId/update', WorkspaceMemberDTO.Update)
 	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.MEMBER_MANAGE }))
-	async update(context: RouterMiddlewareContext) {
+	async update(context: typeof WorkspaceMemberDTO.Update.context) {
 		const { memberId } = context.params;
 
 		const workspace = context.state.workspaceAccess?.workspace;
@@ -99,7 +91,7 @@ export class WorkspaceMembersController {
 
 	@Delete('/:memberId/remove', WorkspaceMemberDTO.Remove)
 	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.MEMBER_KICK }))
-	async remove(context: RouterMiddlewareContext) {
+	async remove(context: typeof WorkspaceMemberDTO.Remove.context) {
 		const { memberId } = context.params;
 
 		const workspace = context.state.workspaceAccess?.workspace;

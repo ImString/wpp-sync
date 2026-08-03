@@ -1,14 +1,6 @@
 import { PermissionsFlags } from '@wppsync/shared';
 
-import {
-	Controller,
-	Delete,
-	Get,
-	HttpResponse,
-	Post,
-	UseMiddleware,
-	type RouterMiddlewareContext
-} from '@/modules/index.js';
+import { Controller, Delete, Get, HttpResponse, Post, UseMiddleware } from '@/modules/index.js';
 
 import { InviteService } from '@/services/workspace/index.js';
 
@@ -29,7 +21,7 @@ export class WorkspaceInvitesController {
 
 	@Get('/', WorkspaceInviteDTO.List)
 	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.INVITE_MANAGE }))
-	async list(context: RouterMiddlewareContext) {
+	async list(context: typeof WorkspaceInviteDTO.List.context) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();
 
@@ -49,7 +41,7 @@ export class WorkspaceInvitesController {
 
 	@Post('/create', WorkspaceInviteDTO.Create)
 	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.INVITE_MANAGE }))
-	async create(context: RouterMiddlewareContext) {
+	async create(context: typeof WorkspaceInviteDTO.Create.context) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		const membership = context.state.workspaceAccess?.membership;
 		if (!workspace || !membership) throw new WorkspaceNotFoundError();
@@ -70,7 +62,7 @@ export class WorkspaceInvitesController {
 
 	@Delete('/:inviteId/revoke', WorkspaceInviteDTO.Revoke)
 	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.INVITE_MANAGE }))
-	async revoke(context: RouterMiddlewareContext) {
+	async revoke(context: typeof WorkspaceInviteDTO.Revoke.context) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();
 

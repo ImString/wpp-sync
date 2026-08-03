@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpResponse, Post, type RouterMiddlewareContext } from '@/modules/index.js';
+import { Controller, Delete, Get, HttpResponse, Post, type RouteSchemaContext } from '@/modules/index.js';
 
 import { UserService } from '@/services/UserService.js';
 import { InviteService } from '@/services/workspace/InviteService.js';
@@ -18,7 +18,7 @@ export class InvitesController {
 	) {}
 
 	@Get('/pending')
-	async pendingList(context: RouterMiddlewareContext) {
+	async pendingList(context: RouteSchemaContext) {
 		const userId = context.state.userId;
 
 		const user = await this.userService.get({ id: userId });
@@ -38,7 +38,7 @@ export class InvitesController {
 	}
 
 	@Post('/:inviteId/accept', InvitesDTO.Accept)
-	async acceptInvite(context: RouterMiddlewareContext) {
+	async acceptInvite(context: RouteSchemaContext) {
 		const { inviteId } = context.params;
 
 		await this.inviteService.accept({ inviteId, userId: context.state.userId });
@@ -47,7 +47,7 @@ export class InvitesController {
 	}
 
 	@Delete('/:inviteId/reject', InvitesDTO.Reject)
-	async rejectInvite(context: RouterMiddlewareContext) {
+	async rejectInvite(context: RouteSchemaContext) {
 		const { inviteId } = context.params;
 
 		await this.inviteService.reject({ inviteId, userId: context.state.userId });
