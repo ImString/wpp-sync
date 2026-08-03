@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, Outlet, useParams } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
 import { Loading } from '@/components/loading';
@@ -8,6 +8,9 @@ import { useWorkspaceStore } from '@/stores';
 
 export const WorkspaceChatRoute: React.FC = () => {
 	const { uid } = useParams<{ uid: string }>();
+
+	const location = useLocation();
+
 	const { workspace, getWorkspace } = useWorkspaceStore(
 		useShallow(state => ({
 			workspace: state.workspaces.find(item => item.uid === uid),
@@ -44,7 +47,18 @@ export const WorkspaceChatRoute: React.FC = () => {
 	if (hasError || !workspace) return <Navigate to="/" replace state={{ workspaceNotFound: true }} />;
 
 	return (
-		<RouteManagerRoute title="Conversas" context={workspace.name} bodyClassName="chat-page">
+		<RouteManagerRoute
+			title={
+				location.pathname.includes('/integrations')
+					? 'Integrações'
+					: location.pathname.includes('/contacts/stages')
+						? 'Etapas de relacionamento'
+						: location.pathname.includes('/contacts')
+							? 'Contatos'
+							: 'Conversas'
+			}
+			context={workspace.name}
+			bodyClassName="chat-page">
 			<Outlet />
 		</RouteManagerRoute>
 	);

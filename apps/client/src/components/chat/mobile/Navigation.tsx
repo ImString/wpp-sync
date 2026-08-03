@@ -1,15 +1,24 @@
 import { MdAdd, MdCampaign, MdChatBubbleOutline, MdMenu, MdOutlineContacts } from 'react-icons/md';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { Button } from '@/components/buttons';
 
 import { useChatStore } from '../store';
+import type { NavigationSection } from '../types';
 import { MobileNavigationItem } from './NavigationItem';
 
-export const MobileNavigation: React.FC = () => {
+interface MobileNavigationProps {
+	activeSection?: NavigationSection;
+	onPrimaryAction?: () => void;
+	primaryActionLabel?: string;
+}
+
+export const MobileNavigation: React.FC<MobileNavigationProps> = props => {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { uid } = useParams<{ uid: string }>();
 	const openSidebar = useChatStore(state => state.openSidebar);
+	const activeSection = props.activeSection || (location.pathname.includes('/contacts') ? 'contacts' : 'chats');
 
 	return (
 		<nav
@@ -18,14 +27,22 @@ export const MobileNavigation: React.FC = () => {
 			<MobileNavigationItem
 				icon={MdChatBubbleOutline}
 				label="Conversas"
-				active
+				active={activeSection === 'chats'}
 				onClick={() => navigate(uid ? `/w/${uid}/chats` : '/')}
 			/>
-			<MobileNavigationItem icon={MdOutlineContacts} label="Contatos" />
+			<MobileNavigationItem
+				icon={MdOutlineContacts}
+				label="Contatos"
+				active={activeSection === 'contacts'}
+				onClick={() => navigate(uid ? `/w/${uid}/contacts` : '/')}
+			/>
 			<Button
 				type="button"
-				aria-label="Nova conversa"
-				className="mx-auto size-12 min-h-12 rounded-full p-0 shadow-[0_8px_20px_rgba(37,211,102,.3)]">
+				aria-label={
+					props.primaryActionLabel || (activeSection === 'contacts' ? 'Novo contato' : 'Nova conversa')
+				}
+				className="mx-auto size-12 min-h-12 rounded-full p-0 shadow-[0_8px_20px_rgba(37,211,102,.3)]"
+				onClick={props.onPrimaryAction}>
 				<MdAdd className="size-6" aria-hidden="true" />
 			</Button>
 			<MobileNavigationItem icon={MdCampaign} label="Campanhas" />

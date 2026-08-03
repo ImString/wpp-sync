@@ -8,7 +8,13 @@ import { ThemeSwitcher } from '@/components/interface';
 import { useChatStore } from '../store';
 import { ConnectionStatus } from './ConnectionStatus';
 
-export const Topbar: React.FC = () => {
+interface TopbarProps {
+	searchValue?: string;
+	searchPlaceholder?: string;
+	onSearchChange?: (value: string) => void;
+}
+
+export const Topbar: React.FC<TopbarProps> = props => {
 	const { openSidebar, search, setSearch } = useChatStore(
 		useShallow(state => ({
 			openSidebar: state.openSidebar,
@@ -16,6 +22,8 @@ export const Topbar: React.FC = () => {
 			setSearch: state.setSearch
 		}))
 	);
+	const searchValue = props.searchValue ?? search;
+	const searchPlaceholder = props.searchPlaceholder || 'Buscar conversas...';
 
 	return (
 		<header className="flex min-w-0 items-center justify-between gap-4 border-b border-slate-200 px-2.5 dark:border-[#223138] mobile:px-4">
@@ -31,9 +39,11 @@ export const Topbar: React.FC = () => {
 
 				<SearchInput
 					data-global-search
-					value={search}
-					onChange={event => setSearch(event.target.value)}
-					placeholder="Buscar conversas..."
+					value={searchValue}
+					onChange={event =>
+						props.onSearchChange ? props.onSearchChange(event.target.value) : setSearch(event.target.value)
+					}
+					placeholder={searchPlaceholder}
 					autoComplete="off"
 					shortcut="⌘ K"
 					containerClassName="w-full max-w-[420px]"

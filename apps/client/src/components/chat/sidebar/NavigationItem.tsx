@@ -29,13 +29,35 @@ export const NavigationItem: React.FC<NavigationItemProps> = props => {
 		location.pathname === '/profile' ||
 		location.pathname.endsWith('/my-profile') ||
 		location.pathname.includes('/settings/');
-	const isActive = props.section === 'settings' ? isProfilePage : !isProfilePage && activeSection === props.section;
+	const routeSection = location.pathname.includes('/integrations')
+		? 'integrations'
+		: location.pathname.includes('/contacts')
+			? 'contacts'
+			: location.pathname.includes('/chats')
+				? 'chats'
+				: activeSection;
+	const isActive = props.section === 'settings' ? isProfilePage : !isProfilePage && routeSection === props.section;
 
 	const handleClick = () => {
 		setActiveSection(props.section);
 
 		if (props.section === 'settings') {
 			navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/settings/profile` : '/profile');
+			return;
+		}
+
+		if (props.section === 'chats') {
+			navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/chats` : '/');
+			return;
+		}
+
+		if (props.section === 'contacts') {
+			navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/contacts` : '/');
+			return;
+		}
+
+		if (props.section === 'integrations') {
+			navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/integrations` : '/');
 			return;
 		}
 

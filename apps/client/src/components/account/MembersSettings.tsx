@@ -26,6 +26,7 @@ import {
 } from '@/utils/api';
 
 import { Button } from '@/components/buttons';
+import { Pagination, useClientPagination } from '@/components/pagination';
 import { Image } from '@/components/shared/Image';
 import type { AuthUser, Workspace } from '@/stores';
 
@@ -194,6 +195,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
 	const [action, setAction] = useState<MemberAction | null>(null);
 	const [actionSubmitting, setActionSubmitting] = useState(false);
+	const pagination = useClientPagination(members);
 
 	useEffect(() => {
 		if (!isWorkspaceOwner && inviteRole === 'Administrador') {
@@ -280,6 +282,10 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 			controller.abort();
 		};
 	}, [loadMembers, resolvedWorkspaceUid, search]);
+
+	useEffect(() => {
+		pagination.resetPage();
+	}, [pagination.resetPage, search]);
 
 	useEffect(() => {
 		if (!resolvedWorkspaceUid || !canManageMembers) {
@@ -562,7 +568,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 								</div>
 							</div>
 						) : members.length > 0 ? (
-							members.map(member => (
+							pagination.pageItems.map(member => (
 								<div
 									key={member.id}
 									className={`relative grid min-h-18 items-center gap-3 border-b border-slate-100 px-3 last:border-0 dark:border-[#1b2a31] mobile:min-h-17 ${canManageMembers ? 'grid-cols-[minmax(0,1fr)_44px] mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px_44px]' : 'grid-cols-1 mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px]'}`}>
@@ -704,6 +710,24 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 									</p>
 								</div>
 							</div>
+						)}
+
+						{membersStatus !== 'loading' && members.length > 0 && (
+							<Pagination
+								page={pagination.page}
+								pageSize={pagination.pageSize}
+								totalItems={pagination.totalItems}
+								itemLabel="membros"
+								singularItemLabel="membro"
+								onPageChange={page => {
+									setOpenMenuId(null);
+									pagination.setPage(page);
+								}}
+								onPageSizeChange={pageSize => {
+									setOpenMenuId(null);
+									pagination.setPageSize(pageSize);
+								}}
+							/>
 						)}
 					</div>
 				</div>

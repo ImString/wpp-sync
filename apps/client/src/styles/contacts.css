@@ -1,0 +1,69 @@
+.contacts-detail-panel {
+	width: clamp(310px, 29vw, 370px);
+	flex: 0 0 clamp(310px, 29vw, 370px);
+}
+
+.contacts-form-modal {
+	animation: contacts-modal-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes contacts-modal-in {
+	from {
+		opacity: 0;
+		transform: translateY(16px) scale(0.985);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@media (min-width: 681px) and (max-width: 1040px) {
+	.contacts-detail-panel {
+		width: 310px;
+		flex-basis: 310px;
+	}
+}
+
+@media (max-width: 680px) {
+	.contacts-detail-panel {
+		position: absolute;
+		z-index: 25;
+		inset: 0;
+		width: 100%;
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+		transform: translateX(105%);
+		visibility: hidden;
+		pointer-events: none;
+		transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.contacts-detail-panel.is-open {
+		transform: translateX(0);
+		visibility: visible;
+		pointer-events: auto;
+	}
+
+	.contacts-form-modal {
+		animation-name: contacts-sheet-in;
+	}
+}
+
+@keyframes contacts-sheet-in {
+	from {
+		transform: translateY(100%);
+	}
+
+	to {
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.contacts-form-modal {
+		animation-duration: 0.001ms;
+	}
+}
