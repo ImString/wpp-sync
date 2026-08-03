@@ -140,21 +140,45 @@ export class InviteService {
 		if (!user) throw new UserNotFoundError();
 		if (invite.email !== user.email) throw new InviteBelongsAnotherError();
 
-		await prisma.$transaction([
-			prisma.member.create({
-				data: {
+		await prisma.$transaction(async transaction => {
+			const existingMember = await transaction.member.findFirst({
+				where: {
 					userId: user.id,
-					workspaceId: invite.workspaceId,
-					role: invite.role
+					workspaceId: invite.workspaceId
 				}
-			}),
+			});
 
-			prisma.invite.delete({
+			if (existingMember && !existingMember.disabled) {
+				throw new Error('User is already a member of this workspace.');
+			}
+
+			if (existingMember) {
+				await transaction.member.update({
+					where: {
+						id: existingMember.id
+					},
+					data: {
+						disabled: false,
+						role: invite.role
+					}
+				});
+			} else {
+				await transaction.member.create({
+					data: {
+						userId: user.id,
+						workspaceId: invite.workspaceId,
+						role: invite.role,
+						disabled: false
+					}
+				});
+			}
+
+			await transaction.invite.delete({
 				where: {
 					id: invite.id
 				}
-			})
-		]);
+			});
+		});
 	}
 
 	async reject(document: { inviteId: string; userId: string }) {

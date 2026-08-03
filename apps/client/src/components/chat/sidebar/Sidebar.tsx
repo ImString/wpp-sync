@@ -27,13 +27,14 @@ export const Sidebar: React.FC = () => {
 			aria-label="Navegação principal"
 			className={twMerge(
 				'sidebar-drawer fixed inset-y-0 left-0 z-40 flex w-[min(290px,86vw)] translate-x-[-105%] flex-col overflow-hidden rounded-r-2xl border border-white/5 bg-[radial-gradient(circle_at_0_0,rgba(37,211,102,.15),transparent_38%),linear-gradient(180deg,#073b32,#041f1b)] text-emerald-50 shadow-app transition-transform duration-200 drawer:static drawer:w-auto drawer:translate-x-0 drawer:rounded-l-2xl drawer:rounded-r-none',
-				sidebarOpen && 'is-open'
+				sidebarOpen && 'translate-x-0'
 			)}>
 			<header className="flex h-18 shrink-0 items-center justify-between gap-2 px-4.5">
 				<div className="flex min-w-0 flex-col gap-0.5">
 					<Brand />
 					<Link
 						to="/"
+						onClick={closeSidebar}
 						className="truncate pl-11 text-[9px] font-medium text-emerald-100/55 transition hover:text-emerald-100"
 						title="Trocar área de trabalho">
 						{activeWorkspace?.name || 'Trocar área de trabalho'}

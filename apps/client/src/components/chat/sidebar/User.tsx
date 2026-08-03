@@ -17,6 +17,8 @@ import { Button } from '@/components/buttons';
 import { Image } from '@/components/shared/Image';
 import { useAuthenticationStore, useWorkspaceStore } from '@/stores';
 
+import { useChatStore } from '../store';
+
 const getRoleLabel = (role?: string) => {
 	if (role === 'ADMIN') return 'Administrador';
 	if (role === 'AGENT') return 'Atendente';
@@ -35,9 +37,17 @@ export const SidebarUser: React.FC = () => {
 		}))
 	);
 	const activeWorkspaceUid = useWorkspaceStore(state => state.activeWorkspaceUid);
+	const closeSidebar = useChatStore(state => state.closeSidebar);
+
+	const handleNavigate = (path: string) => {
+		setMenuOpen(false);
+		closeSidebar();
+		navigate(path);
+	};
 
 	const handleLogout = () => {
 		void authAPI.logout(refreshToken, authToken).catch(() => undefined);
+		closeSidebar();
 		clearAuthentication();
 		navigate('/auth/login', { replace: true });
 	};
@@ -52,13 +62,15 @@ export const SidebarUser: React.FC = () => {
 						type="button"
 						role="menuitem"
 						onClick={() =>
-							navigate(activeWorkspaceUid ? `/w/${activeWorkspaceUid}/settings/profile` : '/profile')
+							handleNavigate(
+								activeWorkspaceUid ? `/w/${activeWorkspaceUid}/settings/profile` : '/profile'
+							)
 						}>
 						<MdOutlinePerson aria-hidden="true" />
 						Meu perfil
 					</button>
 					<hr />
-					<button type="button" role="menuitem" onClick={() => navigate('/')}>
+					<button type="button" role="menuitem" onClick={() => handleNavigate('/')}>
 						<MdOutlineChangeCircle aria-hidden="true" />
 						Áreas de Trabalho
 					</button>

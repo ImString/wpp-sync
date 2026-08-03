@@ -193,10 +193,6 @@ html.dark body.chat-page {
 	scrollbar-color: #2d3d45 transparent;
 }
 
-.sidebar-drawer.is-open {
-	transform: translateX(0);
-}
-
 .sidebar-backdrop.is-open {
 	display: block;
 	opacity: 1;

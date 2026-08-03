@@ -514,14 +514,15 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 					<Button
 						theme="secondary"
 						type="button"
-						className="min-h-10 shrink-0 px-3 text-[10px]"
+						aria-label="Atualizar membros"
+						className="size-10 min-h-10 shrink-0 p-0 text-[10px] mobile:h-auto mobile:w-auto mobile:px-3"
 						disabled={!resolvedWorkspaceUid || membersStatus === 'loading'}
 						onClick={() => void refreshMembers()}>
 						<MdRefresh
 							className={`size-4.5 ${membersStatus === 'loading' ? 'animate-spin' : ''}`}
 							aria-hidden="true"
 						/>
-						Atualizar
+						<span className="hidden mobile:inline">Atualizar</span>
 					</Button>
 				</div>
 
