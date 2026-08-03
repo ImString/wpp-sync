@@ -14,6 +14,7 @@ import { InviteService } from '@/services/workspace/index.js';
 
 import { WorkspaceInviteDTO } from '@/entities/dtos/workspace/invite.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
+import { PermissionDeniedError } from '@/entities/errors/workspace/index.js';
 
 import { AuthenticationMiddleware } from '@/handlers/middlewares/authentication.js';
 import { PermissionMiddleware } from '@/handlers/middlewares/permission.js';
@@ -50,7 +51,12 @@ export class WorkspaceInvitesController {
 	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.INVITE_MANAGE }))
 	async create(context: RouterMiddlewareContext) {
 		const workspace = context.state.workspaceAccess?.workspace;
-		if (!workspace) throw new WorkspaceNotFoundError();
+		const membership = context.state.workspaceAccess?.membership;
+		if (!workspace || !membership) throw new WorkspaceNotFoundError();
+
+		if (context.body.role === 'ADMIN' && membership.resolveRole(workspace.data.ownerId) !== 'OWNER') {
+			throw new PermissionDeniedError();
+		}
 
 		const invite = await this.invitesService.create({
 			email: context.body.email,

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import {
+	MdArrowDownward,
+	MdArrowUpward,
 	MdAdminPanelSettings,
 	MdCheck,
 	MdClose,
@@ -18,6 +20,7 @@ import {
 	getResponseMessage,
 	workspaceAPI,
 	type WorkspaceInvite,
+	type WorkspaceAccessRole,
 	type WorkspaceMember,
 	type WorkspaceMemberRole
 } from '@/utils/api';
@@ -34,6 +37,7 @@ interface MembersSettingsProps {
 	workspace?: Workspace;
 	workspaceUid?: string;
 	onFeedback: (feedback: SettingsFeedback) => void;
+	onCurrentUserRoleChange: (role: WorkspaceMemberRole) => void;
 }
 
 type MemberRole = 'Proprietário' | 'Administrador' | 'Membro';
@@ -54,6 +58,11 @@ interface PendingInvite {
 	role: Exclude<MemberRole, 'Proprietário'>;
 	sentAt: string;
 }
+
+type MemberAction =
+	| { type: 'remove'; member: MemberRow }
+	| { type: 'transfer'; member: MemberRow }
+	| { type: 'role'; member: MemberRow; nextRole: WorkspaceAccessRole };
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -160,11 +169,14 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	currentUserRole,
 	workspace,
 	workspaceUid,
-	onFeedback
+	onFeedback,
+	onCurrentUserRoleChange
 }) => {
 	const resolvedWorkspaceUid = workspace?.uid || workspaceUid;
 	const isWorkspaceOwner = currentUserRole === 'OWNER';
 	const canManageMembers = currentUserRole === 'ADMIN' || isWorkspaceOwner;
+	const canManageTargetMember = (member: MemberRow) =>
+		isWorkspaceOwner ? member.role !== 'Proprietário' : member.role === 'Membro';
 	const [members, setMembers] = useState<MemberRow[]>([]);
 	const [membersStatus, setMembersStatus] = useState<LoadStatus>('idle');
 	const [membersError, setMembersError] = useState('');
@@ -180,7 +192,14 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	const [invitesStatus, setInvitesStatus] = useState<LoadStatus>('idle');
 	const [invitesError, setInvitesError] = useState('');
 	const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
-	const [action, setAction] = useState<{ type: 'remove' | 'transfer'; member: MemberRow } | null>(null);
+	const [action, setAction] = useState<MemberAction | null>(null);
+	const [actionSubmitting, setActionSubmitting] = useState(false);
+
+	useEffect(() => {
+		if (!isWorkspaceOwner && inviteRole === 'Administrador') {
+			setInviteRole('Membro');
+		}
+	}, [inviteRole, isWorkspaceOwner]);
 
 	const loadMembers = useCallback(
 		async (searchTerm = '', signal?: AbortSignal) => {
@@ -320,7 +339,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 		try {
 			const response = await workspaceAPI.createInvite(resolvedWorkspaceUid, {
 				email: normalizedEmail,
-				role: inviteRole === 'Administrador' ? 'ADMIN' : 'MEMBER'
+				role: isWorkspaceOwner && inviteRole === 'Administrador' ? 'ADMIN' : 'MEMBER'
 			});
 
 			if (!response.success) {
@@ -366,9 +385,13 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 		}
 	};
 
-	const confirmAction = () => {
+	const confirmAction = async () => {
 		if (!action) return;
-		if (!canManageMembers || (action.type === 'transfer' && !isWorkspaceOwner)) {
+		if (
+			!canManageMembers ||
+			((action.type === 'transfer' || action.type === 'role') && !isWorkspaceOwner) ||
+			(action.type === 'remove' && !isWorkspaceOwner && action.member.role !== 'Membro')
+		) {
 			setAction(null);
 			setOpenMenuId(null);
 			return;
@@ -377,23 +400,74 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 		if (action.type === 'remove') {
 			setMembers(current => current.filter(member => member.id !== action.member.id));
 			onFeedback({ type: 'success', message: `${action.member.name} foi removido da lista.` });
-		} else {
-			setMembers(current =>
-				current.map(member => ({
-					...member,
-					role:
-						member.id === action.member.id
-							? 'Proprietário'
-							: member.role === 'Proprietário'
-								? 'Administrador'
-								: member.role
-				}))
-			);
-			onFeedback({ type: 'success', message: `A posse foi transferida para ${action.member.name}.` });
+			setAction(null);
+			setOpenMenuId(null);
+			return;
 		}
 
-		setAction(null);
-		setOpenMenuId(null);
+		if (!resolvedWorkspaceUid) {
+			onFeedback({ type: 'error', message: 'Área de trabalho não encontrada.' });
+			return;
+		}
+
+		setActionSubmitting(true);
+
+		try {
+			const response =
+				action.type === 'transfer'
+					? await workspaceAPI.transferOwnership(resolvedWorkspaceUid, action.member.id)
+					: await workspaceAPI.updateMemberRole(resolvedWorkspaceUid, action.member.id, action.nextRole);
+
+			if (!response.success) {
+				throw new Error(
+					getResponseMessage(
+						response,
+						action.type === 'transfer'
+							? 'Não foi possível transferir a posse.'
+							: 'Não foi possível alterar a função do membro.'
+					)
+				);
+			}
+
+			if (action.type === 'transfer') {
+				onCurrentUserRoleChange('MEMBER');
+
+				try {
+					const membershipResponse = await workspaceAPI.getMembership(resolvedWorkspaceUid);
+					if (membershipResponse.success && membershipResponse.data?.role) {
+						onCurrentUserRoleChange(membershipResponse.data.role);
+					}
+				} catch {}
+			} else if (action.member.userId === currentUser?.id) {
+				onCurrentUserRoleChange(action.nextRole);
+			}
+
+			await loadMembers(search.trim());
+
+			onFeedback({
+				type: 'success',
+				message:
+					action.type === 'transfer'
+						? `A posse foi transferida para ${action.member.name}.`
+						: action.nextRole === 'ADMIN'
+							? `${action.member.name} foi promovido a administrador.`
+							: `${action.member.name} foi rebaixado para membro.`
+			});
+			setAction(null);
+			setOpenMenuId(null);
+		} catch (error) {
+			onFeedback({
+				type: 'error',
+				message:
+					error instanceof Error
+						? error.message
+						: action.type === 'transfer'
+							? 'Não foi possível transferir a posse.'
+							: 'Não foi possível alterar a função do membro.'
+			});
+		} finally {
+			setActionSubmitting(false);
+		}
 	};
 
 	return (
@@ -541,7 +615,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 									</span>
 									{canManageMembers && (
 										<div className="relative">
-											{member.role !== 'Proprietário' ? (
+											{canManageTargetMember(member) ? (
 												<Button
 													theme="ghost"
 													type="button"
@@ -549,14 +623,16 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 													aria-label={`Ações de ${member.name}`}
 													aria-expanded={openMenuId === member.id}
 													onClick={() =>
-														setOpenMenuId(current => (current === member.id ? null : member.id))
+														setOpenMenuId(current =>
+															current === member.id ? null : member.id
+														)
 													}>
 													<MdMoreHoriz aria-hidden="true" />
 												</Button>
 											) : (
 												<span className="block size-9" />
 											)}
-											{openMenuId === member.id && (
+											{openMenuId === member.id && canManageTargetMember(member) && (
 												<div className="absolute right-0 top-[calc(100%+4px)] z-20 w-47 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_14px_36px_rgba(15,23,42,.16)] dark:border-[#2a3a42] dark:bg-[#131f26]">
 													{isWorkspaceOwner && (
 														<button
@@ -568,6 +644,36 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 																aria-hidden="true"
 															/>
 															Transferir posse
+														</button>
+													)}
+													{isWorkspaceOwner && (
+														<button
+															className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-[10px] font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-[#17262e]"
+															type="button"
+															onClick={() =>
+																setAction({
+																	type: 'role',
+																	member,
+																	nextRole:
+																		member.role === 'Administrador'
+																			? 'MEMBER'
+																			: 'ADMIN'
+																})
+															}>
+															{member.role === 'Administrador' ? (
+																<MdArrowDownward
+																	className="size-4 text-amber-600"
+																	aria-hidden="true"
+																/>
+															) : (
+																<MdArrowUpward
+																	className="size-4 text-brand-600 dark:text-brand-400"
+																	aria-hidden="true"
+																/>
+															)}
+															{member.role === 'Administrador'
+																? 'Rebaixar para membro'
+																: 'Promover a administrador'}
 														</button>
 													)}
 													<button
@@ -668,7 +774,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 										value={inviteRole}
 										onChange={event => setInviteRole(event.target.value as PendingInvite['role'])}>
 										<option>Membro</option>
-										<option>Administrador</option>
+										{isWorkspaceOwner && <option>Administrador</option>}
 									</select>
 								</label>
 							</div>
@@ -770,46 +876,93 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 
 			{action && (
 				<SettingsDialog
-					title={action.type === 'remove' ? 'Remover membro?' : 'Transferir propriedade?'}
+					title={
+						action.type === 'remove'
+							? 'Remover membro?'
+							: action.type === 'transfer'
+								? 'Transferir propriedade?'
+								: action.nextRole === 'ADMIN'
+									? 'Promover membro?'
+									: 'Rebaixar administrador?'
+					}
 					description={
 						action.type === 'remove'
 							? `${action.member.name} perderá o acesso a esta área de trabalho.`
-							: `${action.member.name} passará a controlar membros, convites e configurações da área.`
+							: action.type === 'transfer'
+								? `${action.member.name} passará a controlar membros, convites e configurações da área.`
+								: action.nextRole === 'ADMIN'
+									? `${action.member.name} receberá permissões para gerenciar membros e convites.`
+									: `${action.member.name} perderá as permissões administrativas desta área.`
 					}
-					onClose={() => setAction(null)}
+					onClose={() => {
+						if (!actionSubmitting) setAction(null);
+					}}
 					className="max-w-115">
 					<div className="px-5 py-5 mobile:px-6">
 						<div
-							className={`flex gap-3 rounded-[14px] border p-3.5 ${action.type === 'remove' ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300' : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'}`}>
-							<span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/70 dark:bg-black/10">
+							className={`flex items-center gap-2.5 rounded-[14px] border p-3 ${action.type === 'remove' ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300' : action.type === 'role' && action.nextRole === 'ADMIN' ? 'border-brand-200 bg-brand-50 text-brand-800 dark:border-brand-500/20 dark:bg-brand-500/10 dark:text-brand-300' : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'}`}>
+							<span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/70 dark:bg-black/10">
 								{action.type === 'remove' ? (
 									<MdDeleteOutline className="size-5" aria-hidden="true" />
-								) : (
+								) : action.type === 'transfer' ? (
 									<MdSwapHoriz className="size-5" aria-hidden="true" />
+								) : action.nextRole === 'ADMIN' ? (
+									<MdArrowUpward className="size-5" aria-hidden="true" />
+								) : (
+									<MdArrowDownward className="size-5" aria-hidden="true" />
 								)}
 							</span>
-							<p className="text-[10px] leading-4">
+							<p className="text-xs leading-4">
 								{action.type === 'remove'
 									? 'Esta ação remove o membro da lista imediatamente nesta prévia.'
-									: 'Você continuará na equipe como administrador depois da transferência.'}
+									: action.type === 'transfer'
+										? 'Sua função será atualizada automaticamente depois da transferência.'
+										: action.nextRole === 'ADMIN'
+											? 'O membro poderá convidar pessoas e alterar funções da equipe.'
+											: 'O usuário continuará com acesso, mas sem opções administrativas.'}
 							</p>
 						</div>
 					</div>
 					<footer className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50/70 px-5 py-4 dark:border-[#223138] dark:bg-[#101b21] mobile:px-6">
-						<Button theme="secondary" type="button" className="text-[10px]" onClick={() => setAction(null)}>
+						<Button
+							theme="secondary"
+							type="button"
+							className="text-xs"
+							disabled={actionSubmitting}
+							onClick={() => setAction(null)}>
 							Cancelar
 						</Button>
 						<Button
 							theme={action.type === 'remove' ? 'danger' : 'primary'}
 							type="button"
-							className="text-[10px]"
-							onClick={confirmAction}>
+							className="text-xs"
+							loading={actionSubmitting}
+							loadingLabel={
+								action.type === 'transfer'
+									? 'Transferindo...'
+									: action.type === 'role' && action.nextRole === 'ADMIN'
+										? 'Promovendo...'
+										: action.type === 'role'
+											? 'Rebaixando...'
+											: 'Removendo...'
+							}
+							onClick={() => void confirmAction()}>
 							{action.type === 'remove' ? (
 								<MdDeleteOutline aria-hidden="true" />
-							) : (
+							) : action.type === 'transfer' ? (
 								<MdSwapHoriz aria-hidden="true" />
+							) : action.nextRole === 'ADMIN' ? (
+								<MdArrowUpward aria-hidden="true" />
+							) : (
+								<MdArrowDownward aria-hidden="true" />
 							)}
-							{action.type === 'remove' ? 'Remover membro' : 'Transferir posse'}
+							{action.type === 'remove'
+								? 'Remover membro'
+								: action.type === 'transfer'
+									? 'Transferir posse'
+									: action.nextRole === 'ADMIN'
+										? 'Promover membro'
+										: 'Rebaixar administrador'}
 						</Button>
 					</footer>
 				</SettingsDialog>

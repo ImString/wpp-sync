@@ -385,6 +385,7 @@ export const AccountPage: React.FC = () => {
 											workspace={workspace}
 											workspaceUid={workspaceUid || undefined}
 											currentUserRole={workspaceRole}
+											onCurrentUserRoleChange={setWorkspaceRole}
 											onFeedback={setFeedback}
 										/>
 									)}

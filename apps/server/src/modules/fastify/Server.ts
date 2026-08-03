@@ -80,7 +80,7 @@ export class ServerModuleBase extends BaseModule {
 				origin: '*',
 				allowedHeaders: ['Content-Type', 'Authorization'],
 
-				methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS']
+				methods: ['GET', 'PUT', 'POST', 'PATCH', 'DELETE', 'OPTIONS']
 			})
 			.register(fastifyHelmet, {})
 			.register(fastifyMultipart, { limits: { fileSize: 55e6 } })

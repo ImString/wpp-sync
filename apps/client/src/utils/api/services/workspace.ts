@@ -89,6 +89,21 @@ export const workspaceAPI = {
 		return response.data;
 	},
 
+	updateMemberRole: async (uid: string, memberId: string, role: WorkspaceAccessRole) => {
+		const response = await mainAPI.patch<ServerResponse>(
+			`/workspace/${encodeURIComponent(uid)}/members/${encodeURIComponent(memberId)}/update`,
+			{ role }
+		);
+		return response.data;
+	},
+
+	transferOwnership: async (uid: string, memberId: string) => {
+		const response = await mainAPI.patch<ServerResponse>(`/workspace/${encodeURIComponent(uid)}/transfer`, {
+			memberId
+		});
+		return response.data;
+	},
+
 	listReceivedInvites: async (signal?: AbortSignal, workspaceName?: string) => {
 		const response = await mainAPI.get<ServerResponse<WorkspaceInviteListData>>('/invites/pending', {
 			signal,
@@ -98,16 +113,12 @@ export const workspaceAPI = {
 	},
 
 	acceptInvite: async (inviteId: string) => {
-		const response = await mainAPI.post<ServerResponse>(
-			`/invites/${encodeURIComponent(inviteId)}/accept`
-		);
+		const response = await mainAPI.post<ServerResponse>(`/invites/${encodeURIComponent(inviteId)}/accept`);
 		return response.data;
 	},
 
 	rejectInvite: async (inviteId: string) => {
-		const response = await mainAPI.delete<ServerResponse>(
-			`/invites/${encodeURIComponent(inviteId)}/reject`
-		);
+		const response = await mainAPI.delete<ServerResponse>(`/invites/${encodeURIComponent(inviteId)}/reject`);
 		return response.data;
 	},
 

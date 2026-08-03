@@ -5,6 +5,7 @@ import { Controller, HttpResponse, Patch, type RouterMiddlewareContext } from '@
 import { WorkspaceService } from '@/services/index.js';
 
 import { WorkspaceTransferDTO } from '@/entities/dtos/workspace/transfer.dto.js';
+import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
 
 import { AuthenticationMiddleware } from '@/handlers/middlewares/authentication.js';
 import { PermissionMiddleware } from '@/handlers/middlewares/permission.js';
@@ -26,9 +27,12 @@ export class WorkspaceTransferController {
 	async transfer(context: RouterMiddlewareContext) {
 		const { memberId } = context.body;
 
+		const workspace = context.state.workspaceAccess?.workspace;
+		if (!workspace) throw new WorkspaceNotFoundError();
+
 		await this.workspaceService.transfer({
 			newOwnerId: memberId,
-			workspaceId: context.params.uid
+			workspaceId: workspace.id
 		});
 
 		return HttpResponse.success();

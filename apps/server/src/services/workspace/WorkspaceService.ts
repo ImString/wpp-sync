@@ -202,9 +202,11 @@ export class WorkspaceService {
 			id: document.workspaceId
 		});
 
-		const newMember = await prisma.member.findUnique({
+		const newMember = await prisma.member.findFirst({
 			where: {
-				id: document.newOwnerId
+				id: document.newOwnerId,
+				workspaceId: workspace.id,
+				disabled: false
 			}
 		});
 

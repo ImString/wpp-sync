@@ -77,9 +77,14 @@ export class WorkspaceMembersController {
 		const { memberId } = context.params;
 
 		const workspace = context.state.workspaceAccess?.workspace;
-		if (!workspace) throw new WorkspaceNotFoundError();
+		const currentMembership = context.state.workspaceAccess?.membership;
+		if (!workspace || !currentMembership) throw new WorkspaceNotFoundError();
 
-		if (memberId === workspace.data.ownerId) throw new PermissionDeniedError();
+		const member = await this.membersService.get({
+			id: memberId,
+			workspaceId: workspace.data.id
+		});
+		if (member.data.userId === workspace.data.ownerId) throw new PermissionDeniedError();
 
 		const { role } = context.body;
 
@@ -93,14 +98,24 @@ export class WorkspaceMembersController {
 	}
 
 	@Delete('/:memberId/remove', WorkspaceMemberDTO.Remove)
-	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.MEMBER_MANAGE }))
+	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.MEMBER_KICK }))
 	async remove(context: RouterMiddlewareContext) {
 		const { memberId } = context.params;
 
 		const workspace = context.state.workspaceAccess?.workspace;
-		if (!workspace) throw new WorkspaceNotFoundError();
+		const currentMembership = context.state.workspaceAccess?.membership;
+		if (!workspace || !currentMembership) throw new WorkspaceNotFoundError();
 
-		if (memberId === workspace.data.ownerId) throw new PermissionDeniedError();
+		const member = await this.membersService.get({
+			id: memberId,
+			workspaceId: workspace.data.id
+		});
+		if (member.data.userId === workspace.data.ownerId) throw new PermissionDeniedError();
+
+		const currentRole = currentMembership.resolveRole(workspace.data.ownerId);
+		if (currentRole !== 'OWNER' && member.data.role === 'ADMIN') {
+			throw new PermissionDeniedError();
+		}
 
 		await this.membersService.remove({
 			id: memberId,
