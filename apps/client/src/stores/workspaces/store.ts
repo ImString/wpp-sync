@@ -17,7 +17,7 @@ const upsertWorkspace = (workspaces: Workspace[], workspace: Workspace) => {
 
 export const useWorkspaceStore = create<WorkspaceStore>()(
 	persist(
-		set => ({
+		(set, get) => ({
 			workspaces: [],
 			total: 0,
 			listStatus: 'idle',
@@ -53,6 +53,13 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 				}
 			},
 			getWorkspace: async (uid, signal) => {
+				const cachedWorkspace = get().workspaces.find(workspace => workspace.uid === uid);
+
+				if (cachedWorkspace) {
+					set({ activeWorkspaceUid: uid });
+					return cachedWorkspace;
+				}
+
 				const response = await workspaceAPI.getByUid(uid, signal);
 
 				if (!response.success || !response.data) {

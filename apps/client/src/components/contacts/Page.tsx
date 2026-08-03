@@ -218,7 +218,11 @@ export const ContactsPage: React.FC = () => {
 	};
 
 	return (
-		<div className="contacts-page relative flex min-h-0 flex-col overflow-hidden bg-slate-50 dark:bg-[#0b151a]">
+		<div
+			className={twMerge(
+				'contacts-page relative flex min-h-0 flex-col overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-[#0b151a] mobile:overflow-hidden scrollbar-thin',
+				contactId && 'overflow-hidden'
+			)}>
 			<header className="shrink-0 px-3 pb-3 pt-4 mobile:px-5 mobile:pb-4 mobile:pt-5">
 				<div className="flex items-end justify-between gap-3">
 					<div>
@@ -287,8 +291,8 @@ export const ContactsPage: React.FC = () => {
 				</div>
 			</header>
 
-			<div className="contacts-content flex min-h-0 flex-1 gap-3 px-3 pb-3 mobile:px-5 mobile:pb-5">
-				<section className="contacts-list-shell flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-panel dark:border-[#223138] dark:bg-[#0e181e]">
+			<div className="contacts-content flex min-h-0 flex-none gap-3 px-3 pb-3 mobile:flex-1 mobile:px-5 mobile:pb-5">
+				<section className="contacts-list-shell flex min-h-0 min-w-0 flex-1 flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-panel mobile:overflow-hidden dark:border-[#223138] dark:bg-[#0e181e]">
 					<div className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-3 dark:border-[#223138] mobile:px-4">
 						<div className="flex min-w-0 items-center gap-2">
 							<MdFilterList className="size-4 shrink-0 text-slate-400" aria-hidden="true" />

@@ -53,7 +53,7 @@ export const ContactList: React.FC<ContactListProps> = props => {
 	return (
 		<>
 			<div className="hidden min-h-0 flex-1 overflow-auto mobile:block scrollbar-thin">
-				<table className="w-full min-w-165 border-separate border-spacing-0 text-left">
+				<table className="w-full min-w-150 border-separate border-spacing-0 text-left">
 					<thead className="sticky top-0 z-10 bg-slate-50/95 text-[9px] font-bold uppercase tracking-[.08em] text-slate-400 backdrop-blur dark:bg-[#101c22]/95 dark:text-slate-500">
 						<tr>
 							<th className="border-b border-slate-200 px-4 py-3 font-bold dark:border-[#223138]">
@@ -142,11 +142,11 @@ export const ContactList: React.FC<ContactListProps> = props => {
 				</table>
 			</div>
 
-			<div className="grid min-h-0 flex-1 gap-2 overflow-y-auto p-3 mobile:hidden scrollbar-thin">
+			<div className="grid w-full min-h-0 flex-none grid-cols-[minmax(0,1fr)] gap-2 overflow-visible p-3 mobile:hidden">
 				{props.contacts.map(contact => (
 					<article
 						key={contact.id}
-						className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition active:scale-[.99] dark:border-[#223138] dark:bg-[#101c22]"
+						className="flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition active:scale-[.99] dark:border-[#223138] dark:bg-[#101c22]"
 						onClick={() => props.onSelect(contact.id)}>
 						<ContactAvatar contactId={contact.id} initials={contact.initials} className="size-12 text-xs" />
 						<div className="min-w-0 flex-1">

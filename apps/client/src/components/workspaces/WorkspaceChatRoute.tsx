@@ -11,18 +11,26 @@ export const WorkspaceChatRoute: React.FC = () => {
 
 	const location = useLocation();
 
-	const { workspace, getWorkspace } = useWorkspaceStore(
+	const { workspace, getWorkspace, setActiveWorkspace } = useWorkspaceStore(
 		useShallow(state => ({
 			workspace: state.workspaces.find(item => item.uid === uid),
-			getWorkspace: state.getWorkspace
+			getWorkspace: state.getWorkspace,
+			setActiveWorkspace: state.setActiveWorkspace
 		}))
 	);
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(!workspace);
 	const [hasError, setHasError] = useState(false);
 
 	useEffect(() => {
 		if (!uid) {
 			setHasError(true);
+			setIsLoading(false);
+			return;
+		}
+
+		if (workspace) {
+			setActiveWorkspace(uid);
+			setHasError(false);
 			setIsLoading(false);
 			return;
 		}
@@ -40,11 +48,11 @@ export const WorkspaceChatRoute: React.FC = () => {
 			});
 
 		return () => controller.abort();
-	}, [getWorkspace, uid]);
+	}, [getWorkspace, setActiveWorkspace, uid, workspace]);
 
-	if (isLoading) return <Loading label="Carregando área de trabalho..." />;
+	if (hasError) return <Navigate to="/" replace state={{ workspaceNotFound: true }} />;
 
-	if (hasError || !workspace) return <Navigate to="/" replace state={{ workspaceNotFound: true }} />;
+	if (isLoading || !workspace) return <Loading label="Carregando área de trabalho..." />;
 
 	return (
 		<RouteManagerRoute
