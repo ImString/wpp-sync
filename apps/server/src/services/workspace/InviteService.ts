@@ -65,7 +65,7 @@ export class InviteService {
 		};
 	}
 
-	async create(document: { email: string; role: Role; workspaceId: string }) {
+	async create(document: { email: string; role: Role; workspaceId: string; authorId?: string }) {
 		const existsUser = await prisma.user.findFirst({
 			where: {
 				email: document.email
@@ -84,8 +84,18 @@ export class InviteService {
 		const invite = await prisma.invite.create({
 			data: {
 				workspaceId: document.workspaceId,
+				...(document.authorId && {
+					authorId: document.authorId
+				}),
 				email: document.email,
 				role: document.role
+			},
+			include: {
+				author: {
+					include: {
+						avatar: true
+					}
+				}
 			}
 		});
 

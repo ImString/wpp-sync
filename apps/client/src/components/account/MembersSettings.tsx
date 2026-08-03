@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import {
 	MdAdminPanelSettings,
@@ -9,9 +9,12 @@ import {
 	MdMailOutline,
 	MdMoreHoriz,
 	MdOutlineGroupAdd,
+	MdRefresh,
 	MdSearch,
 	MdSwapHoriz
 } from 'react-icons/md';
+
+import { getResponseMessage, workspaceAPI, type WorkspaceInvite, type WorkspaceMember } from '@/utils/api';
 
 import { Button } from '@/components/buttons';
 import { Image } from '@/components/shared/Image';
@@ -22,6 +25,7 @@ import type { SettingsFeedback } from './types';
 interface MembersSettingsProps {
 	currentUser: AuthUser | null;
 	workspace?: Workspace;
+	workspaceUid?: string;
 	onFeedback: (feedback: SettingsFeedback) => void;
 }
 
@@ -29,10 +33,12 @@ type MemberRole = 'Proprietário' | 'Administrador' | 'Membro';
 
 interface MemberRow {
 	id: string;
+	userId: string;
 	name: string;
 	email: string;
 	role: MemberRole;
 	avatarUrl?: string | null;
+	disabled: boolean;
 }
 
 interface PendingInvite {
@@ -41,6 +47,8 @@ interface PendingInvite {
 	role: Exclude<MemberRole, 'Proprietário'>;
 	sentAt: string;
 }
+
+type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 interface DialogProps {
 	title: string;
@@ -99,37 +107,57 @@ const SettingsDialog: React.FC<DialogProps> = ({ title, description, onClose, ch
 	);
 };
 
-const createInitialMembers = (currentUser: AuthUser | null, workspace?: Workspace): MemberRow[] => {
-	const owner = workspace?.owner;
-	const ownerRow: MemberRow = {
-		id: owner?.id || currentUser?.id || 'current-owner',
-		name: owner?.name || currentUser?.name || 'Você',
-		email: owner?.email || currentUser?.email || 'usuario@empresa.com',
-		avatarUrl: owner?.avatarUrl || currentUser?.avatarUrl,
-		role: 'Proprietário'
-	};
-	const rows = [ownerRow];
-
-	if (currentUser && currentUser.id !== ownerRow.id) {
-		rows.push({
-			id: currentUser.id,
-			name: currentUser.name,
-			email: currentUser.email,
-			avatarUrl: currentUser.avatarUrl,
-			role: 'Administrador'
-		});
-	}
-
-	rows.push(
-		{ id: 'demo-member-ana', name: 'Ana Martins', email: 'ana@empresa.com', role: 'Administrador' },
-		{ id: 'demo-member-rafael', name: 'Rafael Costa', email: 'rafael@empresa.com', role: 'Membro' }
-	);
-
-	return rows;
+const getMemberRole = (member: WorkspaceMember): MemberRole => {
+	if (member.role === 'OWNER') return 'Proprietário';
+	return member.role === 'ADMIN' ? 'Administrador' : 'Membro';
 };
 
-export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, workspace, onFeedback }) => {
-	const [members, setMembers] = useState<MemberRow[]>(() => createInitialMembers(currentUser, workspace));
+const mapMember = (member: WorkspaceMember): MemberRow | null => {
+	if (!member.user) return null;
+
+	return {
+		id: member.id,
+		userId: member.user.id,
+		name: member.user.name || member.user.email || 'Usuário',
+		email: member.user.email || 'E-mail não informado',
+		avatarUrl: member.user.avatarUrl,
+		role: getMemberRole(member),
+		disabled: Boolean(member.disabled)
+	};
+};
+
+const getInviteRole = (role?: WorkspaceInvite['role']): PendingInvite['role'] =>
+	role === 'ADMIN' ? 'Administrador' : 'Membro';
+
+const formatInviteDate = (value?: string) => {
+	if (!value) return 'recentemente';
+
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return 'recentemente';
+
+	return new Intl.DateTimeFormat('pt-BR', {
+		dateStyle: 'short',
+		timeStyle: 'short'
+	}).format(date);
+};
+
+const mapInvite = (invite: WorkspaceInvite): PendingInvite => ({
+	id: invite.id,
+	email: invite.email || 'E-mail não informado',
+	role: getInviteRole(invite.role),
+	sentAt: formatInviteDate(invite.createdAt)
+});
+
+export const MembersSettings: React.FC<MembersSettingsProps> = ({
+	currentUser,
+	workspace,
+	workspaceUid,
+	onFeedback
+}) => {
+	const resolvedWorkspaceUid = workspace?.uid || workspaceUid;
+	const [members, setMembers] = useState<MemberRow[]>([]);
+	const [membersStatus, setMembersStatus] = useState<LoadStatus>('idle');
+	const [membersError, setMembersError] = useState('');
 	const [search, setSearch] = useState('');
 	const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 	const [invitesOpen, setInvitesOpen] = useState(false);
@@ -137,25 +165,121 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 	const [inviteEmail, setInviteEmail] = useState('');
 	const [inviteRole, setInviteRole] = useState<PendingInvite['role']>('Membro');
 	const [inviteError, setInviteError] = useState('');
-	const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([
-		{ id: 'invite-mariana', email: 'mariana@empresa.com', role: 'Membro', sentAt: 'Hoje, 10:24' },
-		{ id: 'invite-gustavo', email: 'gustavo@empresa.com', role: 'Administrador', sentAt: 'Ontem, 16:08' }
-	]);
+	const [inviteSubmitting, setInviteSubmitting] = useState(false);
+	const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+	const [invitesStatus, setInvitesStatus] = useState<LoadStatus>('idle');
+	const [invitesError, setInvitesError] = useState('');
+	const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
 	const [action, setAction] = useState<{ type: 'remove' | 'transfer'; member: MemberRow } | null>(null);
 
+	const loadMembers = useCallback(
+		async (searchTerm = '', signal?: AbortSignal) => {
+			if (!resolvedWorkspaceUid) return false;
+
+			setMembersStatus('loading');
+			setMembersError('');
+
+			try {
+				const response = await workspaceAPI.listMembers(resolvedWorkspaceUid, signal, searchTerm);
+				if (!response.success || !response.data) {
+					throw new Error(getResponseMessage(response, 'Não foi possível carregar os membros.'));
+				}
+
+				setMembers(response.data.items.map(mapMember).filter((member): member is MemberRow => Boolean(member)));
+				setMembersStatus('ready');
+				return true;
+			} catch (error) {
+				if (signal?.aborted) return false;
+				setMembersError(error instanceof Error ? error.message : 'Não foi possível carregar os membros.');
+				setMembersStatus('error');
+				return false;
+			}
+		},
+		[resolvedWorkspaceUid]
+	);
+
+	const loadPendingInvites = useCallback(
+		async (signal?: AbortSignal) => {
+			if (!resolvedWorkspaceUid) return false;
+
+			setInvitesStatus('loading');
+			setInvitesError('');
+
+			try {
+				const response = await workspaceAPI.listPendingInvites(resolvedWorkspaceUid, signal);
+				if (!response.success || !response.data) {
+					throw new Error(getResponseMessage(response, 'Não foi possível carregar os convites.'));
+				}
+
+				setPendingInvites(response.data.items.map(mapInvite));
+				setInvitesStatus('ready');
+				return true;
+			} catch (error) {
+				if (signal?.aborted) return false;
+				setInvitesError(error instanceof Error ? error.message : 'Não foi possível carregar os convites.');
+				setInvitesStatus('error');
+				return false;
+			}
+		},
+		[resolvedWorkspaceUid]
+	);
+
 	useEffect(() => {
-		setMembers(createInitialMembers(currentUser, workspace));
-	}, [currentUser?.id, workspace?.uid]);
+		if (!resolvedWorkspaceUid) {
+			setMembers([]);
+			setMembersStatus('idle');
+			return;
+		}
 
-	const filteredMembers = useMemo(() => {
-		const normalizedSearch = search.trim().toLocaleLowerCase('pt-BR');
-		if (!normalizedSearch) return members;
-		return members.filter(member =>
-			`${member.name} ${member.email} ${member.role}`.toLocaleLowerCase('pt-BR').includes(normalizedSearch)
-		);
-	}, [members, search]);
+		const controller = new AbortController();
+		const normalizedSearch = search.trim();
 
-	const handleInvite = (event: FormEvent<HTMLFormElement>) => {
+		setMembers([]);
+		setMembersStatus('loading');
+
+		if (!normalizedSearch) {
+			void loadMembers('', controller.signal);
+			return () => controller.abort();
+		}
+
+		const timeout = window.setTimeout(() => {
+			void loadMembers(normalizedSearch, controller.signal);
+		}, 300);
+
+		return () => {
+			window.clearTimeout(timeout);
+			controller.abort();
+		};
+	}, [loadMembers, resolvedWorkspaceUid, search]);
+
+	useEffect(() => {
+		if (!resolvedWorkspaceUid) {
+			setPendingInvites([]);
+			setInvitesStatus('idle');
+			return;
+		}
+
+		const controller = new AbortController();
+		setPendingInvites([]);
+		void loadPendingInvites(controller.signal);
+		return () => controller.abort();
+	}, [loadPendingInvites, resolvedWorkspaceUid]);
+
+	const refreshMembers = async () => {
+		const success = await loadMembers(search.trim());
+		if (!success) {
+			onFeedback({ type: 'error', message: 'Não foi possível atualizar a lista de membros.' });
+		}
+	};
+
+	const refreshPendingInvites = async () => {
+		const success = await loadPendingInvites();
+		if (!success) {
+			onFeedback({ type: 'error', message: 'Não foi possível atualizar a lista de convites.' });
+		}
+	};
+
+	const handleInvite = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const normalizedEmail = inviteEmail.trim().toLowerCase();
 
@@ -165,26 +289,68 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 		}
 
 		if (
-			pendingInvites.some(invite => invite.email === normalizedEmail) ||
-			members.some(member => member.email === normalizedEmail)
+			pendingInvites.some(invite => invite.email.toLowerCase() === normalizedEmail) ||
+			members.some(member => member.email.toLowerCase() === normalizedEmail)
 		) {
 			setInviteError('Este e-mail já é membro ou possui um convite pendente.');
 			return;
 		}
 
-		setPendingInvites(current => [
-			{ id: `invite-${Date.now()}`, email: normalizedEmail, role: inviteRole, sentAt: 'Agora' },
-			...current
-		]);
-		setInviteEmail('');
+		if (!resolvedWorkspaceUid) {
+			setInviteError('Área de trabalho não encontrada.');
+			return;
+		}
+
+		setInviteSubmitting(true);
 		setInviteError('');
-		setInviteView('pending');
-		onFeedback({ type: 'success', message: `Convite preparado para ${normalizedEmail}.` });
+
+		try {
+			const response = await workspaceAPI.createInvite(resolvedWorkspaceUid, {
+				email: normalizedEmail,
+				role: inviteRole === 'Administrador' ? 'ADMIN' : 'MEMBER'
+			});
+
+			if (!response.success) {
+				const message =
+					response.code === 'USER_NOT_FOUND'
+						? 'Não existe uma conta cadastrada com este e-mail.'
+						: response.code === 'INVITE_SAME_EMAIL'
+							? 'Este e-mail já possui um convite pendente.'
+							: getResponseMessage(response, 'Não foi possível enviar o convite.');
+				throw new Error(message);
+			}
+
+			setInviteEmail('');
+			setInviteView('pending');
+			await loadPendingInvites();
+			onFeedback({ type: 'success', message: `Convite enviado para ${normalizedEmail}.` });
+		} catch (error) {
+			setInviteError(error instanceof Error ? error.message : 'Não foi possível enviar o convite.');
+		} finally {
+			setInviteSubmitting(false);
+		}
 	};
 
-	const revokeInvite = (invite: PendingInvite) => {
-		setPendingInvites(current => current.filter(item => item.id !== invite.id));
-		onFeedback({ type: 'info', message: `Convite de ${invite.email} revogado nesta prévia.` });
+	const revokeInvite = async (invite: PendingInvite) => {
+		if (!resolvedWorkspaceUid) return;
+
+		setRevokingInviteId(invite.id);
+		try {
+			const response = await workspaceAPI.revokeInvite(resolvedWorkspaceUid, invite.id);
+			if (!response.success) {
+				throw new Error(getResponseMessage(response, 'Não foi possível revogar o convite.'));
+			}
+
+			setPendingInvites(current => current.filter(item => item.id !== invite.id));
+			onFeedback({ type: 'info', message: `Convite de ${invite.email} revogado.` });
+		} catch (error) {
+			onFeedback({
+				type: 'error',
+				message: error instanceof Error ? error.message : 'Não foi possível revogar o convite.'
+			});
+		} finally {
+			setRevokingInviteId(null);
+		}
 	};
 
 	const confirmAction = () => {
@@ -219,8 +385,9 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 					<div>
 						<h2 className="m-0 text-sm font-bold text-slate-900 dark:text-white">Membros da equipe</h2>
 						<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
-							{members.length} {members.length === 1 ? 'pessoa possui' : 'pessoas possuem'} acesso a esta
-							área.
+							{membersStatus === 'loading' && members.length === 0
+								? 'Carregando pessoas com acesso...'
+								: `${members.length} ${members.length === 1 ? 'pessoa possui' : 'pessoas possuem'} acesso a esta área.`}
 						</p>
 					</div>
 					<Button
@@ -250,6 +417,18 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 							onChange={event => setSearch(event.target.value)}
 						/>
 					</label>
+					<Button
+						theme="secondary"
+						type="button"
+						className="min-h-10 shrink-0 px-3 text-[10px]"
+						disabled={!resolvedWorkspaceUid || membersStatus === 'loading'}
+						onClick={() => void refreshMembers()}>
+						<MdRefresh
+							className={`size-4.5 ${membersStatus === 'loading' ? 'animate-spin' : ''}`}
+							aria-hidden="true"
+						/>
+						Atualizar
+					</Button>
 				</div>
 
 				<div className="px-3 pb-4 mobile:px-6 mobile:pb-6">
@@ -261,8 +440,33 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 							<span className="sr-only">Ações</span>
 						</div>
 
-						{filteredMembers.length > 0 ? (
-							filteredMembers.map(member => (
+						{membersStatus === 'loading' && members.length === 0 ? (
+							<div className="grid min-h-40 place-items-center text-center" role="status">
+								<div>
+									<span className="mx-auto block size-6 animate-spin rounded-full border-2 border-brand-100 border-t-brand-600 dark:border-brand-950 dark:border-t-brand-400" />
+									<strong className="mt-3 block text-xs text-slate-700 dark:text-slate-200">
+										Carregando membros...
+									</strong>
+								</div>
+							</div>
+						) : membersStatus === 'error' && members.length === 0 ? (
+							<div className="grid min-h-40 place-items-center text-center" role="alert">
+								<div>
+									<strong className="block text-xs text-slate-700 dark:text-slate-200">
+										Não foi possível carregar os membros
+									</strong>
+									<p className="mt-1 text-[10px] text-slate-400">{membersError}</p>
+									<Button
+										theme="secondary"
+										type="button"
+										className="mt-3 min-h-8 px-3 text-[10px]"
+										onClick={() => void loadMembers(search.trim())}>
+										Tentar novamente
+									</Button>
+								</div>
+							</div>
+						) : members.length > 0 ? (
+							members.map(member => (
 								<div
 									key={member.id}
 									className="relative grid min-h-18 grid-cols-[minmax(0,1fr)_44px] items-center gap-3 border-b border-slate-100 px-3 last:border-0 dark:border-[#1b2a31] mobile:min-h-17 mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px_44px]">
@@ -276,7 +480,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 										<div className="min-w-0">
 											<strong className="block truncate text-[11px] text-slate-900 dark:text-white">
 												{member.name}
-												{member.id === currentUser?.id && (
+												{member.userId === currentUser?.id && (
 													<span className="ml-1 font-normal text-slate-400">(você)</span>
 												)}
 											</strong>
@@ -293,8 +497,10 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 													aria-hidden="true"
 												/>
 												{member.role}
-												<span className="size-1 rounded-full bg-emerald-500" />
-												Ativo
+												<span
+													className={`size-1 rounded-full ${member.disabled ? 'bg-slate-400' : 'bg-emerald-500'}`}
+												/>
+												{member.disabled ? 'Inativo' : 'Ativo'}
 											</span>
 										</div>
 									</div>
@@ -305,9 +511,12 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 										/>
 										{member.role}
 									</span>
-									<span className="hidden w-fit items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 mobile:inline-flex">
-										<span className="size-1.5 rounded-full bg-emerald-500" />
-										Ativo
+									<span
+										className={`hidden w-fit items-center gap-1.5 rounded-full px-2 py-1 text-[9px] font-bold mobile:inline-flex ${member.disabled ? 'bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'}`}>
+										<span
+											className={`size-1.5 rounded-full ${member.disabled ? 'bg-slate-400' : 'bg-emerald-500'}`}
+										/>
+										{member.disabled ? 'Inativo' : 'Ativo'}
 									</span>
 									<div className="relative">
 										{member.role !== 'Proprietário' ? (
@@ -356,7 +565,11 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 									<strong className="mt-2 block text-xs text-slate-700 dark:text-slate-200">
 										Nenhum membro encontrado
 									</strong>
-									<p className="mt-1 text-[10px] text-slate-400">Tente buscar com outro termo.</p>
+									<p className="mt-1 text-[10px] text-slate-400">
+										{search
+											? 'Tente buscar com outro termo.'
+											: 'Nenhuma pessoa possui acesso a esta área.'}
+									</p>
 								</div>
 							</div>
 						)}
@@ -370,19 +583,35 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 					description="Convide novas pessoas por e-mail ou revogue acessos ainda não aceitos."
 					onClose={() => setInvitesOpen(false)}
 					className="max-w-152.5">
-					<div className="flex gap-1 border-b border-slate-200 px-5 pt-3 dark:border-[#223138] mobile:px-6">
-						<button
-							className={`cursor-pointer border-b-2 px-3 py-3 text-[11px] font-semibold transition ${inviteView === 'new' ? 'border-brand-600 text-brand-700 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
-							type="button"
-							onClick={() => setInviteView('new')}>
-							Convidar por e-mail
-						</button>
-						<button
-							className={`cursor-pointer border-b-2 px-3 py-3 text-[11px] font-semibold transition ${inviteView === 'pending' ? 'border-brand-600 text-brand-700 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
-							type="button"
-							onClick={() => setInviteView('pending')}>
-							Pendentes ({pendingInvites.length})
-						</button>
+					<div className="flex items-center justify-between gap-2 border-b border-slate-200 px-5 pt-3 dark:border-[#223138] mobile:px-6">
+						<div className="flex min-w-0 gap-1">
+							<button
+								className={`cursor-pointer border-b-2 px-3 py-3 text-[11px] font-semibold transition ${inviteView === 'new' ? 'border-brand-600 text-brand-700 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+								type="button"
+								onClick={() => setInviteView('new')}>
+								Convidar por e-mail
+							</button>
+							<button
+								className={`cursor-pointer border-b-2 px-3 py-3 text-[11px] font-semibold transition ${inviteView === 'pending' ? 'border-brand-600 text-brand-700 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+								type="button"
+								onClick={() => setInviteView('pending')}>
+								Pendentes ({pendingInvites.length})
+							</button>
+						</div>
+						{inviteView === 'pending' && (
+							<Button
+								theme="ghost"
+								type="button"
+								className="min-h-8 shrink-0 px-2 text-[10px]"
+								disabled={!resolvedWorkspaceUid || invitesStatus === 'loading'}
+								onClick={() => void refreshPendingInvites()}>
+								<MdRefresh
+									className={`size-4 ${invitesStatus === 'loading' ? 'animate-spin' : ''}`}
+									aria-hidden="true"
+								/>
+								Atualizar
+							</Button>
+						)}
 					</div>
 
 					{inviteView === 'new' ? (
@@ -426,7 +655,12 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 									onClick={() => setInvitesOpen(false)}>
 									Cancelar
 								</Button>
-								<Button theme="primary" type="submit" className="text-[10px]">
+								<Button
+									theme="primary"
+									type="submit"
+									className="text-[10px]"
+									loading={inviteSubmitting}
+									loadingLabel="Enviando...">
 									<MdMailOutline aria-hidden="true" />
 									Enviar convite
 								</Button>
@@ -434,7 +668,32 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 						</form>
 					) : (
 						<div className="px-5 py-5 mobile:px-6 mobile:py-6">
-							{pendingInvites.length > 0 ? (
+							{invitesStatus === 'loading' && pendingInvites.length === 0 ? (
+								<div className="grid min-h-45 place-items-center text-center" role="status">
+									<div>
+										<span className="mx-auto block size-6 animate-spin rounded-full border-2 border-brand-100 border-t-brand-600 dark:border-brand-950 dark:border-t-brand-400" />
+										<strong className="mt-3 block text-xs text-slate-800 dark:text-slate-100">
+											Carregando convites...
+										</strong>
+									</div>
+								</div>
+							) : invitesStatus === 'error' && pendingInvites.length === 0 ? (
+								<div className="grid min-h-45 place-items-center text-center" role="alert">
+									<div>
+										<strong className="block text-xs text-slate-800 dark:text-slate-100">
+											Não foi possível carregar os convites
+										</strong>
+										<p className="mt-1 text-[10px] text-slate-400">{invitesError}</p>
+										<Button
+											theme="secondary"
+											type="button"
+											className="mt-3 min-h-8 px-3 text-[10px]"
+											onClick={() => void loadPendingInvites()}>
+											Tentar novamente
+										</Button>
+									</div>
+								</div>
+							) : pendingInvites.length > 0 ? (
 								<div className="grid gap-2.5">
 									{pendingInvites.map(invite => (
 										<div
@@ -455,6 +714,8 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({ currentUser, w
 												theme="ghost"
 												type="button"
 												className="min-h-8 self-start px-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-500/10"
+												loading={revokingInviteId === invite.id}
+												loadingLabel="Revogando..."
 												onClick={() => revokeInvite(invite)}>
 												<MdDeleteOutline aria-hidden="true" />
 												Revogar

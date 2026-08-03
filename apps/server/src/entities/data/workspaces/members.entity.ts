@@ -13,10 +13,11 @@ export type MemberEntityEntities = {
 };
 
 export type MemberEntityPopulated = MemberEntityRaw & MemberEntityExtra;
+export type MemberEntityRole = Member['role'] | 'OWNER';
 
 export interface MemberEntityObject {
 	id: string;
-	role?: Member['role'];
+	role?: MemberEntityRole;
 	disabled?: boolean;
 	user?: UserEntityObject;
 }
@@ -24,6 +25,7 @@ export interface MemberEntityObject {
 export interface MemberEntityObjectOptions {
 	sign_files?: boolean;
 	duration?: number;
+	workspaceOwnerId?: string;
 }
 
 export class MemberEntity extends Entity<MemberEntityRaw, MemberEntityExtra, MemberEntityEntities> {
@@ -45,10 +47,14 @@ export class MemberEntity extends Entity<MemberEntityRaw, MemberEntityExtra, Mem
 	async toObject(options: MemberEntityObjectOptions = {}): Promise<MemberEntityObject> {
 		return {
 			id: this.id,
-			role: this.data.role,
-			disabled: this.data.disabled,
+			role: this.resolveRole(options.workspaceOwnerId),
 			user: await this.entities.user?.toObject(options)
 		};
+	}
+
+	resolveRole(workspaceOwnerId?: string): MemberEntityRole | undefined {
+		if (workspaceOwnerId && workspaceOwnerId === this.data.userId) return 'OWNER';
+		return this.data.role;
 	}
 
 	async create() {

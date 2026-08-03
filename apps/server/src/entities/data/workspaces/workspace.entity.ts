@@ -80,7 +80,14 @@ export class WorkspaceEntity extends Entity<WorkspaceEntityRaw, WorkspaceEntityE
 			}),
 			this.entities.owner?.toObject(options),
 			options.populate_members && this.entities.members
-				? Promise.all(this.entities.members.items.map(member => member.toObject(options)))
+				? Promise.all(
+						this.entities.members.items.map(member =>
+							member.toObject({
+								...options,
+								workspaceOwnerId: this.data.ownerId
+							})
+						)
+					)
 				: undefined,
 			options.populate_invites && this.entities.invites
 				? Promise.all(this.entities.invites.items.map(invite => invite.toObject(options)))

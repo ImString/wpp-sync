@@ -10,7 +10,6 @@ import {
 	type RouterMiddlewareContext
 } from '@/modules/index.js';
 
-import { UserService } from '@/services/UserService.js';
 import { InviteService } from '@/services/workspace/index.js';
 
 import { WorkspaceInviteDTO } from '@/entities/dtos/workspace/invite.dto.js';
@@ -22,23 +21,19 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 
 @Controller({
 	path: '/workspace/:uid/invites',
-	middlewares: [AuthenticationMiddleware]
+	middlewares: [AuthenticationMiddleware, WorkspaceAccessMiddleware]
 })
 export class WorkspaceInvitesController {
-	constructor(
-		private readonly userService: UserService,
-		private readonly invitesService: InviteService
-	) {}
+	constructor(private readonly invitesService: InviteService) {}
 
 	@Get('/', WorkspaceInviteDTO.List)
+	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.INVITE_MANAGE }))
 	async list(context: RouterMiddlewareContext) {
-		const user = await this.userService.get({ id: context.state.userId });
+		const workspace = context.state.workspaceAccess?.workspace;
+		if (!workspace) throw new WorkspaceNotFoundError();
 
 		const invites = await this.invitesService.list({
-			email: user.data.email,
-			...(context.query.name && {
-				workspaceName: context.query.name
-			}),
+			workspaceId: workspace.id,
 			include: {
 				workspace: {
 					include: {
@@ -52,10 +47,7 @@ export class WorkspaceInvitesController {
 	}
 
 	@Post('/create', WorkspaceInviteDTO.Create)
-	@UseMiddleware(
-		WorkspaceAccessMiddleware,
-		PermissionMiddleware.configure({ permissions: PermissionsFlags.INVITE_MANAGE })
-	)
+	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.INVITE_MANAGE }))
 	async create(context: RouterMiddlewareContext) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();
@@ -63,17 +55,15 @@ export class WorkspaceInvitesController {
 		const invite = await this.invitesService.create({
 			email: context.body.email,
 			role: context.body.role,
-			workspaceId: workspace.id
+			workspaceId: workspace.id,
+			authorId: context.state.userId
 		});
 
-		return HttpResponse.success(invite);
+		return HttpResponse.success(await invite.toObject({ sign_files: true }));
 	}
 
-	@Delete('/:inviteId/revoke')
-	@UseMiddleware(
-		WorkspaceAccessMiddleware,
-		PermissionMiddleware.configure({ permissions: PermissionsFlags.INVITE_MANAGE })
-	)
+	@Delete('/:inviteId/revoke', WorkspaceInviteDTO.Revoke)
+	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.INVITE_MANAGE }))
 	async revoke(context: RouterMiddlewareContext) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();

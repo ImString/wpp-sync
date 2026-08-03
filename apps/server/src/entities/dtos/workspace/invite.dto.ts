@@ -14,8 +14,12 @@ export namespace WorkspaceInviteDTO {
 		body: z.object({
 			email: z.string().email(),
 			role: z.nativeEnum(Role)
-		}),
+		})
+	});
+
+	export const Revoke = new RouteSchema({
 		params: z.object({
+			uid: z.string(),
 			inviteId: z.string()
 		})
 	});

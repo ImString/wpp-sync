@@ -1,6 +1,14 @@
 import { PermissionsFlags } from '@wppsync/shared';
 
-import { Controller, Delete, Get, HttpResponse, Patch, type RouterMiddlewareContext } from '@/modules/index.js';
+import {
+	Controller,
+	Delete,
+	Get,
+	HttpResponse,
+	Patch,
+	UseMiddleware,
+	type RouterMiddlewareContext
+} from '@/modules/index.js';
 
 import { MemberService } from '@/services/workspace/MemberService.js';
 
@@ -13,11 +21,7 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 
 @Controller({
 	path: '/workspace/:uid/members',
-	middlewares: [
-		AuthenticationMiddleware,
-		WorkspaceAccessMiddleware,
-		PermissionMiddleware.configure({ permissions: PermissionsFlags.MEMBER_MANAGE })
-	]
+	middlewares: [AuthenticationMiddleware, WorkspaceAccessMiddleware]
 })
 export class WorkspaceMembersController {
 	constructor(private readonly membersService: MemberService) {}
@@ -32,13 +36,15 @@ export class WorkspaceMembersController {
 		};
 	};
 
-	@Get('')
+	@Get('', WorksapceMemberDTO.List)
 	async list(context: RouterMiddlewareContext) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();
 
 		const members = await this.membersService.list({
+			searchName: context.query.name,
 			workspaceId: workspace.data.id,
+			workspaceOwnerId: workspace.data.ownerId,
 			include: this.includes()
 		});
 
@@ -56,12 +62,19 @@ export class WorkspaceMembersController {
 			include: this.includes()
 		});
 
-		return HttpResponse.success(await member.toObject({ sign_files: true }));
+		return HttpResponse.success(
+			await member.toObject({
+				sign_files: true,
+				workspaceOwnerId: workspace.data.ownerId
+			})
+		);
 	}
 
 	@Patch('/:memberId/update')
+	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.MEMBER_MANAGE }))
 	async update() {}
 
 	@Delete('/:memberId/remove')
+	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.MEMBER_MANAGE }))
 	async remove() {}
 }

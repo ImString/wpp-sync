@@ -16,16 +16,10 @@ export class PermissionMiddleware extends RouterMiddleware {
 		const workspaceAccess = context.state.workspaceAccess;
 		if (!workspaceAccess) throw new WorkspaceNotFoundError();
 
-		const role: Roles =
-			workspaceAccess.workspace.data.ownerId === context.state.userId
-				? 'OWNER'
-				: workspaceAccess.membership.data.role === 'ADMIN'
-					? 'ADMIN'
-					: 'USER';
+		const membershipRole = workspaceAccess.membership.resolveRole(workspaceAccess.workspace.data.ownerId);
+		const role: Roles = membershipRole === 'OWNER' ? 'OWNER' : membershipRole === 'ADMIN' ? 'ADMIN' : 'USER';
 
-		const requiredPermissions = Array.isArray(options.permissions)
-			? options.permissions
-			: [options.permissions];
+		const requiredPermissions = Array.isArray(options.permissions) ? options.permissions : [options.permissions];
 
 		if (!requiredPermissions.every(permission => hasPermission(role, permission))) {
 			throw new PermissionDeniedError();

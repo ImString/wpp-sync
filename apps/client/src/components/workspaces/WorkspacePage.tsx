@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
 	MdAdd,
 	MdCheck,
@@ -18,7 +18,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
 import { useShallow } from 'zustand/react/shallow';
 
-import { authAPI } from '@/utils/api';
+import { authAPI, getResponseMessage, workspaceAPI, type WorkspaceInvite } from '@/utils/api';
 
 import { Brand } from '@/components/brand';
 import { useInterfaceStore } from '@/components/interface';
@@ -27,6 +27,7 @@ import type { CreateWorkspaceData, Workspace } from '@/stores';
 
 import { Image } from '../shared/Image';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
+import { ReceivedInvitesModal } from './ReceivedInvitesModal';
 import { WorkspaceCard } from './WorkspaceCard';
 import {
 	workspaceEyebrowClassName,
@@ -71,6 +72,10 @@ export const WorkspacePage: React.FC = () => {
 
 	const [search, setSearch] = useState('');
 	const [createModalOpen, setCreateModalOpen] = useState(false);
+	const [receivedInvitesOpen, setReceivedInvitesOpen] = useState(false);
+	const [receivedInvites, setReceivedInvites] = useState<WorkspaceInvite[]>([]);
+	const [receivedInvitesStatus, setReceivedInvitesStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+	const [receivedInvitesError, setReceivedInvitesError] = useState('');
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [toast, setToast] = useState(locationState?.workspaceNotFound ? 'A área solicitada não foi encontrada.' : '');
 
@@ -113,6 +118,25 @@ export const WorkspacePage: React.FC = () => {
 		return workspaces.filter(workspace => normalizeSearch(workspace.name).includes(normalizedSearch));
 	}, [search, workspaces]);
 
+	const loadReceivedInvites = useCallback(async (signal?: AbortSignal) => {
+		setReceivedInvitesStatus('loading');
+		setReceivedInvitesError('');
+
+		try {
+			const response = await workspaceAPI.listReceivedInvites(signal);
+			if (!response.success || !response.data) {
+				throw new Error(getResponseMessage(response, 'Não foi possível carregar os convites.'));
+			}
+
+			setReceivedInvites(response.data.items);
+			setReceivedInvitesStatus('ready');
+		} catch (error) {
+			if (signal?.aborted) return;
+			setReceivedInvitesError(error instanceof Error ? error.message : 'Não foi possível carregar os convites.');
+			setReceivedInvitesStatus('error');
+		}
+	}, []);
+
 	useEffect(() => {
 		const controller = new AbortController();
 
@@ -124,6 +148,12 @@ export const WorkspacePage: React.FC = () => {
 
 		return () => controller.abort();
 	}, [listWorkspaces]);
+
+	useEffect(() => {
+		const controller = new AbortController();
+		void loadReceivedInvites(controller.signal);
+		return () => controller.abort();
+	}, [loadReceivedInvites]);
 
 	useEffect(() => {
 		if (!toast) return;
@@ -157,11 +187,11 @@ export const WorkspacePage: React.FC = () => {
 	}, []);
 
 	useEffect(() => {
-		document.body.style.overflow = createModalOpen ? 'hidden' : '';
+		document.body.style.overflow = createModalOpen || receivedInvitesOpen ? 'hidden' : '';
 		return () => {
 			document.body.style.overflow = '';
 		};
-	}, [createModalOpen]);
+	}, [createModalOpen, receivedInvitesOpen]);
 
 	const selectWorkspace = (workspace: Workspace) => {
 		setActiveWorkspace(workspace.uid);
@@ -308,12 +338,14 @@ export const WorkspacePage: React.FC = () => {
 							<button
 								className={workspaceSecondaryButtonClassName}
 								type="button"
-								onClick={() => setToast('Você possui 2 convites pendentes para novas áreas.')}>
+								onClick={() => setReceivedInvitesOpen(true)}>
 								<MdMailOutline aria-hidden="true" />
 								Meus convites
-								<span className="grid h-4.5 min-w-4.5 place-items-center rounded-full bg-brand-600 px-1 text-[8px] text-white">
-									2
-								</span>
+								{receivedInvites.length > 0 && (
+									<span className="grid h-4.5 min-w-4.5 place-items-center rounded-full bg-brand-600 px-1 text-[8px] text-white">
+										{receivedInvites.length}
+									</span>
+								)}
 							</button>
 
 							<button
@@ -381,6 +413,16 @@ export const WorkspacePage: React.FC = () => {
 					isOpen
 					onClose={() => setCreateModalOpen(false)}
 					onCreate={handleCreateWorkspace}
+				/>
+			)}
+
+			{receivedInvitesOpen && (
+				<ReceivedInvitesModal
+					invites={receivedInvites}
+					status={receivedInvitesStatus}
+					error={receivedInvitesError}
+					onClose={() => setReceivedInvitesOpen(false)}
+					onRetry={() => void loadReceivedInvites()}
 				/>
 			)}
 

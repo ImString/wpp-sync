@@ -12,9 +12,15 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 export class WorkspaceMembershipController {
 	@Get('/')
 	async get(context: RouterMiddlewareContext) {
+		const workspace = context.state.workspaceAccess?.workspace;
 		const membership = context.state.workspaceAccess?.membership;
-		if (!membership) throw new WorkspaceNotFoundError();
+		if (!workspace || !membership) throw new WorkspaceNotFoundError();
 
-		return HttpResponse.success(await membership.toObject({ sign_files: true }));
+		return HttpResponse.success(
+			await membership.toObject({
+				sign_files: true,
+				workspaceOwnerId: workspace.data.ownerId
+			})
+		);
 	}
 }

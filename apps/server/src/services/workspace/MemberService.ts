@@ -9,11 +9,16 @@ export type MemberServiceWhereInput = Prisma.MemberWhereInput;
 export type MemberServiceWhereOptions = {
 	id?: string;
 
-	search?: string;
+	searchName?: string;
+	searchWorkspace?: string;
+
 	userId?: string;
 	workspaceId?: string;
 
 	include?: Prisma.MemberInclude;
+};
+export type MemberServiceListOptions = MemberServiceWhereOptions & {
+	workspaceOwnerId?: string;
 };
 
 @Provider()
@@ -21,10 +26,28 @@ export class MemberService {
 	private mountWhere(options: MemberServiceWhereOptions): MemberServiceWhereInput {
 		return {
 			...(options.id && { id: options.id }),
-			...(options.search && {
+			...(options.searchName && {
+				user: {
+					OR: [
+						{
+							name: {
+								contains: options.searchName,
+								mode: 'insensitive'
+							}
+						},
+						{
+							email: {
+								contains: options.searchName,
+								mode: 'insensitive'
+							}
+						}
+					]
+				}
+			}),
+			...(options.searchWorkspace && {
 				workspace: {
 					name: {
-						contains: options.search,
+						contains: options.searchWorkspace,
 						mode: 'insensitive'
 					}
 				}
@@ -34,7 +57,7 @@ export class MemberService {
 		};
 	}
 
-	async list(document: MemberServiceWhereOptions) {
+	async list(document: MemberServiceListOptions) {
 		const [dataList, dataListTotal] = await prisma.$transaction([
 			prisma.member.findMany({
 				where: {
@@ -52,7 +75,14 @@ export class MemberService {
 		]);
 
 		const members = MemberEntity.fromList(dataList);
-		const items = await Promise.all(members.items.map(member => member.toObject({ sign_files: true })));
+		const items = await Promise.all(
+			members.items.map(member =>
+				member.toObject({
+					sign_files: true,
+					workspaceOwnerId: document.workspaceOwnerId
+				})
+			)
+		);
 
 		return {
 			items,
