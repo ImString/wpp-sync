@@ -65,6 +65,14 @@ export const workspaceAPI = {
 		return response.data;
 	},
 
+	getMembership: async (uid: string, signal?: AbortSignal) => {
+		const response = await mainAPI.get<ServerResponse<WorkspaceMember>>(
+			`/workspace/${encodeURIComponent(uid)}/membership`,
+			{ signal }
+		);
+		return response.data;
+	},
+
 	create: async (data: FormData) => {
 		const response = await mainAPI.post<ServerResponse<Workspace>>('/workspace/create', data);
 		return response.data;
@@ -86,6 +94,20 @@ export const workspaceAPI = {
 			signal,
 			params: workspaceName ? { name: workspaceName } : undefined
 		});
+		return response.data;
+	},
+
+	acceptInvite: async (inviteId: string) => {
+		const response = await mainAPI.post<ServerResponse>(
+			`/invites/${encodeURIComponent(inviteId)}/accept`
+		);
+		return response.data;
+	},
+
+	rejectInvite: async (inviteId: string) => {
+		const response = await mainAPI.delete<ServerResponse>(
+			`/invites/${encodeURIComponent(inviteId)}/reject`
+		);
 		return response.data;
 	},
 

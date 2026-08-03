@@ -3,6 +3,7 @@ import { prisma, Prisma, Role } from '@wppsync/database';
 import { Provider } from '@/core/index.js';
 
 import { InviteEntity } from '@/entities/data/workspaces/invites.entity.js';
+import { InviteBelongsAnotherError } from '@/entities/errors/invite/InviteBelongsAnotherError.js';
 import { UserNotFoundError } from '@/entities/errors/user/UserNotFoundError.js';
 import { InviteNotFoundError } from '@/entities/errors/workspace/index.js';
 import { InviteWithSameEmailError } from '@/entities/errors/workspace/invites/InviteWithSameEmailError.js';
@@ -113,6 +114,66 @@ export class InviteService {
 		});
 
 		if (!invite) throw new InviteNotFoundError();
+
+		await prisma.invite.delete({
+			where: {
+				id: invite.id
+			}
+		});
+	}
+
+	async accept(document: { inviteId: string; userId: string }) {
+		const invite = await prisma.invite.findUnique({
+			where: {
+				id: document.inviteId
+			}
+		});
+
+		if (!invite) throw new InviteNotFoundError();
+
+		const user = await prisma.user.findUnique({
+			where: {
+				id: document.userId
+			}
+		});
+
+		if (!user) throw new UserNotFoundError();
+		if (invite.email !== user.email) throw new InviteBelongsAnotherError();
+
+		await prisma.$transaction([
+			prisma.member.create({
+				data: {
+					userId: user.id,
+					workspaceId: invite.workspaceId,
+					role: invite.role
+				}
+			}),
+
+			prisma.invite.delete({
+				where: {
+					id: invite.id
+				}
+			})
+		]);
+	}
+
+	async reject(document: { inviteId: string; userId: string }) {
+		const invite = await prisma.invite.findUnique({
+			where: {
+				id: document.inviteId
+			}
+		});
+
+		if (!invite) throw new InviteNotFoundError();
+
+		const user = await prisma.user.findUnique({
+			where: {
+				id: document.userId
+			}
+		});
+
+		if (!user) throw new UserNotFoundError();
+		if (invite.email !== user.email) throw new InviteBelongsAnotherError();
 
 		await prisma.invite.delete({
 			where: {

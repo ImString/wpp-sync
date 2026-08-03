@@ -14,7 +14,13 @@ import {
 	MdSwapHoriz
 } from 'react-icons/md';
 
-import { getResponseMessage, workspaceAPI, type WorkspaceInvite, type WorkspaceMember } from '@/utils/api';
+import {
+	getResponseMessage,
+	workspaceAPI,
+	type WorkspaceInvite,
+	type WorkspaceMember,
+	type WorkspaceMemberRole
+} from '@/utils/api';
 
 import { Button } from '@/components/buttons';
 import { Image } from '@/components/shared/Image';
@@ -24,6 +30,7 @@ import type { SettingsFeedback } from './types';
 
 interface MembersSettingsProps {
 	currentUser: AuthUser | null;
+	currentUserRole: WorkspaceMemberRole | null;
 	workspace?: Workspace;
 	workspaceUid?: string;
 	onFeedback: (feedback: SettingsFeedback) => void;
@@ -150,11 +157,14 @@ const mapInvite = (invite: WorkspaceInvite): PendingInvite => ({
 
 export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	currentUser,
+	currentUserRole,
 	workspace,
 	workspaceUid,
 	onFeedback
 }) => {
 	const resolvedWorkspaceUid = workspace?.uid || workspaceUid;
+	const isWorkspaceOwner = currentUserRole === 'OWNER';
+	const canManageMembers = currentUserRole === 'ADMIN' || isWorkspaceOwner;
 	const [members, setMembers] = useState<MemberRow[]>([]);
 	const [membersStatus, setMembersStatus] = useState<LoadStatus>('idle');
 	const [membersError, setMembersError] = useState('');
@@ -200,7 +210,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 
 	const loadPendingInvites = useCallback(
 		async (signal?: AbortSignal) => {
-			if (!resolvedWorkspaceUid) return false;
+			if (!resolvedWorkspaceUid || !canManageMembers) return false;
 
 			setInvitesStatus('loading');
 			setInvitesError('');
@@ -221,7 +231,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 				return false;
 			}
 		},
-		[resolvedWorkspaceUid]
+		[canManageMembers, resolvedWorkspaceUid]
 	);
 
 	useEffect(() => {
@@ -253,9 +263,10 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	}, [loadMembers, resolvedWorkspaceUid, search]);
 
 	useEffect(() => {
-		if (!resolvedWorkspaceUid) {
+		if (!resolvedWorkspaceUid || !canManageMembers) {
 			setPendingInvites([]);
 			setInvitesStatus('idle');
+			setInvitesOpen(false);
 			return;
 		}
 
@@ -263,7 +274,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 		setPendingInvites([]);
 		void loadPendingInvites(controller.signal);
 		return () => controller.abort();
-	}, [loadPendingInvites, resolvedWorkspaceUid]);
+	}, [canManageMembers, loadPendingInvites, resolvedWorkspaceUid]);
 
 	const refreshMembers = async () => {
 		const success = await loadMembers(search.trim());
@@ -281,6 +292,8 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 
 	const handleInvite = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+		if (!canManageMembers) return;
+
 		const normalizedEmail = inviteEmail.trim().toLowerCase();
 
 		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
@@ -332,7 +345,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	};
 
 	const revokeInvite = async (invite: PendingInvite) => {
-		if (!resolvedWorkspaceUid) return;
+		if (!resolvedWorkspaceUid || !canManageMembers) return;
 
 		setRevokingInviteId(invite.id);
 		try {
@@ -355,6 +368,11 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 
 	const confirmAction = () => {
 		if (!action) return;
+		if (!canManageMembers || (action.type === 'transfer' && !isWorkspaceOwner)) {
+			setAction(null);
+			setOpenMenuId(null);
+			return;
+		}
 
 		if (action.type === 'remove') {
 			setMembers(current => current.filter(member => member.id !== action.member.id));
@@ -390,19 +408,21 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 								: `${members.length} ${members.length === 1 ? 'pessoa possui' : 'pessoas possuem'} acesso a esta área.`}
 						</p>
 					</div>
-					<Button
-						theme="primary"
-						type="button"
-						className="min-h-10 self-start px-3 text-[10px] mobile:self-auto"
-						onClick={() => setInvitesOpen(true)}>
-						<MdOutlineGroupAdd className="size-4.5" aria-hidden="true" />
-						Convites
-						{pendingInvites.length > 0 && (
-							<span className="grid min-w-4.5 place-items-center rounded-full bg-white/20 px-1 text-[9px]">
-								{pendingInvites.length}
-							</span>
-						)}
-					</Button>
+					{canManageMembers && (
+						<Button
+							theme="primary"
+							type="button"
+							className="min-h-10 self-start px-3 text-[10px] mobile:self-auto"
+							onClick={() => setInvitesOpen(true)}>
+							<MdOutlineGroupAdd className="size-4.5" aria-hidden="true" />
+							Convites
+							{pendingInvites.length > 0 && (
+								<span className="grid min-w-4.5 place-items-center rounded-full bg-white/20 px-1 text-[9px]">
+									{pendingInvites.length}
+								</span>
+							)}
+						</Button>
+					)}
 				</header>
 
 				<div className="flex items-center justify-between gap-3 px-5 py-4 mobile:px-6">
@@ -433,11 +453,12 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 
 				<div className="px-3 pb-4 mobile:px-6 mobile:pb-6">
 					<div>
-						<div className="hidden grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px_44px] gap-3 border-b border-slate-200 px-3 py-2 text-[9px] font-bold uppercase tracking-[.08em] text-slate-400 dark:border-[#223138] mobile:grid">
+						<div
+							className={`hidden gap-3 border-b border-slate-200 px-3 py-2 text-[9px] font-bold uppercase tracking-[.08em] text-slate-400 dark:border-[#223138] mobile:grid ${canManageMembers ? 'mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px_44px]' : 'mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px]'}`}>
 							<span>Membro</span>
 							<span>Função</span>
 							<span>Status</span>
-							<span className="sr-only">Ações</span>
+							{canManageMembers && <span className="sr-only">Ações</span>}
 						</div>
 
 						{membersStatus === 'loading' && members.length === 0 ? (
@@ -469,7 +490,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 							members.map(member => (
 								<div
 									key={member.id}
-									className="relative grid min-h-18 grid-cols-[minmax(0,1fr)_44px] items-center gap-3 border-b border-slate-100 px-3 last:border-0 dark:border-[#1b2a31] mobile:min-h-17 mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px_44px]">
+									className={`relative grid min-h-18 items-center gap-3 border-b border-slate-100 px-3 last:border-0 dark:border-[#1b2a31] mobile:min-h-17 ${canManageMembers ? 'grid-cols-[minmax(0,1fr)_44px] mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px_44px]' : 'grid-cols-1 mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px]'}`}>
 									<div className="flex min-w-0 items-center gap-3">
 										<Image
 											className="size-9.5 shrink-0 rounded-full object-cover"
@@ -518,44 +539,48 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 										/>
 										{member.disabled ? 'Inativo' : 'Ativo'}
 									</span>
-									<div className="relative">
-										{member.role !== 'Proprietário' ? (
-											<Button
-												theme="ghost"
-												type="button"
-												className="size-9 min-h-9 p-0 text-lg"
-												aria-label={`Ações de ${member.name}`}
-												aria-expanded={openMenuId === member.id}
-												onClick={() =>
-													setOpenMenuId(current => (current === member.id ? null : member.id))
-												}>
-												<MdMoreHoriz aria-hidden="true" />
-											</Button>
-										) : (
-											<span className="block size-9" />
-										)}
-										{openMenuId === member.id && (
-											<div className="absolute right-0 top-[calc(100%+4px)] z-20 w-47 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_14px_36px_rgba(15,23,42,.16)] dark:border-[#2a3a42] dark:bg-[#131f26]">
-												<button
-													className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-[10px] font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-[#17262e]"
+									{canManageMembers && (
+										<div className="relative">
+											{member.role !== 'Proprietário' ? (
+												<Button
+													theme="ghost"
 													type="button"
-													onClick={() => setAction({ type: 'transfer', member })}>
-													<MdSwapHoriz
-														className="size-4 text-brand-600 dark:text-brand-400"
-														aria-hidden="true"
-													/>
-													Transferir posse
-												</button>
-												<button
-													className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-[10px] font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-													type="button"
-													onClick={() => setAction({ type: 'remove', member })}>
-													<MdDeleteOutline className="size-4" aria-hidden="true" />
-													Remover membro
-												</button>
-											</div>
-										)}
-									</div>
+													className="size-9 min-h-9 p-0 text-lg"
+													aria-label={`Ações de ${member.name}`}
+													aria-expanded={openMenuId === member.id}
+													onClick={() =>
+														setOpenMenuId(current => (current === member.id ? null : member.id))
+													}>
+													<MdMoreHoriz aria-hidden="true" />
+												</Button>
+											) : (
+												<span className="block size-9" />
+											)}
+											{openMenuId === member.id && (
+												<div className="absolute right-0 top-[calc(100%+4px)] z-20 w-47 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_14px_36px_rgba(15,23,42,.16)] dark:border-[#2a3a42] dark:bg-[#131f26]">
+													{isWorkspaceOwner && (
+														<button
+															className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-[10px] font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-[#17262e]"
+															type="button"
+															onClick={() => setAction({ type: 'transfer', member })}>
+															<MdSwapHoriz
+																className="size-4 text-brand-600 dark:text-brand-400"
+																aria-hidden="true"
+															/>
+															Transferir posse
+														</button>
+													)}
+													<button
+														className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-[10px] font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+														type="button"
+														onClick={() => setAction({ type: 'remove', member })}>
+														<MdDeleteOutline className="size-4" aria-hidden="true" />
+														Remover membro
+													</button>
+												</div>
+											)}
+										</div>
+									)}
 								</div>
 							))
 						) : (
@@ -577,7 +602,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 				</div>
 			</section>
 
-			{invitesOpen && (
+			{invitesOpen && canManageMembers && (
 				<SettingsDialog
 					title="Gerenciar convites"
 					description="Convide novas pessoas por e-mail ou revogue acessos ainda não aceitos."

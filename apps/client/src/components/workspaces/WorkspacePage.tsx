@@ -27,7 +27,7 @@ import type { CreateWorkspaceData, Workspace } from '@/stores';
 
 import { Image } from '../shared/Image';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
-import { ReceivedInvitesModal } from './ReceivedInvitesModal';
+import { ReceivedInvitesModal, type ReceivedInviteAction } from './ReceivedInvitesModal';
 import { WorkspaceCard } from './WorkspaceCard';
 import {
 	workspaceEyebrowClassName,
@@ -76,6 +76,10 @@ export const WorkspacePage: React.FC = () => {
 	const [receivedInvites, setReceivedInvites] = useState<WorkspaceInvite[]>([]);
 	const [receivedInvitesStatus, setReceivedInvitesStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 	const [receivedInvitesError, setReceivedInvitesError] = useState('');
+	const [processingInvite, setProcessingInvite] = useState<{
+		id: string;
+		action: ReceivedInviteAction;
+	} | null>(null);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [toast, setToast] = useState(locationState?.workspaceNotFound ? 'A área solicitada não foi encontrada.' : '');
 
@@ -207,6 +211,53 @@ export const WorkspacePage: React.FC = () => {
 		void listWorkspaces().catch(error => {
 			setToast(error instanceof Error ? error.message : 'Não foi possível carregar as áreas de trabalho.');
 		});
+	};
+
+	const handleInviteAction = async (invite: WorkspaceInvite, action: ReceivedInviteAction) => {
+		if (processingInvite) return;
+
+		setProcessingInvite({ id: invite.id, action });
+
+		try {
+			const response =
+				action === 'accept'
+					? await workspaceAPI.acceptInvite(invite.id)
+					: await workspaceAPI.rejectInvite(invite.id);
+
+			if (!response.success) {
+				throw new Error(
+					getResponseMessage(
+						response,
+						action === 'accept'
+							? 'Não foi possível aceitar o convite.'
+							: 'Não foi possível recusar o convite.'
+					)
+				);
+			}
+
+			setReceivedInvites(current => current.filter(item => item.id !== invite.id));
+
+			if (action === 'accept') {
+				try {
+					await listWorkspaces();
+					setToast(`O convite para “${invite.workspace?.name || 'a área de trabalho'}” foi aceito.`);
+				} catch {
+					setToast('Convite aceito. Recarregue a lista para visualizar a nova área de trabalho.');
+				}
+			} else {
+				setToast(`O convite para “${invite.workspace?.name || 'a área de trabalho'}” foi recusado.`);
+			}
+		} catch (error) {
+			setToast(
+				error instanceof Error
+					? error.message
+					: action === 'accept'
+						? 'Não foi possível aceitar o convite.'
+						: 'Não foi possível recusar o convite.'
+			);
+		} finally {
+			setProcessingInvite(null);
+		}
 	};
 
 	const handleLogout = () => {
@@ -421,8 +472,11 @@ export const WorkspacePage: React.FC = () => {
 					invites={receivedInvites}
 					status={receivedInvitesStatus}
 					error={receivedInvitesError}
+					processingInvite={processingInvite}
 					onClose={() => setReceivedInvitesOpen(false)}
 					onRetry={() => void loadReceivedInvites()}
+					onAccept={invite => void handleInviteAction(invite, 'accept')}
+					onReject={invite => void handleInviteAction(invite, 'reject')}
 				/>
 			)}
 

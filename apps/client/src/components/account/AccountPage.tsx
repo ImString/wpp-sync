@@ -18,6 +18,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
 import { useShallow } from 'zustand/react/shallow';
 
+import { getResponseMessage, workspaceAPI, type WorkspaceMemberRole } from '@/utils/api';
+
 import { Brand } from '@/components/brand';
 import { Button } from '@/components/buttons';
 import { Sidebar, SidebarBackdrop } from '@/components/chat/sidebar';
@@ -96,30 +98,62 @@ export const AccountPage: React.FC = () => {
 			setActiveSection: state.setActiveSection
 		}))
 	);
+	const [workspaceRole, setWorkspaceRole] = useState<WorkspaceMemberRole | null>(null);
+	const [feedback, setFeedback] = useState<SettingsFeedback | null>(null);
 	const isWorkspaceContext = Boolean(routeWorkspaceUid);
 	const workspaceUid = routeWorkspaceUid || activeWorkspaceUid;
 	const workspace = workspaces.find(item => item.uid === workspaceUid);
 	const requestedSection = isSettingsSection(settingsSection) ? settingsSection : 'profile';
-	const activeSettingsSection = isWorkspaceContext ? requestedSection : 'profile';
+	const isWorkspaceOwner = workspaceRole === 'OWNER';
+	const availableSections = sections.filter(section => section.id !== 'workspace' || isWorkspaceOwner);
+	const activeSettingsSection = isWorkspaceContext
+		? requestedSection === 'workspace' && workspaceRole && !isWorkspaceOwner
+			? 'members'
+			: requestedSection
+		: 'profile';
 	const activeDefinition = sections.find(section => section.id === activeSettingsSection) || sections[0];
-	const [feedback, setFeedback] = useState<SettingsFeedback | null>(null);
 
 	useEffect(() => {
-		if (!routeWorkspaceUid) return;
+		if (!routeWorkspaceUid) {
+			setWorkspaceRole(null);
+			return;
+		}
 
 		const controller = new AbortController();
 		setActiveWorkspace(routeWorkspaceUid);
+		setWorkspaceRole(null);
 
-		void getWorkspace(routeWorkspaceUid, controller.signal).catch(error => {
-			if (controller.signal.aborted) return;
-			setFeedback({
-				type: 'error',
-				message: error instanceof Error ? error.message : 'Não foi possível carregar a área de trabalho.'
+		void Promise.all([
+			getWorkspace(routeWorkspaceUid, controller.signal),
+			workspaceAPI.getMembership(routeWorkspaceUid, controller.signal)
+		])
+			.then(([, membershipResponse]) => {
+				if (!membershipResponse.success || !membershipResponse.data) {
+					throw new Error(
+						getResponseMessage(membershipResponse, 'Não foi possível carregar suas permissões nesta área.')
+					);
+				}
+
+				setWorkspaceRole(membershipResponse.data.role || 'MEMBER');
+			})
+			.catch(error => {
+				if (controller.signal.aborted) return;
+				setWorkspaceRole('MEMBER');
+				setFeedback({
+					type: 'error',
+					message: error instanceof Error ? error.message : 'Não foi possível carregar a área de trabalho.'
+				});
 			});
-		});
 
 		return () => controller.abort();
 	}, [getWorkspace, routeWorkspaceUid, setActiveWorkspace]);
+
+	useEffect(() => {
+		if (!routeWorkspaceUid || !workspaceRole) return;
+		if (requestedSection !== 'workspace' || isWorkspaceOwner) return;
+
+		navigate(`/w/${routeWorkspaceUid}/settings/members`, { replace: true });
+	}, [isWorkspaceOwner, navigate, requestedSection, routeWorkspaceUid, workspaceRole]);
 
 	useEffect(() => {
 		if (isWorkspaceContext) setActiveSection('settings');
@@ -135,6 +169,7 @@ export const AccountPage: React.FC = () => {
 
 	const navigateToSection = (section: SettingsSection) => {
 		if (!isWorkspaceContext || !workspaceUid) return;
+		if (section === 'workspace' && !isWorkspaceOwner) return;
 		navigate(`/w/${workspaceUid}/settings/${section}`);
 	};
 
@@ -280,7 +315,7 @@ export const AccountPage: React.FC = () => {
 										<nav
 											className="grid grid-cols-3 gap-1 drawer:grid-cols-1"
 											aria-label="Seções das configurações">
-											{sections.map(section => {
+											{availableSections.map(section => {
 												const Icon = section.icon;
 												const isActive = section.id === activeSettingsSection;
 												return (
@@ -341,7 +376,7 @@ export const AccountPage: React.FC = () => {
 									{activeSettingsSection === 'profile' && (
 										<ProfileSettings onFeedback={setFeedback} />
 									)}
-									{activeSettingsSection === 'workspace' && (
+									{activeSettingsSection === 'workspace' && isWorkspaceOwner && (
 										<WorkspaceSettings workspace={workspace} onFeedback={setFeedback} />
 									)}
 									{activeSettingsSection === 'members' && (
@@ -349,6 +384,7 @@ export const AccountPage: React.FC = () => {
 											currentUser={currentUser}
 											workspace={workspace}
 											workspaceUid={workspaceUid || undefined}
+											currentUserRole={workspaceRole}
 											onFeedback={setFeedback}
 										/>
 									)}

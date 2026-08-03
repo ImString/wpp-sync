@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MdClose, MdMailOutline, MdRefresh, MdSearch } from 'react-icons/md';
+import { MdAutorenew, MdCheck, MdClose, MdMailOutline, MdRefresh, MdSearch } from 'react-icons/md';
 
 import type { WorkspaceInvite } from '@/utils/api';
 
 import { Image } from '../shared/Image';
-import { workspaceSecondaryButtonClassName } from './styles';
+import { workspacePrimaryButtonClassName, workspaceSecondaryButtonClassName } from './styles';
+
+export type ReceivedInviteAction = 'accept' | 'reject';
 
 interface ReceivedInvitesModalProps {
 	invites: WorkspaceInvite[];
 	status: 'loading' | 'ready' | 'error';
 	error: string;
+	processingInvite: { id: string; action: ReceivedInviteAction } | null;
 	onClose: () => void;
 	onRetry: () => void;
+	onAccept: (invite: WorkspaceInvite) => void;
+	onReject: (invite: WorkspaceInvite) => void;
 }
 
 const normalizeSearch = (value: string) =>
@@ -39,8 +44,11 @@ export const ReceivedInvitesModal: React.FC<ReceivedInvitesModalProps> = ({
 	invites,
 	status,
 	error,
+	processingInvite,
 	onClose,
-	onRetry
+	onRetry,
+	onAccept,
+	onReject
 }) => {
 	const [search, setSearch] = useState('');
 	const filteredInvites = useMemo(() => {
@@ -132,29 +140,61 @@ export const ReceivedInvitesModal: React.FC<ReceivedInvitesModalProps> = ({
 						</div>
 					) : filteredInvites.length > 0 ? (
 						<div className="grid gap-2.5">
-							{filteredInvites.map(invite => (
-								<article
-									key={invite.id}
-									className="flex items-center gap-3.5 rounded-[15px] border border-(--workspace-border) bg-(--workspace-surface-muted) p-3.5">
-									<Image
-										className="size-11 shrink-0 rounded-[13px] object-cover"
-										src={invite.workspace?.avatarUrl || undefined}
-										seed={invite.workspace?.name || invite.email}
-										collection="initials"
-									/>
-									<div className="min-w-0 flex-1">
-										<strong className="block truncate text-xs">
-											{invite.workspace?.name || 'Área de trabalho'}
-										</strong>
-										<span className="mt-0.5 block text-[9px] text-(--workspace-muted)">
-											{getRoleLabel(invite.role)} · {formatInviteDate(invite.createdAt)}
-										</span>
-									</div>
-									<span className="rounded-full bg-brand-50 px-2.5 py-1 text-[9px] font-bold text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">
-										Pendente
-									</span>
-								</article>
-							))}
+							{filteredInvites.map(invite => {
+								const isAccepting =
+									processingInvite?.id === invite.id && processingInvite.action === 'accept';
+								const isRejecting =
+									processingInvite?.id === invite.id && processingInvite.action === 'reject';
+
+								return (
+									<article
+										key={invite.id}
+										className="flex flex-col gap-3.5 rounded-[15px] border border-(--workspace-border) bg-(--workspace-surface-muted) p-3.5 min-[560px]:flex-row min-[560px]:items-center">
+										<div className="flex min-w-0 flex-1 items-center gap-3.5">
+											<Image
+												className="size-11 shrink-0 rounded-[13px] object-cover"
+												src={invite.workspace?.avatarUrl || undefined}
+												seed={invite.workspace?.name || invite.email}
+												collection="initials"
+											/>
+											<div className="min-w-0 flex-1">
+												<strong className="block truncate text-xs">
+													{invite.workspace?.name || 'Área de trabalho'}
+												</strong>
+												<span className="mt-0.5 block text-[9px] text-(--workspace-muted)">
+													{getRoleLabel(invite.role)} · {formatInviteDate(invite.createdAt)}
+												</span>
+											</div>
+										</div>
+										<div className="flex shrink-0 gap-2 self-stretch min-[560px]:self-auto">
+											<button
+												className={`${workspaceSecondaryButtonClassName} min-h-9 flex-1 px-2.5 text-[10px] disabled:cursor-not-allowed disabled:opacity-60 min-[560px]:flex-none`}
+												type="button"
+												disabled={Boolean(processingInvite)}
+												onClick={() => onReject(invite)}>
+												{isRejecting ? (
+													<MdAutorenew className="animate-spin" aria-hidden="true" />
+												) : (
+													<MdClose aria-hidden="true" />
+												)}
+												{/* {isRejecting ? 'Recusando...' : 'Recusar'} */}
+											</button>
+											<button
+												className={`${workspacePrimaryButtonClassName} min-h-9 flex-1 px-2.5 text-[10px] disabled:cursor-not-allowed disabled:opacity-60 min-[560px]:flex-none`}
+												type="button"
+												disabled={Boolean(processingInvite)}
+												onClick={() => onAccept(invite)}>
+												{isAccepting ? (
+													<MdAutorenew className="animate-spin" aria-hidden="true" />
+												) : (
+													<MdCheck aria-hidden="true" />
+												)}
+												{/* {isAccepting ? 'Aceitando...' : 'Aceitar'} */}
+											</button>
+										</div>
+									</article>
+								);
+							})}
 						</div>
 					) : (
 						<div className="grid min-h-45 place-items-center text-center">
