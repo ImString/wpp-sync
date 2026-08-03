@@ -1,4 +1,4 @@
-import { prisma, Prisma } from '@wppsync/database';
+import { prisma, Prisma, Role } from '@wppsync/database';
 
 import { Provider } from '@/core/index.js';
 
@@ -61,7 +61,8 @@ export class MemberService {
 		const [dataList, dataListTotal] = await prisma.$transaction([
 			prisma.member.findMany({
 				where: {
-					...this.mountWhere(document)
+					...this.mountWhere(document),
+					disabled: false
 				},
 				include: {
 					...document.include
@@ -101,5 +102,43 @@ export class MemberService {
 		if (!data) throw new MemberNotFoundError();
 
 		return new MemberEntity(data);
+	}
+
+	async update(document: { id: string; workspaceId: string; role: Role }) {
+		const member = await this.get({
+			id: document.id,
+			workspaceId: document.workspaceId
+		});
+
+		if (member.data.disabled) throw new MemberNotFoundError();
+
+		await prisma.member.update({
+			data: {
+				role: document.role
+			},
+			where: {
+				id: document.id,
+				workspaceId: document.workspaceId
+			}
+		});
+	}
+
+	async remove(document: { id: string; workspaceId: string }) {
+		const member = await this.get({
+			id: document.id,
+			workspaceId: document.workspaceId
+		});
+
+		if (member.data.disabled) throw new MemberNotFoundError();
+
+		await prisma.member.update({
+			data: {
+				disabled: true
+			},
+			where: {
+				id: document.id,
+				workspaceId: document.workspaceId
+			}
+		});
 	}
 }

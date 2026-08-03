@@ -12,8 +12,9 @@ import {
 
 import { MemberService } from '@/services/workspace/MemberService.js';
 
-import { WorksapceMemberDTO } from '@/entities/dtos/workspace/member.dto.js';
+import { WorkspaceMemberDTO } from '@/entities/dtos/workspace/member.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
+import { PermissionDeniedError } from '@/entities/errors/workspace/index.js';
 
 import { AuthenticationMiddleware } from '@/handlers/middlewares/authentication.js';
 import { PermissionMiddleware } from '@/handlers/middlewares/permission.js';
@@ -36,7 +37,7 @@ export class WorkspaceMembersController {
 		};
 	};
 
-	@Get('', WorksapceMemberDTO.List)
+	@Get('', WorkspaceMemberDTO.List)
 	async list(context: RouterMiddlewareContext) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();
@@ -51,7 +52,7 @@ export class WorkspaceMembersController {
 		return HttpResponse.success(members);
 	}
 
-	@Get('/:memberId', WorksapceMemberDTO.Get)
+	@Get('/:memberId', WorkspaceMemberDTO.Get)
 	async get(context: RouterMiddlewareContext) {
 		const workspace = context.state.workspaceAccess?.workspace;
 		if (!workspace) throw new WorkspaceNotFoundError();
@@ -70,11 +71,42 @@ export class WorkspaceMembersController {
 		);
 	}
 
-	@Patch('/:memberId/update')
+	@Patch('/:memberId/update', WorkspaceMemberDTO.Update)
 	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.MEMBER_MANAGE }))
-	async update() {}
+	async update(context: RouterMiddlewareContext) {
+		const { memberId } = context.params;
 
-	@Delete('/:memberId/remove')
+		const workspace = context.state.workspaceAccess?.workspace;
+		if (!workspace) throw new WorkspaceNotFoundError();
+
+		if (memberId === workspace.data.ownerId) throw new PermissionDeniedError();
+
+		const { role } = context.body;
+
+		await this.membersService.update({
+			id: memberId,
+			workspaceId: workspace.data.id!,
+			role
+		});
+
+		return HttpResponse.success();
+	}
+
+	@Delete('/:memberId/remove', WorkspaceMemberDTO.Remove)
 	@UseMiddleware(PermissionMiddleware.configure({ permissions: PermissionsFlags.MEMBER_MANAGE }))
-	async remove() {}
+	async remove(context: RouterMiddlewareContext) {
+		const { memberId } = context.params;
+
+		const workspace = context.state.workspaceAccess?.workspace;
+		if (!workspace) throw new WorkspaceNotFoundError();
+
+		if (memberId === workspace.data.ownerId) throw new PermissionDeniedError();
+
+		await this.membersService.remove({
+			id: memberId,
+			workspaceId: workspace.data.id!
+		});
+
+		return HttpResponse.success();
+	}
 }

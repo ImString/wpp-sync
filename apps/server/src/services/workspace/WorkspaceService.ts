@@ -9,7 +9,8 @@ import { Provider } from '@/core/index.js';
 import { MemberEntity } from '@/entities/data/workspaces/members.entity.js';
 import { WorkspaceEntity } from '@/entities/data/workspaces/workspace.entity.js';
 import type { WorkspaceDTO } from '@/entities/dtos/workspace/workspace.dto.js';
-import { WorkspaceNotFoundError } from '@/entities/errors/workspace/index.js';
+import { MemberNotFoundError, WorkspaceNotFoundError } from '@/entities/errors/workspace/index.js';
+import { MemberAlreadyOwnerError } from '@/entities/errors/workspace/members/MemberAlreadyOwnerError.js';
 
 import { FilesService } from '../FilesService.js';
 
@@ -194,5 +195,29 @@ export class WorkspaceService {
 		}
 
 		return new WorkspaceEntity(workspaceCreated).toObject({ sign_files: true });
+	}
+
+	async transfer(document: { newOwnerId: string; workspaceId: string }) {
+		const workspace = await this.get({
+			id: document.workspaceId
+		});
+
+		const newMember = await prisma.member.findUnique({
+			where: {
+				id: document.newOwnerId
+			}
+		});
+
+		if (!newMember) throw new MemberNotFoundError();
+		if (workspace.data.ownerId === newMember.userId) throw new MemberAlreadyOwnerError();
+
+		await prisma.workspace.update({
+			where: {
+				id: workspace.id
+			},
+			data: {
+				ownerId: newMember.userId
+			}
+		});
 	}
 }

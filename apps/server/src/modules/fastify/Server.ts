@@ -87,6 +87,7 @@ export class ServerModuleBase extends BaseModule {
 			.register(routes, {
 				providers: core.providers,
 				loader: {
+					pattern: /\.controller\.ts$/,
 					path: fileURLToPath(new URL('../../handlers/controllers', import.meta.url))
 				}
 			});
