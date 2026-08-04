@@ -1,4 +1,4 @@
-import { prisma, Prisma } from '@wppsync/database';
+import { applyPrismaPagination, PaginationOptions, prisma, Prisma } from '@wppsync/database';
 
 import { Provider } from '@/core/index.js';
 
@@ -65,7 +65,7 @@ export class ContactService {
 		};
 	}
 
-	async list(options: ContactServiceWhereOptions) {
+	async list(options: ContactServiceWhereOptions & PaginationOptions) {
 		const [dataList, dataListTotal] = await prisma.$transaction([
 			prisma.contact.findMany({
 				where: {
@@ -76,7 +76,8 @@ export class ContactService {
 				},
 				orderBy: {
 					createdAt: 'desc'
-				}
+				},
+				...applyPrismaPagination(options)
 			}),
 			prisma.contact.count({
 				where: {
