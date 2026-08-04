@@ -1,4 +1,6 @@
+export * from './workspace/index.js';
+export * from './contact/index.js';
+
 export * from './AuthenticationService.js';
 export * from './FilesService.js';
 export * from './UserService.js';
-export * from './workspace/WorkspaceService.js';

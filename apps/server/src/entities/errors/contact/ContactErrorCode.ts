@@ -1,0 +1,1 @@
+export type ContactErrorCode = 'CONTACT_NOT_FOUND' | 'CONTACT_ALREADY_EXISTS' | 'CONTACT_STAGE_NOT_FOUND';

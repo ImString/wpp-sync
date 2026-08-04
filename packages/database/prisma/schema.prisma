@@ -89,5 +89,51 @@ model Workspace {
     filesId   String?
     ownerId   String   @map("owner_id")
 
+    contacts      Contact[]
+    contactStages ContactStage[]
+
     @@map("workspaces")
+}
+
+model Contact {
+    id String @id @unique @default(cuid())
+
+    name     String?
+    pushName String?       @map("push_name")
+    whatsapp String
+    email    String?
+    stage    ContactStage? @relation(fields: [contactStageId], references: [id])
+    tags     String[]
+
+    notes     String?
+    isDeleted Boolean? @default(false) @map("is_deleted")
+
+    createdBy String?  @map("created_by")
+    updatedAt DateTime @updatedAt @map("updated_at")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    workspace      Workspace @relation(fields: [workspaceId], references: [id])
+    workspaceId    String
+    contactStageId String?
+
+    @@map("contacts")
+}
+
+model ContactStage {
+    id String @id @unique @default(cuid())
+
+    name        String
+    icon        String
+    color       String  @default("#000000")
+    description String?
+    position    Int     @default(0)
+
+    updatedAt DateTime @updatedAt @map("updated_at")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    workspace   Workspace @relation(fields: [workspaceId], references: [id])
+    contacts    Contact[]
+    workspaceId String
+
+    @@map("contacts_stages")
 }
