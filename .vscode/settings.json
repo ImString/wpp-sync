@@ -1,6 +1,26 @@
 {
+	"editor.formatOnSave": true,
+	"editor.formatOnPaste": true,
+
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"symbols.folders.associations": {
+		"controllers": "folder-yellow-outline",
+		"dtos": "folder-sky-outline",
+		"handlers": "folder-orange-outline",
+		"entities": "folder-models"
+	},
+
+	"symbols.files.associations": {
+		"*.dto.ts": "dts",
+		"*.entity.ts": "ts-test"
+	},
+
 	"files.associations": {
 		"*.css": "tailwindcss"
 	},
-	"tailwindCSS.experimental.configFile": "./apps/client/src/index.css"
+	"tailwindCSS.experimental.configFile": "./apps/client/src/index.css",
+
+	"[prisma]": {
+		"editor.defaultFormatter": "Prisma.prisma"
+	}
 }
