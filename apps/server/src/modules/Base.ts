@@ -1,4 +1,4 @@
-import type { Core } from '../core/Core.js';
+import type { Core } from '@/core/Core.js';
 
 export class BaseModule {
 	dependencies: BaseModule[] = [];

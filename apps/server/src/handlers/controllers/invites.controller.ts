@@ -1,7 +1,6 @@
 import { Controller, Delete, Get, HttpResponse, Post, type RouteSchemaContext } from '@/modules/index.js';
 
-import { UserService } from '@/services/UserService.js';
-import { InviteService } from '@/services/workspace/InviteService.js';
+import { InviteService, UserService } from '@/services/index.js';
 
 import { InvitesDTO } from '@/entities/dtos/invites.dto.js';
 

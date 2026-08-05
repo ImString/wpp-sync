@@ -2,7 +2,7 @@ import { PermissionsFlags } from '@wppsync/shared';
 
 import { Controller, Delete, Get, HttpResponse, Post, UseMiddleware } from '@/modules/index.js';
 
-import { InviteService } from '@/services/workspace/index.js';
+import { InviteService } from '@/services/index.js';
 
 import { WorkspaceInviteDTO } from '@/entities/dtos/workspace/invite.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';

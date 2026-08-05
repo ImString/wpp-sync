@@ -23,6 +23,7 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 })
 export class WorkspaceTransferController {
 	constructor(private readonly workspaceService: WorkspaceService) {}
+
 	@Patch('/', WorkspaceTransferDTO.Index)
 	async transfer(context: typeof WorkspaceTransferDTO.Index.context) {
 		const { memberId } = context.body;
