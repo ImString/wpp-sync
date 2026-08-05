@@ -1,4 +1,4 @@
-import { prisma, Prisma, Role } from '@wppsync/database';
+import { applyPrismaPagination, PaginationOptions, prisma, Prisma, Role } from '@wppsync/database';
 
 import { Provider } from '@/core/index.js';
 
@@ -57,20 +57,23 @@ export class MemberService {
 		};
 	}
 
-	async list(document: MemberServiceListOptions) {
+	async list(options: MemberServiceListOptions & PaginationOptions) {
 		const [dataList, dataListTotal] = await prisma.$transaction([
 			prisma.member.findMany({
 				where: {
-					...this.mountWhere(document),
+					...this.mountWhere(options),
 					disabled: false
 				},
 				include: {
-					...document.include
-				}
+					...options.include
+				},
+				orderBy: { id: 'asc' },
+				...applyPrismaPagination(options)
 			}),
 			prisma.member.count({
 				where: {
-					...this.mountWhere(document)
+					...this.mountWhere(options),
+					disabled: false
 				}
 			})
 		]);
@@ -80,7 +83,7 @@ export class MemberService {
 			members.items.map(member =>
 				member.toObject({
 					sign_files: true,
-					workspaceOwnerId: document.workspaceOwnerId
+					workspaceOwnerId: options.workspaceOwnerId
 				})
 			)
 		);

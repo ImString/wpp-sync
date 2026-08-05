@@ -28,6 +28,13 @@ export interface WorkspaceMemberListData {
 	total: number;
 }
 
+export interface WorkspaceMemberListOptions {
+	page?: number;
+	limit?: number;
+	search?: string;
+	signal?: AbortSignal;
+}
+
 export interface WorkspaceInvite {
 	id: string;
 	email?: string;
@@ -78,12 +85,16 @@ export const workspaceAPI = {
 		return response.data;
 	},
 
-	listMembers: async (uid: string, signal?: AbortSignal, search?: string) => {
+	listMembers: async (uid: string, options?: WorkspaceMemberListOptions) => {
 		const response = await mainAPI.get<ServerResponse<WorkspaceMemberListData>>(
 			`/workspace/${encodeURIComponent(uid)}/members`,
 			{
-				signal,
-				params: search ? { name: search } : undefined
+				signal: options?.signal,
+				params: {
+					page: options?.page,
+					limit: options?.limit,
+					search: options?.search || undefined
+				}
 			}
 		);
 		return response.data;

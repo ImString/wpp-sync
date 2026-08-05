@@ -35,7 +35,9 @@ export class WorkspaceMembersController {
 		if (!workspace) throw new WorkspaceNotFoundError();
 
 		const members = await this.membersService.list({
-			searchName: context.query.name,
+			...(context.query.search && { searchName: context.query.search }),
+			...(context.query.page && { page: context.query.page }),
+			...(context.query.limit && { limit: context.query.limit }),
 			workspaceId: workspace.data.id,
 			workspaceOwnerId: workspace.data.ownerId,
 			include: this.includes()

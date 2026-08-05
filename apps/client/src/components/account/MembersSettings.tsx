@@ -26,7 +26,7 @@ import {
 } from '@/utils/api';
 
 import { Button } from '@/components/buttons';
-import { Pagination, useClientPagination } from '@/components/pagination';
+import { Pagination } from '@/components/pagination';
 import { Image } from '@/components/shared/Image';
 import type { AuthUser, Workspace } from '@/stores';
 
@@ -165,6 +165,33 @@ const mapInvite = (invite: WorkspaceInvite): PendingInvite => ({
 	sentAt: formatInviteDate(invite.createdAt)
 });
 
+const MembersListSkeleton: React.FC<{ canManageMembers: boolean; count: number }> = props => {
+	const items = Array.from({ length: Math.min(Math.max(props.count, 5), 8) }, (_, index) => index);
+
+	return (
+		<div className="animate-pulse motion-reduce:animate-none" role="status" aria-label="Carregando membros">
+			{items.map(item => (
+				<div
+					key={item}
+					aria-hidden="true"
+					className={`grid min-h-18 items-center gap-3 border-b border-slate-100 px-3 last:border-0 dark:border-[#1b2a31] mobile:min-h-17 ${props.canManageMembers ? 'grid-cols-[minmax(0,1fr)_44px] mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px_44px]' : 'grid-cols-1 mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px]'}`}>
+					<div className="flex min-w-0 items-center gap-3">
+						<span className="size-9.5 shrink-0 rounded-full bg-slate-200 dark:bg-[#1b2a31]" />
+						<span className="min-w-0 flex-1 space-y-2">
+							<span className="block h-2.5 w-32 max-w-full rounded-full bg-slate-200 dark:bg-[#1b2a31]" />
+							<span className="block h-2 w-44 max-w-4/5 rounded-full bg-slate-100 dark:bg-[#17262e]" />
+							<span className="block h-2 w-24 rounded-full bg-slate-100 mobile:hidden dark:bg-[#17262e]" />
+						</span>
+					</div>
+					<span className="hidden h-3 w-24 rounded-full bg-slate-100 mobile:block dark:bg-[#17262e]" />
+					<span className="hidden h-5 w-14 rounded-full bg-slate-100 mobile:block dark:bg-[#17262e]" />
+					{props.canManageMembers && <span className="size-9 rounded-lg bg-slate-100 dark:bg-[#17262e]" />}
+				</div>
+			))}
+		</div>
+	);
+};
+
 export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	currentUser,
 	currentUserRole,
@@ -179,9 +206,13 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	const canManageTargetMember = (member: MemberRow) =>
 		isWorkspaceOwner ? member.role !== 'Proprietário' : member.role === 'Membro';
 	const [members, setMembers] = useState<MemberRow[]>([]);
+	const [membersTotal, setMembersTotal] = useState(0);
 	const [membersStatus, setMembersStatus] = useState<LoadStatus>('idle');
 	const [membersError, setMembersError] = useState('');
 	const [search, setSearch] = useState('');
+	const [debouncedSearch, setDebouncedSearch] = useState('');
+	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(5);
 	const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 	const [invitesOpen, setInvitesOpen] = useState(false);
 	const [inviteView, setInviteView] = useState<'new' | 'pending'>('new');
@@ -195,7 +226,6 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
 	const [action, setAction] = useState<MemberAction | null>(null);
 	const [actionSubmitting, setActionSubmitting] = useState(false);
-	const pagination = useClientPagination(members);
 
 	useEffect(() => {
 		if (!isWorkspaceOwner && inviteRole === 'Administrador') {
@@ -204,19 +234,25 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	}, [inviteRole, isWorkspaceOwner]);
 
 	const loadMembers = useCallback(
-		async (searchTerm = '', signal?: AbortSignal) => {
+		async (currentPage: number, currentPageSize: number, searchTerm = '', signal?: AbortSignal) => {
 			if (!resolvedWorkspaceUid) return false;
 
 			setMembersStatus('loading');
 			setMembersError('');
 
 			try {
-				const response = await workspaceAPI.listMembers(resolvedWorkspaceUid, signal, searchTerm);
+				const response = await workspaceAPI.listMembers(resolvedWorkspaceUid, {
+					page: currentPage,
+					limit: currentPageSize,
+					search: searchTerm || undefined,
+					signal
+				});
 				if (!response.success || !response.data) {
 					throw new Error(getResponseMessage(response, 'Não foi possível carregar os membros.'));
 				}
 
 				setMembers(response.data.items.map(mapMember).filter((member): member is MemberRow => Boolean(member)));
+				setMembersTotal(response.data.total);
 				setMembersStatus('ready');
 				return true;
 			} catch (error) {
@@ -256,36 +292,31 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	);
 
 	useEffect(() => {
+		const timeout = window.setTimeout(() => {
+			setDebouncedSearch(search.trim());
+			setPage(1);
+		}, 300);
+
+		return () => window.clearTimeout(timeout);
+	}, [search]);
+
+	useEffect(() => {
 		if (!resolvedWorkspaceUid) {
 			setMembers([]);
+			setMembersTotal(0);
 			setMembersStatus('idle');
 			return;
 		}
 
 		const controller = new AbortController();
-		const normalizedSearch = search.trim();
-
-		setMembers([]);
-		setMembersStatus('loading');
-
-		if (!normalizedSearch) {
-			void loadMembers('', controller.signal);
-			return () => controller.abort();
-		}
-
-		const timeout = window.setTimeout(() => {
-			void loadMembers(normalizedSearch, controller.signal);
-		}, 300);
-
-		return () => {
-			window.clearTimeout(timeout);
-			controller.abort();
-		};
-	}, [loadMembers, resolvedWorkspaceUid, search]);
+		void loadMembers(page, pageSize, debouncedSearch, controller.signal);
+		return () => controller.abort();
+	}, [debouncedSearch, loadMembers, page, pageSize, resolvedWorkspaceUid]);
 
 	useEffect(() => {
-		pagination.resetPage();
-	}, [pagination.resetPage, search]);
+		const totalPages = Math.max(1, Math.ceil(membersTotal / pageSize));
+		if (page > totalPages) setPage(totalPages);
+	}, [membersTotal, page, pageSize]);
 
 	useEffect(() => {
 		if (!resolvedWorkspaceUid || !canManageMembers) {
@@ -302,7 +333,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 	}, [canManageMembers, loadPendingInvites, resolvedWorkspaceUid]);
 
 	const refreshMembers = async () => {
-		const success = await loadMembers(search.trim());
+		const success = await loadMembers(page, pageSize, debouncedSearch);
 		if (!success) {
 			onFeedback({ type: 'error', message: 'Não foi possível atualizar a lista de membros.' });
 		}
@@ -405,6 +436,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 
 		if (action.type === 'remove') {
 			setMembers(current => current.filter(member => member.id !== action.member.id));
+			setMembersTotal(current => Math.max(0, current - 1));
 			onFeedback({ type: 'success', message: `${action.member.name} foi removido da lista.` });
 			setAction(null);
 			setOpenMenuId(null);
@@ -448,7 +480,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 				onCurrentUserRoleChange(action.nextRole);
 			}
 
-			await loadMembers(search.trim());
+			await loadMembers(page, pageSize, debouncedSearch);
 
 			onFeedback({
 				type: 'success',
@@ -483,9 +515,9 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 					<div>
 						<h2 className="m-0 text-sm font-bold text-slate-900 dark:text-white">Membros da equipe</h2>
 						<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
-							{membersStatus === 'loading' && members.length === 0
+							{membersStatus === 'loading' && membersTotal === 0
 								? 'Carregando pessoas com acesso...'
-								: `${members.length} ${members.length === 1 ? 'pessoa possui' : 'pessoas possuem'} acesso a esta área.`}
+								: `${membersTotal} ${membersTotal === 1 ? 'pessoa possui' : 'pessoas possuem'} acesso a esta área.`}
 						</p>
 					</div>
 					{canManageMembers && (
@@ -542,16 +574,9 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 							{canManageMembers && <span className="sr-only">Ações</span>}
 						</div>
 
-						{membersStatus === 'loading' && members.length === 0 ? (
-							<div className="grid min-h-40 place-items-center text-center" role="status">
-								<div>
-									<span className="mx-auto block size-6 animate-spin rounded-full border-2 border-brand-100 border-t-brand-600 dark:border-brand-950 dark:border-t-brand-400" />
-									<strong className="mt-3 block text-xs text-slate-700 dark:text-slate-200">
-										Carregando membros...
-									</strong>
-								</div>
-							</div>
-						) : membersStatus === 'error' && members.length === 0 ? (
+						{membersStatus === 'loading' ? (
+							<MembersListSkeleton canManageMembers={canManageMembers} count={pageSize} />
+						) : membersStatus === 'error' ? (
 							<div className="grid min-h-40 place-items-center text-center" role="alert">
 								<div>
 									<strong className="block text-xs text-slate-700 dark:text-slate-200">
@@ -562,13 +587,13 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 										theme="secondary"
 										type="button"
 										className="mt-3 min-h-8 px-3 text-[10px]"
-										onClick={() => void loadMembers(search.trim())}>
+										onClick={() => void loadMembers(page, pageSize, debouncedSearch)}>
 										Tentar novamente
 									</Button>
 								</div>
 							</div>
 						) : members.length > 0 ? (
-							pagination.pageItems.map(member => (
+							members.map(member => (
 								<div
 									key={member.id}
 									className={`relative grid min-h-18 items-center gap-3 border-b border-slate-100 px-3 last:border-0 dark:border-[#1b2a31] mobile:min-h-17 ${canManageMembers ? 'grid-cols-[minmax(0,1fr)_44px] mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px_44px]' : 'grid-cols-1 mobile:grid-cols-[minmax(230px,1.6fr)_minmax(170px,1fr)_100px]'}`}>
@@ -712,20 +737,22 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 							</div>
 						)}
 
-						{membersStatus !== 'loading' && members.length > 0 && (
+						{membersTotal > 0 && membersStatus !== 'error' && (
 							<Pagination
-								page={pagination.page}
-								pageSize={pagination.pageSize}
-								totalItems={pagination.totalItems}
+								page={page}
+								pageSize={pageSize}
+								totalItems={membersTotal}
+								disabled={membersStatus === 'loading'}
 								itemLabel="membros"
 								singularItemLabel="membro"
-								onPageChange={page => {
+								onPageChange={nextPage => {
 									setOpenMenuId(null);
-									pagination.setPage(page);
+									setPage(nextPage);
 								}}
-								onPageSizeChange={pageSize => {
+								onPageSizeChange={nextPageSize => {
 									setOpenMenuId(null);
-									pagination.setPageSize(pageSize);
+									setPageSize(nextPageSize);
+									setPage(1);
 								}}
 							/>
 						)}
