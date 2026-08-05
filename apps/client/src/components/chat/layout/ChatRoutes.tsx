@@ -4,7 +4,6 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import { useShallow } from 'zustand/react/shallow';
 
 import { ContactPanel } from '../contact';
-import { conversations } from '../data';
 import { ChatPanel } from '../messages';
 import { useChatStore } from '../store';
 
@@ -39,8 +38,9 @@ export const ChatEmptyRoute: React.FC = () => {
 export const ChatConversationRoute: React.FC = () => {
 	const { chatId, uid } = useParams<{ chatId: string; uid: string }>();
 
-	const { selectedConversationId, selectConversation } = useChatStore(
+	const { conversations, selectedConversationId, selectConversation } = useChatStore(
 		useShallow(state => ({
+			conversations: state.conversations,
 			selectedConversationId: state.selectedConversationId,
 			selectConversation: state.selectConversation
 		}))

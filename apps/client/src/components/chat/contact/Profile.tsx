@@ -2,10 +2,10 @@ import { twMerge } from 'tailwind-merge';
 
 import { Image } from '@/components/shared/Image';
 
-import { conversations } from '../data';
 import { useChatStore } from '../store';
 
 export const ContactProfile: React.FC = () => {
+	const conversations = useChatStore(state => state.conversations);
 	const selectedConversationId = useChatStore(state => state.selectedConversationId);
 	const conversation = conversations.find(item => item.id === selectedConversationId) || conversations[0];
 

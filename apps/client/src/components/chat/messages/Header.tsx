@@ -6,20 +6,21 @@ import { useShallow } from 'zustand/react/shallow';
 import { Button } from '@/components/buttons';
 import { Image } from '@/components/shared/Image';
 
-import { conversations } from '../data';
 import { useChatStore } from '../store';
 
 export const ChatHeader: React.FC = () => {
 	const navigate = useNavigate();
 	const { uid } = useParams<{ uid: string }>();
-	const { contactPanelOpen, selectedConversationId, closeContactPanel, openContactPanel } = useChatStore(
-		useShallow(state => ({
-			contactPanelOpen: state.contactPanelOpen,
-			selectedConversationId: state.selectedConversationId,
-			closeContactPanel: state.closeContactPanel,
-			openContactPanel: state.openContactPanel
-		}))
-	);
+	const { contactPanelOpen, conversations, selectedConversationId, closeContactPanel, openContactPanel } =
+		useChatStore(
+			useShallow(state => ({
+				contactPanelOpen: state.contactPanelOpen,
+				conversations: state.conversations,
+				selectedConversationId: state.selectedConversationId,
+				closeContactPanel: state.closeContactPanel,
+				openContactPanel: state.openContactPanel
+			}))
+		);
 	const conversation = conversations.find(item => item.id === selectedConversationId) || conversations[0];
 	const toggleContactPanel = () => (contactPanelOpen ? closeContactPanel() : openContactPanel());
 

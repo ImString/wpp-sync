@@ -2,7 +2,11 @@ import { MdAdd } from 'react-icons/md';
 
 import { Button } from '@/components/buttons';
 
+import { useChatStore } from '../store';
+
 export const ConversationHeader: React.FC = () => {
+	const openNewConversation = useChatStore(state => state.openNewConversation);
+
 	return (
 		<header className="flex min-h-21 items-center justify-between px-4.5 pb-2.5 pt-4">
 			<div>
@@ -11,7 +15,12 @@ export const ConversationHeader: React.FC = () => {
 				</p>
 				<h1 className="text-2xl font-bold tracking-[-.04em]">Conversas</h1>
 			</div>
-			<Button theme="ghost" type="button" aria-label="Nova conversa" className="icon-button">
+			<Button
+				theme="ghost"
+				type="button"
+				aria-label="Nova conversa"
+				className="icon-button"
+				onClick={openNewConversation}>
 				<MdAdd aria-hidden="true" />
 			</Button>
 		</header>

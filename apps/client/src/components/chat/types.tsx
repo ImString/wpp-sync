@@ -1,7 +1,13 @@
 export type ConversationFilter = 'all' | 'unread' | 'waiting' | 'groups';
 export type MobileView = 'conversations' | 'chat' | 'contact';
 export type NavigationSection =
-	'chats' | 'contacts' | 'campaigns' | 'automations' | 'reports' | 'integrations' | 'settings';
+	| 'chats'
+	| 'contacts'
+	| 'campaigns'
+	| 'automations'
+	| 'reports'
+	| 'integrations'
+	| 'settings';
 
 export interface Conversation {
 	id: string;
@@ -15,6 +21,13 @@ export interface Conversation {
 	phone: string;
 	avatarClassName: string;
 	tags: string[];
+}
+
+export interface ConversationContact {
+	id: string;
+	name: string;
+	phone: string;
+	tags?: string[];
 }
 
 export interface TextMessage {
@@ -41,16 +54,21 @@ export interface ChatStore {
 	activeFilter: ConversationFilter;
 	activeSection: NavigationSection;
 	contactPanelOpen: boolean;
+	conversations: Conversation[];
 	messages: Record<string, ChatMessage[]>;
 	mobileView: MobileView;
+	newConversationOpen: boolean;
 	search: string;
 	selectedConversationId: string;
 	sidebarOpen: boolean;
 	closeContactPanel: () => void;
+	closeNewConversation: () => void;
 	closeSidebar: () => void;
 	openContactPanel: () => void;
+	openNewConversation: () => void;
 	openSidebar: () => void;
 	selectConversation: (conversationId: string) => void;
+	startConversation: (contact: ConversationContact) => string;
 	sendMessage: (text: string) => void;
 	setActiveFilter: (filter: ConversationFilter) => void;
 	setActiveSection: (section: NavigationSection) => void;

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import { conversations } from '../data';
 import { useChatStore } from '../store';
 import { ConversationEmpty } from './Empty';
 import { ConversationFilters } from './Filters';
@@ -18,9 +17,10 @@ const normalizeText = (value: string) => {
 };
 
 export const ConversationPanel: React.FC = () => {
-	const { activeFilter, search } = useChatStore(
+	const { activeFilter, conversations, search } = useChatStore(
 		useShallow(state => ({
 			activeFilter: state.activeFilter,
+			conversations: state.conversations,
 			search: state.search
 		}))
 	);
@@ -34,7 +34,7 @@ export const ConversationPanel: React.FC = () => {
 
 			return matchesSearch && matchesFilter;
 		});
-	}, [activeFilter, search]);
+	}, [activeFilter, conversations, search]);
 
 	return (
 		<section className="conversation-panel mobile-screen flex min-h-0 flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-[#223138] dark:bg-[#0e181e]">
