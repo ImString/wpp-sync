@@ -28,7 +28,7 @@ export const IntegrationsLayout: React.FC = () => {
 				<Topbar
 					searchValue={search}
 					onSearchChange={setSearch}
-					searchPlaceholder="Buscar por canal, conta ou status..."
+					searchPlaceholder="Buscar integração por nome..."
 				/>
 				<Outlet context={{ search, createRequest } satisfies IntegrationsLayoutContext} />
 				<MobileNavigation

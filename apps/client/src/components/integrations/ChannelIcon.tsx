@@ -1,17 +1,17 @@
 import type { IconType } from 'react-icons';
-import { FaFacebookMessenger, FaInstagram, FaWhatsapp } from 'react-icons/fa';
-import { MdEmail, MdLanguage, MdVerified } from 'react-icons/md';
+import { FaWhatsapp } from 'react-icons/fa';
+import { MdLanguage } from 'react-icons/md';
 
 import { channels } from './data';
 import type { IntegrationType } from './types';
 
 const iconByType: Record<IntegrationType, IconType> = {
-	whatsapp: FaWhatsapp,
+	WHATSAPP: FaWhatsapp,
 	// 'whatsapp-official': MdVerified,
 	// instagram: FaInstagram,
 	// messenger: FaFacebookMessenger,
 	// email: MdEmail,
-	website: MdLanguage
+	WEB: MdLanguage
 };
 
 interface ChannelIconProps {

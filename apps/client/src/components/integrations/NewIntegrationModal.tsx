@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { MdChevronRight, MdClose, MdHub } from 'react-icons/md';
+import { MdChevronRight, MdClose, MdHub, MdSchedule } from 'react-icons/md';
 
 import { Button } from '@/components/buttons';
 
@@ -67,7 +67,8 @@ export const NewIntegrationModal: React.FC<NewIntegrationModalProps> = props => 
 							<button
 								key={channel.type}
 								type="button"
-								className="group flex w-full items-center gap-3 rounded-2xl border border-transparent p-3 text-left transition hover:border-slate-200 hover:bg-slate-50 focus-visible:border-brand-500 focus-visible:outline-none dark:hover:border-[#2d414a] dark:hover:bg-[#131f26]"
+								disabled={channel.disabled}
+								className="group flex w-full items-center gap-3 rounded-2xl border border-transparent p-3 text-left transition hover:border-slate-200 hover:bg-slate-50 focus-visible:border-brand-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:hover:border-[#2d414a] dark:hover:bg-[#131f26]"
 								onClick={() => props.onSelect(channel)}>
 								<ChannelIcon type={channel.type} />
 								<span className="min-w-0 flex-1">
@@ -78,10 +79,16 @@ export const NewIntegrationModal: React.FC<NewIntegrationModalProps> = props => 
 										{channel.description}
 									</span>
 								</span>
-								<MdChevronRight
-									className="size-5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-600 dark:text-slate-600"
-									aria-hidden="true"
-								/>
+								{channel.disabled ? (
+									<span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[8px] font-bold uppercase tracking-wide text-slate-500 dark:bg-[#17262e] dark:text-slate-400">
+										<MdSchedule aria-hidden="true" /> Em breve
+									</span>
+								) : (
+									<MdChevronRight
+										className="size-5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-600 dark:text-slate-600"
+										aria-hidden="true"
+									/>
+								)}
 							</button>
 						))}
 					</div>

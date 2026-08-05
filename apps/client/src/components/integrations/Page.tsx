@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { IconType } from 'react-icons';
 import {
 	MdAdd,
@@ -9,55 +9,67 @@ import {
 	MdFilterList,
 	MdHourglassTop,
 	MdHub,
-	MdOutlineSync,
-	MdQrCode,
-	MdRefresh,
-	MdSync
+	MdLogin,
+	MdOutlineSync
 } from 'react-icons/md';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useParams } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
-import { useShallow } from 'zustand/react/shallow';
+
+import { getResponseMessage, integrationsAPI } from '@/utils/api';
 
 import { Button } from '@/components/buttons';
-import { Pagination, useClientPagination } from '@/components/pagination';
+import { Pagination } from '@/components/pagination';
 
 import { ChannelIcon } from './ChannelIcon';
 import { IntegrationFormModal } from './IntegrationFormModal';
 import type { IntegrationsLayoutContext } from './Layout';
 import { NewIntegrationModal } from './NewIntegrationModal';
-import { WhatsAppQrModal } from './WhatsAppQrModal';
 import { channels } from './data';
-import { useIntegrationsStore } from './store';
 import type { ChannelDefinition, Integration, IntegrationDraft, IntegrationFilter, IntegrationStatus } from './types';
 
-const normalizeText = (value: string) =>
-	value
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '')
-		.toLowerCase()
-		.trim();
+type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+const integrationStatuses: IntegrationStatus[] = ['CONNECTED', 'INITIALIZING', 'AWAITING_LOGIN', 'DISCONNECTED'];
 
 const statusMeta: Record<
 	IntegrationStatus,
-	{ label: string; shortLabel: string; icon: IconType; className: string; color: string }
+	{
+		label: string;
+		shortLabel: string;
+		description: string;
+		icon: IconType;
+		className: string;
+		color: string;
+	}
 > = {
-	connected: {
-		label: 'Conectado',
-		shortLabel: 'Ativas',
+	CONNECTED: {
+		label: 'Conectada',
+		shortLabel: 'Conectadas',
+		description: 'Integração disponível para uso.',
 		icon: MdCheckCircle,
 		className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
 		color: '#22c55e'
 	},
-	pending: {
-		label: 'Aguardando conexão',
-		shortLabel: 'Aguardando',
+	INITIALIZING: {
+		label: 'Preparando',
+		shortLabel: 'Preparando',
+		description: 'A configuração inicial está sendo preparada.',
 		icon: MdHourglassTop,
 		className: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
 		color: '#f59e0b'
 	},
-	attention: {
-		label: 'Requer atenção',
-		shortLabel: 'Com atenção',
+	AWAITING_LOGIN: {
+		label: 'Aguardando login',
+		shortLabel: 'Aguardando',
+		description: 'A integração aguarda a autenticação do canal.',
+		icon: MdLogin,
+		className: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300',
+		color: '#0ea5e9'
+	},
+	DISCONNECTED: {
+		label: 'Desconectada',
+		shortLabel: 'Desconectadas',
+		description: 'A integração não está conectada no momento.',
 		icon: MdErrorOutline,
 		className: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400',
 		color: '#ef4444'
@@ -122,87 +134,84 @@ const StatusBadge: React.FC<{ status: IntegrationStatus }> = ({ status }) => {
 
 interface IntegrationActionsProps {
 	integration: Integration;
-	onConnect: (integration: Integration) => void;
 	onEdit: (integration: Integration) => void;
 	onRemove: (integration: Integration) => void;
-	onSync: (integration: Integration) => void;
 }
 
-const IntegrationActions: React.FC<IntegrationActionsProps> = props => {
-	const isWhatsApp = props.integration.type === 'whatsapp';
-	const needsConnection = props.integration.status !== 'connected';
+const IntegrationActions: React.FC<IntegrationActionsProps> = props => (
+	<div className="flex items-center justify-end gap-1">
+		<Button
+			theme="ghost"
+			type="button"
+			aria-label={`Editar ${props.integration.name}`}
+			className="size-8 min-h-8 rounded-lg p-0"
+			onClick={() => props.onEdit(props.integration)}>
+			<MdEdit aria-hidden="true" />
+		</Button>
+		<Button
+			theme="ghost"
+			type="button"
+			aria-label={`Remover ${props.integration.name}`}
+			className="size-8 min-h-8 rounded-lg p-0 hover:text-red-500 dark:hover:text-red-400"
+			onClick={() => props.onRemove(props.integration)}>
+			<MdDeleteOutline aria-hidden="true" />
+		</Button>
+	</div>
+);
 
-	return (
-		<div className="flex flex-wrap items-center justify-end gap-1">
-			{isWhatsApp && needsConnection && (
-				<Button
-					type="button"
-					className="h-8 min-h-8 rounded-lg px-2.5 text-[9px]"
-					onClick={() => props.onConnect(props.integration)}>
-					<MdQrCode className="size-4" aria-hidden="true" />
-					Conectar
-				</Button>
-			)}
-			{!isWhatsApp && needsConnection && (
-				<Button
-					type="button"
-					className="h-8 min-h-8 rounded-lg px-2.5 text-[9px]"
-					onClick={() => props.onEdit(props.integration)}>
-					<MdRefresh className="size-4" aria-hidden="true" />
-					Reconfigurar
-				</Button>
-			)}
-			{props.integration.status === 'connected' && (
-				<Button
-					theme="ghost"
-					type="button"
-					aria-label={`Sincronizar ${props.integration.name}`}
-					className="size-8 min-h-8 rounded-lg p-0"
-					onClick={() => props.onSync(props.integration)}>
-					<MdSync aria-hidden="true" />
-				</Button>
-			)}
-			<Button
-				theme="ghost"
-				type="button"
-				aria-label={`Editar ${props.integration.name}`}
-				className="size-8 min-h-8 rounded-lg p-0"
-				onClick={() => props.onEdit(props.integration)}>
-				<MdEdit aria-hidden="true" />
-			</Button>
-			<Button
-				theme="ghost"
-				type="button"
-				aria-label={`Excluir ${props.integration.name}`}
-				className="size-8 min-h-8 rounded-lg p-0 hover:text-red-500 dark:hover:text-red-400"
-				onClick={() => props.onRemove(props.integration)}>
-				<MdDeleteOutline aria-hidden="true" />
-			</Button>
-		</div>
-	);
-};
+const IntegrationsListSkeleton: React.FC<{ count: number }> = ({ count }) => (
+	<div className="animate-pulse motion-reduce:animate-none" role="status" aria-label="Carregando integrações">
+		{Array.from({ length: Math.min(Math.max(count, 5), 8) }, (_, index) => (
+			<div
+				key={index}
+				aria-hidden="true"
+				className="grid min-h-17 grid-cols-[minmax(0,1fr)_44px] items-center gap-3 border-b border-slate-100 px-3 last:border-0 dark:border-[#1d2b32] mobile:grid-cols-[minmax(230px,1.2fr)_minmax(145px,.8fr)_minmax(140px,.75fr)_80px] mobile:gap-4 mobile:px-4">
+				<div className="flex min-w-0 items-center gap-3">
+					<span className="size-10 shrink-0 rounded-xl bg-slate-200 dark:bg-[#1b2a31]" />
+					<span className="min-w-0 flex-1 space-y-2">
+						<span className="block h-2.5 w-36 max-w-full rounded-full bg-slate-200 dark:bg-[#1b2a31]" />
+						<span className="block h-2 w-24 rounded-full bg-slate-100 dark:bg-[#17262e]" />
+					</span>
+				</div>
+				<span className="hidden h-5 w-24 rounded-full bg-slate-100 mobile:block dark:bg-[#17262e]" />
+				<span className="hidden space-y-2 mobile:block">
+					<span className="block h-2 w-36 rounded-full bg-slate-100 dark:bg-[#17262e]" />
+					<span className="block h-2 w-24 rounded-full bg-slate-100 dark:bg-[#17262e]" />
+				</span>
+				<span className="ml-auto size-8 rounded-lg bg-slate-100 dark:bg-[#17262e]" />
+			</div>
+		))}
+	</div>
+);
 
 export const IntegrationsPage: React.FC = () => {
+	const { uid } = useParams<{ uid: string }>();
 	const { search, createRequest } = useOutletContext<IntegrationsLayoutContext>();
-	const { integrations, createIntegration, updateIntegration, removeIntegration, restartIntegration, markSynced } =
-		useIntegrationsStore(
-			useShallow(state => ({
-				integrations: state.integrations,
-				createIntegration: state.createIntegration,
-				updateIntegration: state.updateIntegration,
-				removeIntegration: state.removeIntegration,
-				restartIntegration: state.restartIntegration,
-				markSynced: state.markSynced
-			}))
-		);
+	const [integrations, setIntegrations] = useState<Integration[]>([]);
+	const [integrationsTotal, setIntegrationsTotal] = useState(0);
+	const [statusCounts, setStatusCounts] = useState<Record<IntegrationStatus, number>>({
+		CONNECTED: 0,
+		INITIALIZING: 0,
+		AWAITING_LOGIN: 0,
+		DISCONNECTED: 0
+	});
+	const [listStatus, setListStatus] = useState<LoadStatus>('idle');
+	const [listError, setListError] = useState('');
 	const [activeFilter, setActiveFilter] = useState<IntegrationFilter>('all');
+	const [debouncedSearch, setDebouncedSearch] = useState(search.trim());
+	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(5);
+	const [refreshVersion, setRefreshVersion] = useState(0);
 	const [newModalOpen, setNewModalOpen] = useState(false);
 	const [formChannel, setFormChannel] = useState<ChannelDefinition>();
 	const [editingIntegration, setEditingIntegration] = useState<Integration>();
-	const [qrIntegration, setQrIntegration] = useState<Integration>();
 	const [removeCandidate, setRemoveCandidate] = useState<Integration>();
+	const [removing, setRemoving] = useState(false);
+	const [removeError, setRemoveError] = useState('');
 	const [toast, setToast] = useState('');
 	const previousCreateRequest = useRef(createRequest);
+
+	const [workspaceTotal, setWorkspaceTotal] = useState(0);
 
 	useEffect(() => {
 		if (createRequest !== previousCreateRequest.current) {
@@ -212,52 +221,82 @@ export const IntegrationsPage: React.FC = () => {
 	}, [createRequest]);
 
 	useEffect(() => {
-		if (!toast) return;
+		const timeout = window.setTimeout(() => {
+			setDebouncedSearch(search.trim());
+			setPage(1);
+		}, 300);
 
+		return () => window.clearTimeout(timeout);
+	}, [search]);
+
+	useEffect(() => {
+		if (!uid) return;
+
+		const controller = new AbortController();
+		setListStatus('loading');
+		setListError('');
+
+		void integrationsAPI
+			.list(uid, {
+				page,
+				limit: pageSize,
+				search: debouncedSearch || undefined,
+				status: activeFilter === 'all' ? undefined : activeFilter,
+				signal: controller.signal
+			})
+			.then(response => {
+				if (!response.success || !response.data) {
+					throw new Error(getResponseMessage(response, 'Não foi possível carregar as integrações.'));
+				}
+
+				setIntegrations(response.data.items);
+				setIntegrationsTotal(response.data.total);
+				setListStatus('ready');
+			})
+			.catch(error => {
+				if (controller.signal.aborted) return;
+				setListError(error instanceof Error ? error.message : 'Não foi possível carregar as integrações.');
+				setListStatus('error');
+			});
+
+		return () => controller.abort();
+	}, [activeFilter, debouncedSearch, page, pageSize, refreshVersion, uid]);
+
+	useEffect(() => {
+		if (!uid) return;
+
+		const controller = new AbortController();
+		void integrationsAPI
+			.allCount(uid, controller.signal)
+			.then(response => {
+				if (!response.success || !response.data || controller.signal.aborted) return;
+				setWorkspaceTotal(response.data.total);
+				setStatusCounts(response.data.byStatus);
+			})
+			.catch(() => undefined);
+
+		return () => controller.abort();
+	}, [refreshVersion, uid]);
+
+	useEffect(() => {
+		const totalPages = Math.max(1, Math.ceil(integrationsTotal / pageSize));
+		if (page > totalPages) setPage(totalPages);
+	}, [integrationsTotal, page, pageSize]);
+
+	useEffect(() => {
+		if (!toast) return;
 		const timeout = window.setTimeout(() => setToast(''), 2400);
 		return () => window.clearTimeout(timeout);
 	}, [toast]);
 
-	const filteredIntegrations = useMemo(() => {
-		const normalizedSearch = normalizeText(search);
-
-		return integrations.filter(integration => {
-			const channel = channels.find(item => item.type === integration.type);
-			const searchableText = normalizeText(
-				[integration.name, integration.account, channel?.name, statusMeta[integration.status].label]
-					.filter(Boolean)
-					.join(' ')
-			);
-			const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch);
-			const matchesFilter = activeFilter === 'all' || integration.status === activeFilter;
-			return matchesSearch && matchesFilter;
-		});
-	}, [activeFilter, integrations, search]);
-	const pagination = useClientPagination(filteredIntegrations);
-
-	useEffect(() => {
-		pagination.resetPage();
-	}, [activeFilter, pagination.resetPage, search]);
-
-	const statusCount = (status: IntegrationStatus) =>
-		integrations.filter(integration => integration.status === status).length;
+	const handleFilterChange = (filter: IntegrationFilter) => {
+		setActiveFilter(filter);
+		setPage(1);
+	};
 
 	const handleSelectChannel = (channel: ChannelDefinition) => {
+		if (channel.disabled) return;
 		setNewModalOpen(false);
-
-		if (channel.type === 'whatsapp') {
-			const index = integrations.filter(integration => integration.type === 'whatsapp').length + 1;
-			const integration = createIntegration({
-				name: `WhatsApp ${index}`,
-				account: 'Número será identificado após conectar',
-				type: 'whatsapp'
-			});
-			pagination.resetPage();
-			setQrIntegration(integration);
-			setToast('Canal criado. Escaneie o QR Code para conectar.');
-			return;
-		}
-
 		setEditingIntegration(undefined);
 		setFormChannel(channel);
 	};
@@ -269,36 +308,48 @@ export const IntegrationsPage: React.FC = () => {
 		setFormChannel(channel);
 	};
 
-	const handleSave = (draft: IntegrationDraft, integrationId?: string) => {
+	const handleSave = async (draft: IntegrationDraft, integrationId?: string) => {
+		if (!uid) throw new Error('Área de trabalho não encontrada.');
+
 		if (integrationId) {
-			updateIntegration(integrationId, draft);
+			const response = await integrationsAPI.update(uid, integrationId, { name: draft.name });
+			if (!response.success) {
+				throw new Error(getResponseMessage(response, 'Não foi possível atualizar a integração.'));
+			}
 			setToast('Integração atualizada.');
 		} else {
-			createIntegration(draft);
-			pagination.resetPage();
-			setToast('Integração conectada com sucesso.');
-			// setToast(draft.type === 'whatsapp-official' ? 'Canal criado. Finalize a autorização com a Meta.' : 'Integração conectada com sucesso.');
+			const response = await integrationsAPI.create(uid, draft);
+			if (!response.success || !response.data) {
+				throw new Error(getResponseMessage(response, 'Não foi possível vincular a integração.'));
+			}
+			setPage(1);
+			setToast('Integração vinculada com sucesso.');
 		}
 
 		setFormChannel(undefined);
 		setEditingIntegration(undefined);
+		setRefreshVersion(version => version + 1);
 	};
 
-	const handleConnectWhatsApp = (integration: Integration) => {
-		restartIntegration(integration.id);
-		setQrIntegration({ ...integration, status: 'pending', lastSync: 'Aguardando nova conexão' });
-	};
+	const confirmRemove = async () => {
+		if (!removeCandidate || !uid) return;
+		setRemoving(true);
+		setRemoveError('');
 
-	const handleSync = (integration: Integration) => {
-		markSynced(integration.id);
-		setToast(`${integration.name} sincronizada.`);
-	};
+		try {
+			const response = await integrationsAPI.delete(uid, removeCandidate.id);
+			if (!response.success) {
+				throw new Error(getResponseMessage(response, 'Não foi possível remover a integração.'));
+			}
 
-	const confirmRemove = () => {
-		if (!removeCandidate) return;
-		removeIntegration(removeCandidate.id);
-		setToast(`${removeCandidate.name} removida.`);
-		setRemoveCandidate(undefined);
+			setToast(`${removeCandidate.name} removida.`);
+			setRemoveCandidate(undefined);
+			setRefreshVersion(version => version + 1);
+		} catch (error) {
+			setRemoveError(error instanceof Error ? error.message : 'Não foi possível remover a integração.');
+		} finally {
+			setRemoving(false);
+		}
 	};
 
 	return (
@@ -311,7 +362,7 @@ export const IntegrationsPage: React.FC = () => {
 						</p>
 						<h1 className="mt-1 text-xl font-bold tracking-[-.04em] mobile:text-2xl">Integrações</h1>
 						<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 mobile:text-[11px]">
-							Centralize seus canais e acompanhe a saúde de cada conexão.
+							Vincule e gerencie os canais desta área de trabalho.
 						</p>
 					</div>
 					<Button
@@ -327,23 +378,23 @@ export const IntegrationsPage: React.FC = () => {
 				<div className="scrollbar-none -mx-3 mt-4 flex gap-2 overflow-x-auto px-3 py-1 mobile:mx-0 mobile:px-0">
 					<StatCard
 						label="Todos os canais"
-						value={integrations.length}
+						value={workspaceTotal}
 						filter="all"
 						activeFilter={activeFilter}
 						color="#8b5cf6"
 						icon={MdHub}
-						onClick={setActiveFilter}
+						onClick={handleFilterChange}
 					/>
-					{(['connected', 'pending', 'attention'] as const).map(status => (
+					{integrationStatuses.map(status => (
 						<StatCard
 							key={status}
 							label={statusMeta[status].shortLabel}
-							value={statusCount(status)}
+							value={statusCounts[status]}
 							filter={status}
 							activeFilter={activeFilter}
 							color={statusMeta[status].color}
 							icon={statusMeta[status].icon}
-							onClick={setActiveFilter}
+							onClick={handleFilterChange}
 						/>
 					))}
 				</div>
@@ -355,21 +406,20 @@ export const IntegrationsPage: React.FC = () => {
 						<div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<MdFilterList className="size-4" aria-hidden="true" />
 							<span className="text-[10px] font-semibold">
-								{filteredIntegrations.length}{' '}
-								{filteredIntegrations.length === 1 ? 'integração' : 'integrações'}
+								{integrationsTotal} {integrationsTotal === 1 ? 'integração' : 'integrações'}
 							</span>
 						</div>
-						<div className="flex items-center gap-1 rounded-lg bg-slate-50 p-0.5 dark:bg-[#131f26]">
-							{(['all', 'connected', 'pending', 'attention'] as const).map(filter => (
+						<div className="scrollbar-none flex max-w-[70%] items-center gap-1 overflow-x-auto rounded-lg bg-slate-50 p-0.5 dark:bg-[#131f26]">
+							{(['all', ...integrationStatuses] as IntegrationFilter[]).map(filter => (
 								<button
 									key={filter}
 									type="button"
 									className={twMerge(
-										'rounded-md px-2 py-1.5 text-[9px] font-semibold text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200',
+										'shrink-0 rounded-md px-2 py-1.5 text-[9px] font-semibold text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200',
 										activeFilter === filter &&
 											'bg-white text-slate-900 shadow-sm dark:bg-[#0e181e] dark:text-white'
 									)}
-									onClick={() => setActiveFilter(filter)}>
+									onClick={() => handleFilterChange(filter)}>
 									{filter === 'all' ? 'Todos' : statusMeta[filter].shortLabel}
 								</button>
 							))}
@@ -377,21 +427,42 @@ export const IntegrationsPage: React.FC = () => {
 					</div>
 
 					<div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
-						{filteredIntegrations.length ? (
+						{listStatus === 'loading' ? (
+							<IntegrationsListSkeleton count={pageSize} />
+						) : listStatus === 'error' ? (
+							<div className="grid h-full min-h-56 place-items-center p-6 text-center">
+								<div>
+									<span className="mx-auto grid size-12 place-items-center rounded-2xl bg-red-50 text-xl text-red-500 dark:bg-red-500/10">
+										<MdErrorOutline aria-hidden="true" />
+									</span>
+									<h3 className="mt-3 text-sm font-semibold">
+										Não foi possível carregar as integrações
+									</h3>
+									<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">{listError}</p>
+									<Button
+										theme="secondary"
+										type="button"
+										className="mt-4 h-9 min-h-9 px-3 text-[10px]"
+										onClick={() => setRefreshVersion(version => version + 1)}>
+										Tentar novamente
+									</Button>
+								</div>
+							</div>
+						) : integrations.length ? (
 							<>
-								<div className="hidden min-w-190 mobile:block">
-									<div className="grid grid-cols-[minmax(230px,1.2fr)_minmax(145px,.8fr)_minmax(140px,.75fr)_190px] gap-4 border-b border-slate-200 bg-slate-50/70 px-4 py-3 text-[9px] font-bold uppercase tracking-[.08em] text-slate-400 dark:border-[#223138] dark:bg-[#101b21]">
+								<div className="hidden min-w-180 mobile:block">
+									<div className="grid grid-cols-[minmax(230px,1.2fr)_minmax(145px,.8fr)_minmax(140px,.75fr)_80px] gap-4 border-b border-slate-200 bg-slate-50/70 px-4 py-3 text-[9px] font-bold uppercase tracking-[.08em] text-slate-400 dark:border-[#223138] dark:bg-[#101b21]">
 										<span>Canal</span>
 										<span>Status</span>
-										<span>Atividade</span>
+										<span>Informações</span>
 										<span className="text-right">Ações</span>
 									</div>
-									{pagination.pageItems.map(integration => {
+									{integrations.map(integration => {
 										const channel = channels.find(item => item.type === integration.type);
 										return (
 											<article
 												key={integration.id}
-												className="grid grid-cols-[minmax(230px,1.2fr)_minmax(145px,.8fr)_minmax(140px,.75fr)_190px] items-center gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 hover:bg-slate-50/70 dark:border-[#1d2b32] dark:hover:bg-[#101b21]">
+												className="grid grid-cols-[minmax(230px,1.2fr)_minmax(145px,.8fr)_minmax(140px,.75fr)_80px] items-center gap-4 border-b border-slate-100 px-4 py-3.5 last:border-b-0 hover:bg-slate-50/70 dark:border-[#1d2b32] dark:hover:bg-[#101b21]">
 												<div className="flex min-w-0 items-center gap-3">
 													<ChannelIcon type={integration.type} />
 													<div className="min-w-0">
@@ -399,27 +470,20 @@ export const IntegrationsPage: React.FC = () => {
 															{integration.name}
 														</h3>
 														<p className="mt-1 truncate text-[9px] text-slate-500 dark:text-slate-400">
-															{channel?.name} · {integration.account}
+															{channel?.name || integration.type}
 														</p>
 													</div>
 												</div>
 												<div>
 													<StatusBadge status={integration.status} />
 												</div>
-												<div>
-													<p className="text-[9px] font-medium text-slate-600 dark:text-slate-300">
-														{integration.lastSync}
-													</p>
-													<p className="mt-1 text-[9px] text-slate-400">
-														{integration.conversations} conversas
-													</p>
-												</div>
+												<p className="text-[9px] leading-4 text-slate-500 dark:text-slate-400">
+													{statusMeta[integration.status].description}
+												</p>
 												<IntegrationActions
 													integration={integration}
-													onConnect={handleConnectWhatsApp}
 													onEdit={handleEdit}
 													onRemove={setRemoveCandidate}
-													onSync={handleSync}
 												/>
 											</article>
 										);
@@ -427,7 +491,7 @@ export const IntegrationsPage: React.FC = () => {
 								</div>
 
 								<div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 p-2.5 mobile:hidden">
-									{pagination.pageItems.map(integration => {
+									{integrations.map(integration => {
 										const channel = channels.find(item => item.type === integration.type);
 										return (
 											<article
@@ -440,26 +504,19 @@ export const IntegrationsPage: React.FC = () => {
 															{integration.name}
 														</h3>
 														<p className="mt-1 truncate text-[9px] text-slate-500 dark:text-slate-400">
-															{channel?.name} · {integration.account}
+															{channel?.name || integration.type}
 														</p>
 													</div>
 													<StatusBadge status={integration.status} />
 												</div>
 												<div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-[#1d2b32]">
-													<div className="min-w-0">
-														<p className="truncate text-[9px] font-medium text-slate-500 dark:text-slate-400">
-															{integration.lastSync}
-														</p>
-														<p className="mt-0.5 text-[9px] text-slate-400">
-															{integration.conversations} conversas
-														</p>
-													</div>
+													<p className="text-[9px] leading-4 text-slate-500 dark:text-slate-400">
+														{statusMeta[integration.status].description}
+													</p>
 													<IntegrationActions
 														integration={integration}
-														onConnect={handleConnectWhatsApp}
 														onEdit={handleEdit}
 														onRemove={setRemoveCandidate}
-														onSync={handleSync}
 													/>
 												</div>
 											</article>
@@ -475,28 +532,33 @@ export const IntegrationsPage: React.FC = () => {
 									</span>
 									<h3 className="mt-3 text-sm font-semibold">Nenhuma integração encontrada</h3>
 									<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
-										Ajuste a busca ou conecte um novo canal.
+										Ajuste a busca ou vincule um novo canal.
 									</p>
 									<Button
 										type="button"
 										className="mt-4 h-9 min-h-9 px-3 text-[10px]"
 										onClick={() => setNewModalOpen(true)}>
-										<MdAdd aria-hidden="true" />
-										Nova integração
+										<MdAdd aria-hidden="true" /> Nova integração
 									</Button>
 								</div>
 							</div>
 						)}
 					</div>
-					<Pagination
-						page={pagination.page}
-						pageSize={pagination.pageSize}
-						totalItems={pagination.totalItems}
-						itemLabel="integrações"
-						singularItemLabel="integração"
-						onPageChange={pagination.setPage}
-						onPageSizeChange={pagination.setPageSize}
-					/>
+					{listStatus !== 'error' && (
+						<Pagination
+							page={page}
+							pageSize={pageSize}
+							totalItems={integrationsTotal}
+							itemLabel="integrações"
+							singularItemLabel="integração"
+							disabled={listStatus === 'loading'}
+							onPageChange={setPage}
+							onPageSizeChange={nextPageSize => {
+								setPageSize(nextPageSize);
+								setPage(1);
+							}}
+						/>
+					)}
 				</section>
 			</div>
 
@@ -514,20 +576,13 @@ export const IntegrationsPage: React.FC = () => {
 					onSave={handleSave}
 				/>
 			)}
-			{qrIntegration && (
-				<WhatsAppQrModal
-					integration={qrIntegration}
-					onClose={() => setQrIntegration(undefined)}
-					onRefresh={() => restartIntegration(qrIntegration.id)}
-				/>
-			)}
 
 			{removeCandidate && (
 				<div
 					className="fixed inset-0 z-60 flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-[3px] mobile:items-center mobile:p-5"
 					role="presentation"
 					onMouseDown={event => {
-						if (event.target === event.currentTarget) setRemoveCandidate(undefined);
+						if (event.target === event.currentTarget && !removing) setRemoveCandidate(undefined);
 					}}>
 					<section
 						role="alertdialog"
@@ -541,14 +596,27 @@ export const IntegrationsPage: React.FC = () => {
 							Remover integração?
 						</h2>
 						<p className="mt-2 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-							“{removeCandidate.name}” deixará de receber novas mensagens. O histórico de conversas será
-							preservado.
+							“{removeCandidate.name}” será desvinculada desta área de trabalho.
 						</p>
+						{removeError && (
+							<p role="alert" className="mt-3 text-[10px] text-red-500">
+								{removeError}
+							</p>
+						)}
 						<div className="mt-5 flex justify-end gap-2">
-							<Button theme="secondary" type="button" onClick={() => setRemoveCandidate(undefined)}>
+							<Button
+								theme="secondary"
+								type="button"
+								disabled={removing}
+								onClick={() => setRemoveCandidate(undefined)}>
 								Cancelar
 							</Button>
-							<Button theme="danger" type="button" onClick={confirmRemove}>
+							<Button
+								theme="danger"
+								type="button"
+								loading={removing}
+								loadingLabel="Removendo..."
+								onClick={confirmRemove}>
 								Remover
 							</Button>
 						</div>

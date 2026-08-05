@@ -1,4 +1,4 @@
-import { Integration } from '@wppsync/database';
+import { Integration, Prisma } from '@wppsync/database';
 
 import { Entity } from '../Entity.js';
 import { EntityGroup } from '../Group.js';
@@ -31,7 +31,7 @@ export class IntegrationEntity extends Entity<IntegrationEntityRaw, IntegrationE
 
 	async create() {
 		await this.db.integration.create({
-			data: this.toRaw() as Required<IntegrationEntityRaw>
+			data: this.toRaw() as Prisma.IntegrationUncheckedCreateInput
 		});
 	}
 
@@ -40,7 +40,7 @@ export class IntegrationEntity extends Entity<IntegrationEntityRaw, IntegrationE
 			where: {
 				id: this.id
 			},
-			data: this.changes
+			data: this.changes as Prisma.IntegrationUncheckedUpdateInput
 		});
 	}
 

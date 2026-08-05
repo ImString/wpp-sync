@@ -13,6 +13,8 @@ export namespace IntegrationDTO {
 		})
 	});
 
+	export const AllCount = new RouteSchema({});
+
 	export const Get = new RouteSchema({
 		params: z.object({
 			uid: z.string(),

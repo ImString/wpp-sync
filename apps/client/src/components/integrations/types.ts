@@ -1,26 +1,11 @@
-export type IntegrationType =
-	| 'whatsapp'
-	// | 'whatsapp-official'
-	// | 'instagram'
-	// | 'messenger'
-	// | 'email'
-	| 'website';
+import type { IntegrationData, IntegrationStatusData, IntegrationTypeData } from '@/utils/api';
 
-export type IntegrationStatus = 'connected' | 'pending' | 'attention';
-
-export interface Integration {
-	id: string;
-	name: string;
-	type: IntegrationType;
-	status: IntegrationStatus;
-	account: string;
-	lastSync: string;
-	conversations: number;
-}
+export type IntegrationType = IntegrationTypeData;
+export type IntegrationStatus = IntegrationStatusData;
+export type Integration = IntegrationData;
 
 export interface IntegrationDraft {
 	name: string;
-	account: string;
 	type: IntegrationType;
 }
 
@@ -28,10 +13,9 @@ export interface ChannelDefinition {
 	type: IntegrationType;
 	name: string;
 	description: string;
-	accountLabel: string;
-	accountPlaceholder: string;
 	accent: string;
 	softAccent: string;
+	disabled?: boolean;
 }
 
 export type IntegrationFilter = 'all' | IntegrationStatus;

@@ -77,6 +77,34 @@ export class IntegrationService {
 		};
 	}
 
+	async allCount(options: IntegrationServiceWhereOptions) {
+		const groupedCounts = await prisma.integration.groupBy({
+			by: ['status'],
+			where: {
+				...this.mountWhere(options)
+			},
+			_count: {
+				_all: true
+			}
+		});
+
+		const byStatus: Record<IntegrationStatus, number> = {
+			INITIALIZING: 0,
+			AWAITING_LOGIN: 0,
+			CONNECTED: 0,
+			DISCONNECTED: 0
+		};
+
+		for (const groupedCount of groupedCounts) {
+			byStatus[groupedCount.status] = groupedCount._count._all;
+		}
+
+		return {
+			total: groupedCounts.reduce((total, groupedCount) => total + groupedCount._count._all, 0),
+			byStatus
+		};
+	}
+
 	async get(options: IntegrationServiceWhereOptions) {
 		const data = await prisma.integration.findFirst({
 			where: {

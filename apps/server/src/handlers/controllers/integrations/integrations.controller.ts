@@ -31,6 +31,18 @@ export class IntegrationsController {
 		return HttpResponse.success(integrations);
 	}
 
+	@Get('/all-count', IntegrationDTO.AllCount)
+	async allCount(context: typeof IntegrationDTO.AllCount.context) {
+		const workspace = context.state.workspaceAccess?.workspace;
+		if (!workspace) throw new WorkspaceNotFoundError();
+
+		const count = await this.integrationService.allCount({
+			workspace: workspace.id
+		});
+
+		return HttpResponse.success(count);
+	}
+
 	@Get('/:dataId', IntegrationDTO.Get)
 	async get(context: typeof IntegrationDTO.Get.context) {
 		const workspace = context.state.workspaceAccess?.workspace;
