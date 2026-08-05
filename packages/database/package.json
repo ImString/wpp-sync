@@ -15,12 +15,12 @@
 		"dist"
 	],
 	"scripts": {
-		"build": "dotenvx run -f ../../.env -- prisma generate && tsc -p tsconfig.json",
-		"build:dev": "dotenvx run -f ../../.env.development -- prisma generate && tsc -p tsconfig.json",
+		"build": "dotenvx run -f ../../.env -- prisma generate && node ./scripts/fix-prisma-json-imports.mjs && tsc -p tsconfig.json",
+		"build:dev": "dotenvx run -f ../../.env.development -- prisma generate && node ./scripts/fix-prisma-json-imports.mjs && tsc -p tsconfig.json",
 		"check-types": "tsc -p tsconfig.json --noEmit",
-		"db:generate": "dotenvx run -f ../../.env -- prisma generate",
-		"db:push": "dotenvx run -f ../../.env -- prisma db push",
-		"db:push:dev": "dotenvx run -f ../../.env.development -- prisma db push",
+		"db:generate": "dotenvx run -f ../../.env -- prisma generate && node ./scripts/fix-prisma-json-imports.mjs",
+		"db:push": "dotenvx run -f ../../.env -- prisma db push && node ./scripts/fix-prisma-json-imports.mjs",
+		"db:push:dev": "dotenvx run -f ../../.env.development -- prisma db push && node ./scripts/fix-prisma-json-imports.mjs",
 		"db:studio": "dotenvx run -f ../../.env -- prisma studio",
 		"db:studio:dev": "dotenvx run -f ../../.env.development -- prisma studio"
 	},
@@ -31,9 +31,10 @@
 	},
 	"devDependencies": {
 		"@dotenvx/dotenvx": "^1.34.0",
-		"@wppsync/config": "workspace:*",
 		"@types/pg": "^8.20.0",
+		"@wppsync/config": "workspace:*",
 		"prisma": "^7.9.0",
+		"prisma-json-types-generator": "^5.1.1",
 		"typescript": "^7.0.2"
 	}
 }

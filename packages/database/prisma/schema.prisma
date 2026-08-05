@@ -3,6 +3,10 @@ generator client {
     output   = "../src/generated/prisma"
 }
 
+generator json {
+    provider = "prisma-json-types-generator"
+}
+
 datasource db {
     provider = "postgresql"
 }
@@ -91,8 +95,37 @@ model Workspace {
 
     contacts      Contact[]
     contactStages ContactStage[]
+    integrations  Integration[]
 
     @@map("workspaces")
+}
+
+enum IntegrationType {
+    WHATSAPP
+    WEB
+}
+
+enum IntegrationStatus {
+    INITIALIZING
+    AWAITING_LOGIN
+    CONNECTED
+    DISCONNECTED
+}
+
+model Integration {
+    id String @id @unique @default(cuid())
+
+    name   String
+    type   IntegrationType
+    status IntegrationStatus
+    /// [IntegrationData]
+    data   Json
+
+    workspace   Workspace @relation(fields: [workspaceId], references: [id])
+    createdAt   DateTime  @default(now()) @map("created_at")
+    workspaceId String
+
+    @@map("integrations")
 }
 
 model Contact {
