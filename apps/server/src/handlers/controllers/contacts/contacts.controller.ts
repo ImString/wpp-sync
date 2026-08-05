@@ -2,7 +2,7 @@ import { Prisma } from '@wppsync/database';
 
 import { Controller, Delete, Get, HttpResponse, Post, Put } from '@/modules/index.js';
 
-import { ContactService } from '@/services/index.js';
+import { ContactService, ContactStageService } from '@/services/index.js';
 
 import { ContactsDTO } from '@/entities/dtos/contacts/contacts.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
@@ -15,7 +15,10 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 	middlewares: [AuthenticationMiddleware, WorkspaceAccessMiddleware]
 })
 export class ContactsController {
-	constructor(private readonly contactService: ContactService) {}
+	constructor(
+		private readonly contactService: ContactService,
+		private readonly contactStageService: ContactStageService
+	) {}
 
 	private includes = (): Prisma.ContactInclude => {
 		return {
@@ -29,7 +32,9 @@ export class ContactsController {
 		if (!workspace) throw new WorkspaceNotFoundError();
 
 		const contacts = await this.contactService.list({
-			...(context.query.name && { name: context.query.name }),
+			...(context.query.search && { search: context.query.search }),
+			...(context.query.stage && { stage: context.query.stage }),
+			...(context.query.order && { order: context.query.order }),
 			...(context.query.page && { page: context.query.page }),
 			...(context.query.limit && { limit: context.query.limit }),
 			include: this.includes(),
@@ -59,12 +64,17 @@ export class ContactsController {
 		const membership = context.state.workspaceAccess?.membership;
 		if (!workspace || !membership) throw new WorkspaceNotFoundError();
 
+		const stage = context.body.stage
+			? await this.contactStageService.get({ id: context.body.stage, workspace: workspace.id })
+			: undefined;
+
 		const contact = await this.contactService.create({
 			name: context.body.name,
 			email: context.body.email,
 			whatsapp: context.body.whatsapp,
 			notes: context.body.notes,
 			tags: context.body.tags,
+			stage,
 			author: membership.data.id,
 			workspace: workspace.id
 		});
@@ -81,13 +91,19 @@ export class ContactsController {
 			id: context.params.dataId,
 			workspace: workspace.id
 		});
+		const stage = context.body.stage
+			? await this.contactStageService.get({ id: context.body.stage, workspace: workspace.id })
+			: context.body.stage === null
+				? null
+				: undefined;
 
 		await this.contactService.update(contact, {
 			name: context.body.name,
 			email: context.body.email,
 			notes: context.body.notes,
 			tags: context.body.tags,
-			whatsapp: context.body.whatsapp
+			whatsapp: context.body.whatsapp,
+			stage
 		});
 
 		return HttpResponse.success();

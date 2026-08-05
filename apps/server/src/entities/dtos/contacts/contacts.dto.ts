@@ -14,9 +14,11 @@ export namespace ContactsDTO {
 
 	export const List = new RouteSchema({
 		query: z.object({
-			name: z.string().optional(),
-			page: z.number().min(1).optional(),
-			limit: z.number().min(1).max(100).optional()
+			search: z.string().trim().optional(),
+			stage: z.string().optional(),
+			order: z.enum(['recent', 'name']).optional(),
+			page: z.coerce.number().min(1).optional(),
+			limit: z.coerce.number().min(1).max(100).optional()
 		})
 	});
 
@@ -46,8 +48,8 @@ export namespace ContactsDTO {
 		body: z.object({
 			name: z.string().optional(),
 			whatsapp: z.string().optional(),
-			email: z.string().email().optional(),
-			stage: z.string().optional(),
+			email: z.string().email().nullable().optional(),
+			stage: z.string().nullable().optional(),
 			tags: TagsSchema.optional(),
 			notes: z.string().optional()
 		})

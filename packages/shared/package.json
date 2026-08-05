@@ -9,6 +9,11 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js",
 			"default": "./dist/index.js"
+		},
+		"./contact-stages": {
+			"types": "./dist/constants/contact-stages.d.ts",
+			"import": "./dist/constants/contact-stages.js",
+			"default": "./dist/constants/contact-stages.js"
 		}
 	},
 	"files": [

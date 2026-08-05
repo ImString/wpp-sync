@@ -37,8 +37,9 @@ export class ContactEntity extends Entity<ContactEntityRaw, ContactEntityExtra, 
 				pushName: this.data.pushName
 			}),
 			email: this.data.email,
-			...(this.data.tags && { tags: this.data.tags.split(',') }),
+			...(this.data.tags && { tags: this.data.tags }),
 			...(this.data.notes && { notes: this.data.notes }),
+			stageId: this.entities.stage?.id || this.data.contactStageId || null,
 			...(this.entities.stage && { stage: this.entities.stage.toObject({}) }),
 			whatsapp: this.data.whatsapp,
 
@@ -61,7 +62,7 @@ export class ContactEntity extends Entity<ContactEntityRaw, ContactEntityExtra, 
 		});
 	}
 
-	static fromList(dataList: ContactEntityRaw[]) {
+	static fromList(dataList: ContactEntityPopulated[]) {
 		return new EntityGroup(dataList.map(data => new ContactEntity(data)));
 	}
 }

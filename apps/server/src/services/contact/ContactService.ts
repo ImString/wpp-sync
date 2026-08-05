@@ -12,6 +12,8 @@ export type ContactServiceWhereOptions = {
 	ids?: string[];
 
 	search?: string;
+	stage?: string;
+	order?: 'recent' | 'name';
 	whatsapp?: string;
 	isDeleted?: boolean;
 
@@ -53,9 +55,17 @@ export class ContactService {
 							contains: options.search,
 							mode: 'insensitive'
 						}
+					},
+					{
+						email: options.search && {
+							contains: options.search,
+							mode: 'insensitive'
+						}
 					}
 				]
 			}),
+
+			...(options.stage && { contactStageId: options.stage }),
 
 			isDeleted: options.isDeleted || false,
 
@@ -74,9 +84,14 @@ export class ContactService {
 				include: {
 					...options.include
 				},
-				orderBy: {
-					createdAt: 'desc'
-				},
+				orderBy:
+					options.order === 'name'
+						? [
+								{ name: { sort: 'asc', nulls: 'last' } },
+								{ pushName: { sort: 'asc', nulls: 'last' } },
+								{ createdAt: 'desc' }
+							]
+						: { createdAt: 'desc' },
 				...applyPrismaPagination(options)
 			}),
 			prisma.contact.count({
@@ -119,7 +134,7 @@ export class ContactService {
 		notes?: string;
 		workspace: string;
 	}) {
-		const phoneNumber = this.normalisedBrazilNumber(document.whatsapp);
+		const phoneNumber = this.normalisePhoneNumber(document.whatsapp);
 
 		const alreadyExists = await this.get({
 			whatsapp: phoneNumber,
@@ -152,7 +167,7 @@ export class ContactService {
 			}
 		});
 
-		const contactEntity = new ContactEntity(contact);
+		const contactEntity = new ContactEntity(contact, { stage: document.stage });
 
 		return contactEntity;
 	}
@@ -163,8 +178,8 @@ export class ContactService {
 			name?: string;
 			author?: string;
 			whatsapp?: string;
-			email?: string;
-			stage?: ContactStageEntity;
+			email?: string | null;
+			stage?: ContactStageEntity | null;
 			tags?: string[];
 			notes?: string;
 			isDeleted?: boolean;
@@ -174,11 +189,11 @@ export class ContactService {
 			isDeleted: document.isDeleted || false,
 			name: document.name,
 			...(document.whatsapp && {
-				whatsapp: this.normalisedBrazilNumber(document.whatsapp)
+				whatsapp: this.normalisePhoneNumber(document.whatsapp)
 			}),
 			email: document.email,
-			...(document.stage && {
-				contactStageId: document.stage.data.id
+			...(document.stage !== undefined && {
+				contactStageId: document.stage?.data.id || null
 			}),
 			tags: document.tags,
 			notes: document.notes,
@@ -187,14 +202,18 @@ export class ContactService {
 
 		await contact.save();
 
-		contact.entities.stage = document.stage;
+		if (document.stage !== undefined) contact.entities.stage = document.stage;
 
 		return contact;
 	}
 
-	private normalisedBrazilNumber(phoneNumber: string): string {
-		const ddd = phoneNumber.slice(2, 4);
-		let number = phoneNumber.slice(4);
+	private normalisePhoneNumber(phoneNumber: string): string {
+		const digits = phoneNumber.replace(/\D/g, '');
+
+		if (!digits.startsWith('55')) return digits;
+
+		const ddd = digits.slice(2, 4);
+		let number = digits.slice(4);
 
 		if (number.length === 9 && /^[2-5]/.test(number.slice(1))) {
 			return `55${ddd}${number.slice(1)}`;

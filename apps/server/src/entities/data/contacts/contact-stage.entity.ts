@@ -1,9 +1,14 @@
 import { ContactStage } from '@wppsync/database';
+import { Slug } from '@wppsync/shared';
 
 import { Entity } from '../Entity.js';
 import { EntityGroup } from '../Group.js';
 
-export type ContactStageEntityRaw = Partial<ContactStage>;
+export type ContactStageEntityRaw = Partial<ContactStage> & {
+	_count?: {
+		contacts: number;
+	};
+};
 export type ContactStageEntityExtra = {};
 export type ContactStageEntityEntities = {};
 
@@ -28,9 +33,11 @@ export class ContactStageEntity extends Entity<
 			id: this.id,
 
 			name: this.data.name,
+			slug: this.data.slug || Slug.createSlug(this.data.name || ''),
 			position: this.data.position,
 			color: this.data.color,
 			icon: this.data.icon,
+			contactCount: this.data._count?.contacts || 0,
 			...(this.data.description && { description: this.data.description }),
 
 			createdAt: this.data.createdAt

@@ -1,4 +1,4 @@
-import { Controller, Get, HttpResponse, Post, Put, type RouteSchemaContext } from '@/modules/index.js';
+import { Controller, Delete, Get, HttpResponse, Post, Put, type RouteSchemaContext } from '@/modules/index.js';
 
 import { ContactStageService } from '@/services/index.js';
 
@@ -67,12 +67,42 @@ export class ContactStagesController {
 			workspace: workspace.id
 		});
 
-		await this.contactStageService.update(contactStage, {
+		const updatedContactStage = await this.contactStageService.update(contactStage, {
 			name: context.body.name,
 			color: context.body.color,
 			icon: context.body.icon,
 			description: context.body.description
 		});
+
+		return HttpResponse.success(await updatedContactStage.toObject({}));
+	}
+
+	@Put('/reorder', ContactStagesDTO.Reorder)
+	async reorder(context: typeof ContactStagesDTO.Reorder.context) {
+		const workspace = context.state.workspaceAccess?.workspace;
+		if (!workspace) throw new WorkspaceNotFoundError();
+
+		await this.contactStageService.reorder(workspace.id, context.body.stageIds);
+		return HttpResponse.success();
+	}
+
+	@Delete('/:dataId/delete', ContactStagesDTO.Delete)
+	async delete(context: typeof ContactStagesDTO.Delete.context) {
+		const workspace = context.state.workspaceAccess?.workspace;
+		if (!workspace) throw new WorkspaceNotFoundError();
+
+		const contactStage = await this.contactStageService.get({
+			id: context.params.dataId,
+			workspace: workspace.id
+		});
+		const replacementStage = context.body.replacementStageId
+			? await this.contactStageService.get({
+					id: context.body.replacementStageId,
+					workspace: workspace.id
+				})
+			: undefined;
+
+		await this.contactStageService.delete(contactStage, replacementStage);
 
 		return HttpResponse.success();
 	}
