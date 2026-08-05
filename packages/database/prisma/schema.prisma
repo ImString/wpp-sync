@@ -119,8 +119,9 @@ model Integration {
     type   IntegrationType
     status IntegrationStatus
     /// [IntegrationData]
-    data   Json
+    data   Json?
 
+    isDeleted   Boolean?  @default(false) @map("is_deleted")
     workspace   Workspace @relation(fields: [workspaceId], references: [id])
     createdAt   DateTime  @default(now()) @map("created_at")
     workspaceId String

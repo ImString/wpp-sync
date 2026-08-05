@@ -5,6 +5,7 @@ export interface IntegrationWebData {
 
 export interface IntegrationWhatsAppData {
 	instanceId: string;
+	phoneNumber?: string;
 }
 
 declare global {
