@@ -13,6 +13,7 @@ interface PaginationProps {
 	singularItemLabel?: string;
 	pageSizeOptions?: number[];
 	className?: string;
+	disabled?: boolean;
 	onPageChange: (page: number) => void;
 	onPageSizeChange: (pageSize: number) => void;
 }
@@ -59,7 +60,7 @@ export const Pagination: React.FC<PaginationProps> = props => {
 					type="button"
 					className="size-8 min-h-8 rounded-lg p-0"
 					aria-label="Página anterior"
-					disabled={currentPage === 1}
+					disabled={props.disabled || currentPage === 1}
 					onClick={() => props.onPageChange(currentPage - 1)}>
 					<MdChevronLeft className="size-4" aria-hidden="true" />
 				</Button>
@@ -77,6 +78,7 @@ export const Pagination: React.FC<PaginationProps> = props => {
 							)}
 							aria-label={`Ir para página ${item}`}
 							aria-current={item === currentPage ? 'page' : undefined}
+							disabled={props.disabled}
 							onClick={() => props.onPageChange(item)}>
 							{item}
 						</Button>
@@ -95,7 +97,7 @@ export const Pagination: React.FC<PaginationProps> = props => {
 					type="button"
 					className="size-8 min-h-8 rounded-lg p-0"
 					aria-label="Próxima página"
-					disabled={currentPage === totalPages}
+					disabled={props.disabled || currentPage === totalPages}
 					onClick={() => props.onPageChange(currentPage + 1)}>
 					<MdChevronRight className="size-4" aria-hidden="true" />
 				</Button>
@@ -105,6 +107,7 @@ export const Pagination: React.FC<PaginationProps> = props => {
 				<span className="hidden wide:inline">Por página</span>
 				<select
 					value={props.pageSize}
+					disabled={props.disabled}
 					onChange={event => props.onPageSizeChange(Number(event.target.value))}
 					aria-label="Itens por página"
 					className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-2 text-[9px] font-semibold text-slate-600 outline-none focus:border-brand-500 dark:border-[#2a3a42] dark:bg-[#131f26] dark:text-slate-300">

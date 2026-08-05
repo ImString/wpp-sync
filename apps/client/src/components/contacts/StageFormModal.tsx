@@ -3,15 +3,15 @@ import { MdAdd, MdClose, MdEdit } from 'react-icons/md';
 
 import { Button } from '@/components/buttons';
 
-import { StageIcon, stageIconSuggestions } from './stageIcons';
 import { stageColorPresets } from './stageColors';
+import { StageIcon, stageIconSuggestions } from './stageIcons';
 import type { RelationshipStage, RelationshipStageDraft } from './types';
 
 interface StageFormModalProps {
 	stage?: RelationshipStage;
 	existingStages: RelationshipStage[];
 	onClose: () => void;
-	onSave: (draft: RelationshipStageDraft, stageId?: string) => void;
+	onSave: (draft: RelationshipStageDraft, stageId?: string) => void | Promise<void>;
 }
 
 const fieldClassName =
@@ -25,6 +25,8 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 		icon: props.stage?.icon || 'label'
 	});
 	const [submitted, setSubmitted] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
+	const [errorMessage, setErrorMessage] = useState('');
 	const isEditing = Boolean(props.stage);
 
 	useEffect(() => {
@@ -52,21 +54,30 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 		};
 	}, [draft.color, draft.name, props.existingStages, props.stage?.id]);
 
-	const handleSubmit = (event: React.FormEvent) => {
+	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
 		setSubmitted(true);
 
 		if (Object.values(errors).some(Boolean)) return;
 
-		props.onSave(
-			{
-				name: draft.name.trim(),
-				color: draft.color.toLowerCase(),
-				description: draft.description.trim(),
-				icon: draft.icon
-			},
-			props.stage?.id
-		);
+		setSubmitting(true);
+		setErrorMessage('');
+
+		try {
+			await props.onSave(
+				{
+					name: draft.name.trim(),
+					color: draft.color.toLowerCase(),
+					description: draft.description.trim(),
+					icon: draft.icon
+				},
+				props.stage?.id
+			);
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : 'Não foi possível salvar a etapa.');
+		} finally {
+			setSubmitting(false);
+		}
 	};
 
 	return (
@@ -107,6 +118,11 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 
 				<form onSubmit={handleSubmit} noValidate>
 					<div className="grid gap-4 p-4 mobile:p-5">
+						{errorMessage && (
+							<p className="rounded-xl bg-red-50 px-3 py-2.5 text-[10px] text-red-700 dark:bg-red-500/10 dark:text-red-300">
+								{errorMessage}
+							</p>
+						)}
 						<label className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
 							Nome da etapa <span className="text-red-500">*</span>
 							<input
@@ -125,8 +141,12 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 						<div>
 							<div className="flex items-end justify-between gap-3">
 								<div>
-									<span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">Ícone da etapa</span>
-									<p className="mt-0.5 text-[9px] text-slate-400">Escolha uma sugestão para identificar esta fase.</p>
+									<span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+										Ícone da etapa
+									</span>
+									<p className="mt-0.5 text-[9px] text-slate-400">
+										Escolha uma sugestão para identificar esta fase.
+									</p>
 								</div>
 								<span
 									className="grid size-9 shrink-0 place-items-center rounded-xl"
@@ -134,7 +154,10 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 									<StageIcon name={draft.icon} className="size-4.5" />
 								</span>
 							</div>
-							<div className="mt-2.5 grid grid-cols-7 gap-2 mobile:grid-cols-9" role="listbox" aria-label="Ícones sugeridos para a etapa">
+							<div
+								className="mt-2.5 grid grid-cols-7 gap-2 mobile:grid-cols-9"
+								role="listbox"
+								aria-label="Ícones sugeridos para a etapa">
 								{stageIconSuggestions.map(suggestion => {
 									const selected = draft.icon === suggestion.name;
 
@@ -147,8 +170,19 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 											aria-selected={selected}
 											title={suggestion.label}
 											className="grid size-10 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400 outline-none transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:border-[#223138] dark:bg-[#131f26] dark:hover:border-[#344851] dark:hover:bg-[#17262e] dark:hover:text-slate-200"
-											style={selected ? { color: draft.color, borderColor: draft.color, backgroundColor: `${draft.color}1f`, boxShadow: `0 0 0 2px ${draft.color}22` } : undefined}
-											onClick={() => setDraft(current => ({ ...current, icon: suggestion.name }))}>
+											style={
+												selected
+													? {
+															color: draft.color,
+															borderColor: draft.color,
+															backgroundColor: `${draft.color}1f`,
+															boxShadow: `0 0 0 2px ${draft.color}22`
+														}
+													: undefined
+											}
+											onClick={() =>
+												setDraft(current => ({ ...current, icon: suggestion.name }))
+											}>
 											<suggestion.icon className="size-4.5" aria-hidden="true" />
 										</button>
 									);
@@ -226,10 +260,15 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 					</div>
 
 					<footer className="flex justify-end gap-2 border-t border-slate-200 px-4 py-3.5 dark:border-[#223138] mobile:px-5">
-						<Button theme="secondary" type="button" className="min-w-24" onClick={props.onClose}>
+						<Button
+							theme="secondary"
+							type="button"
+							className="min-w-24"
+							disabled={submitting}
+							onClick={props.onClose}>
 							Cancelar
 						</Button>
-						<Button type="submit" className="min-w-28">
+						<Button type="submit" className="min-w-28" loading={submitting} loadingLabel="Salvando...">
 							{isEditing ? 'Salvar etapa' : 'Criar etapa'}
 						</Button>
 					</footer>

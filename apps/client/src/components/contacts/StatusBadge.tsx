@@ -10,7 +10,17 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = props => {
-	if (!props.stage) return null;
+	if (!props.stage) {
+		return (
+			<span
+				className={twMerge(
+					'inline-flex w-fit items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-500 dark:bg-[#17262e] dark:text-slate-400',
+					props.compact && 'px-2 py-0.5 text-[9px]'
+				)}>
+				Sem etapa
+			</span>
+		);
+	}
 
 	return (
 		<span

@@ -1,32 +1,17 @@
-export type StageIconName =
-	| 'label'
-	| 'clock'
-	| 'person'
-	| 'group'
-	| 'star'
-	| 'heart'
-	| 'chat'
-	| 'phone'
-	| 'calendar'
-	| 'event'
-	| 'check'
-	| 'hourglass'
-	| 'flag'
-	| 'target'
-	| 'cart'
-	| 'money'
-	| 'rocket'
-	| 'pause'
-	| 'warning'
-	| 'archive';
+import type { StageIconName } from '@wppsync/shared/contact-stages';
+
+export type { StageIconName } from '@wppsync/shared/contact-stages';
 
 export interface RelationshipStage {
 	id: string;
 	name: string;
+	slug: string;
 	color: string;
 	description: string;
 	icon: StageIconName;
 	order: number;
+	contactCount: number;
+	createdAt?: string;
 }
 
 export interface Contact {
@@ -34,27 +19,17 @@ export interface Contact {
 	name: string;
 	initials: string;
 	phone: string;
-	email: string;
-	company?: string;
-	city: string;
-	stageId: string;
+	email?: string;
+	stageId?: string;
 	tags: string[];
-	lastInteraction: string;
-	lastInteractionOrder: number;
-	firstContact: string;
-	origin: string;
-	conversations: number;
-	lastMessage: string;
 	notes: string;
-	favorite?: boolean;
+	createdAt?: string;
 }
 
 export interface ContactDraft {
 	name: string;
 	phone: string;
 	email: string;
-	company: string;
-	city: string;
 	stageId: string;
 	tags: string;
 }

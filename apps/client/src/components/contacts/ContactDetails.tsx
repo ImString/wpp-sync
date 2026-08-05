@@ -1,22 +1,20 @@
 import { useEffect, useState } from 'react';
 import {
-	MdArchive,
 	MdArrowBack,
-	MdBusiness,
 	MdCall,
-	MdChatBubbleOutline,
 	MdCheck,
 	MdContentCopy,
+	MdDeleteOutline,
 	MdEdit,
 	MdEmail,
-	MdLocationOn,
 	MdOutlineAccessTime,
-	MdOutlineAutoAwesome,
 	MdOutlineHistory,
 	MdOutlineNotes,
 	MdWhatsapp
 } from 'react-icons/md';
 import { twMerge } from 'tailwind-merge';
+
+import { formatNationalPhone } from '@/utils';
 
 import { Button } from '@/components/buttons';
 
@@ -25,14 +23,13 @@ import { StatusBadge } from './StatusBadge';
 import type { Contact, RelationshipStage } from './types';
 
 interface ContactDetailsProps {
-	contact?: Contact;
+	contact: Contact;
 	stage?: RelationshipStage;
 	isOpen: boolean;
 	onClose: () => void;
 	onEdit: (contact: Contact) => void;
-	onOpenConversation: (contact: Contact) => void;
-	onSaveNotes: (contactId: string, notes: string) => void;
-	onArchive?: (contactId: string) => void;
+	onSaveNotes: (contactId: string, notes: string) => Promise<void>;
+	onDelete: (contactId: string) => Promise<void>;
 }
 
 const DetailRow: React.FC<{
@@ -51,34 +48,32 @@ const DetailRow: React.FC<{
 	</div>
 );
 
+const formatCreatedAt = (value?: string) => {
+	if (!value) return 'Data não informada';
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return 'Data não informada';
+	return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeStyle: 'short' }).format(date);
+};
+
 export const ContactDetails: React.FC<ContactDetailsProps> = props => {
-	const [notes, setNotes] = useState(props.contact?.notes || '');
+	const [notes, setNotes] = useState(props.contact.notes);
 	const [notesSaved, setNotesSaved] = useState(false);
 	const [phoneCopied, setPhoneCopied] = useState(false);
+	const [savingNotes, setSavingNotes] = useState(false);
+	const [deleteConfirmation, setDeleteConfirmation] = useState(false);
+	const [deleting, setDeleting] = useState(false);
+	const [errorMessage, setErrorMessage] = useState('');
 
 	useEffect(() => {
-		setNotes(props.contact?.notes || '');
+		setNotes(props.contact.notes);
 		setNotesSaved(false);
-	}, [props.contact?.id, props.contact?.notes]);
-
-	if (!props.contact) {
-		return (
-			<aside className="hidden min-h-0 place-items-center rounded-2xl border border-slate-200 bg-white p-8 text-center mobile:grid dark:border-[#223138] dark:bg-[#0e181e]">
-				<div className="max-w-52">
-					<span className="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-600 dark:bg-[#0f3826] dark:text-brand-400">
-						<MdOutlineAutoAwesome className="size-6" aria-hidden="true" />
-					</span>
-					<h3 className="mt-3 text-sm font-semibold">Selecione um contato</h3>
-					<p className="mt-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
-						Os detalhes aparecerão aqui.
-					</p>
-				</div>
-			</aside>
-		);
-	}
+		setDeleteConfirmation(false);
+		setErrorMessage('');
+	}, [props.contact.id, props.contact.notes]);
 
 	const contact = props.contact;
 	const normalizedPhone = contact.phone.replace(/\D/g, '');
+	const formattedPhone = formatNationalPhone(contact.phone) || contact.phone;
 	const notesChanged = notes !== contact.notes;
 
 	const handleCopyPhone = async () => {
@@ -91,10 +86,29 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 		}
 	};
 
-	const handleSaveNotes = () => {
-		props.onSaveNotes(contact.id, notes.trim());
-		setNotesSaved(true);
-		window.setTimeout(() => setNotesSaved(false), 1600);
+	const handleSaveNotes = async () => {
+		setSavingNotes(true);
+		setErrorMessage('');
+		try {
+			await props.onSaveNotes(contact.id, notes.trim());
+			setNotesSaved(true);
+			window.setTimeout(() => setNotesSaved(false), 1600);
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : 'Não foi possível salvar a nota.');
+		} finally {
+			setSavingNotes(false);
+		}
+	};
+
+	const handleDelete = async () => {
+		setDeleting(true);
+		setErrorMessage('');
+		try {
+			await props.onDelete(contact.id);
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : 'Não foi possível excluir o contato.');
+			setDeleting(false);
+		}
 	};
 
 	return (
@@ -141,27 +155,17 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 					className="mx-auto size-18 text-lg ring-4"
 				/>
 				<h2 className="mt-3 truncate text-lg font-bold tracking-[-.02em]">{contact.name}</h2>
-				<p className="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">
-					{contact.company || contact.phone}
-				</p>
+				<p className="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">{formattedPhone}</p>
 				<div className="mt-2.5 flex justify-center">
 					<StatusBadge stage={props.stage} />
 				</div>
 
-				<div className="mx-auto mt-5 grid max-w-64 grid-cols-3 gap-2">
-					<Button
-						theme="ghost"
-						type="button"
-						className="flex min-h-14 flex-col gap-1 rounded-xl bg-brand-50 px-2 text-[9px] text-brand-700 hover:bg-brand-100 dark:bg-[#0f3826] dark:text-brand-400 dark:hover:bg-[#124931]"
-						onClick={() => props.onOpenConversation(contact)}>
-						<MdChatBubbleOutline className="size-5" aria-hidden="true" />
-						Conversar
-					</Button>
+				<div className="mx-auto mt-5 grid max-w-52 grid-cols-2 gap-2">
 					<a
 						href={`https://wa.me/${normalizedPhone}`}
 						target="_blank"
 						rel="noreferrer"
-						className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl bg-slate-100 px-2 text-[9px] font-semibold text-slate-600 transition hover:bg-slate-200 dark:bg-[#17262e] dark:text-slate-300 dark:hover:bg-[#1d3039]">
+						className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl bg-brand-50 px-2 text-[9px] font-semibold text-brand-700 transition hover:bg-brand-100 dark:bg-[#0f3826] dark:text-brand-400 dark:hover:bg-[#124931]">
 						<MdWhatsapp className="size-5" aria-hidden="true" />
 						WhatsApp
 					</a>
@@ -187,23 +191,25 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 					</Button>
 				</div>
 				<dl className="mt-4 grid gap-4">
-					<DetailRow icon={MdWhatsapp} label="Telefone" value={contact.phone} />
+					<DetailRow icon={MdWhatsapp} label="Telefone" value={formattedPhone} />
 					<DetailRow icon={MdEmail} label="E-mail" value={contact.email || 'Não informado'} />
-					{contact.company && <DetailRow icon={MdBusiness} label="Empresa" value={contact.company} />}
-					<DetailRow icon={MdLocationOn} label="Localização" value={contact.city || 'Não informada'} />
 				</dl>
 			</section>
 
 			<section className="border-b border-slate-200 p-4 dark:border-[#223138] mobile:p-5">
 				<h3 className="text-xs font-semibold">Tags</h3>
 				<div className="mt-3 flex flex-wrap gap-1.5">
-					{contact.tags.map(tag => (
-						<span
-							key={tag}
-							className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-semibold text-brand-700 dark:bg-[#0f3826] dark:text-brand-400">
-							{tag}
-						</span>
-					))}
+					{contact.tags.length ? (
+						contact.tags.map(tag => (
+							<span
+								key={tag}
+								className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-semibold text-brand-700 dark:bg-[#0f3826] dark:text-brand-400">
+								{tag}
+							</span>
+						))
+					) : (
+						<span className="text-[10px] text-slate-400">Nenhuma tag adicionada.</span>
+					)}
 				</div>
 			</section>
 
@@ -224,6 +230,8 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 						type="button"
 						className="h-8 min-h-8 rounded-lg px-3 text-[10px]"
 						disabled={!notesChanged}
+						loading={savingNotes}
+						loadingLabel="Salvando..."
 						onClick={handleSaveNotes}>
 						{notesSaved && <MdCheck aria-hidden="true" />}
 						{notesSaved ? 'Salvo' : 'Salvar nota'}
@@ -236,35 +244,55 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 					<MdOutlineHistory className="size-4 text-slate-400" aria-hidden="true" />
 					<h3 className="text-xs font-semibold">Histórico</h3>
 				</div>
-				<div className="relative mt-4 grid gap-4 pl-1 before:absolute before:bottom-2 before:left-1.75 before:top-2 before:w-px before:bg-slate-200 dark:before:bg-[#223138]">
-					<div className="relative flex gap-3">
-						<span className="z-1 mt-0.5 size-2 rounded-full bg-brand-500 ring-4 ring-white dark:ring-[#0e181e]" />
-						<div>
-							<p className="text-[10px] font-medium">Última interação no WhatsApp</p>
-							<span className="mt-0.5 flex items-center gap-1 text-[9px] text-slate-400">
-								<MdOutlineAccessTime aria-hidden="true" /> {contact.lastInteraction}
-							</span>
-						</div>
-					</div>
-					<div className="relative flex gap-3">
-						<span className="z-1 mt-0.5 size-2 rounded-full bg-sky-400 ring-4 ring-white dark:ring-[#0e181e]" />
-						<div>
-							<p className="text-[10px] font-medium">Contato adicionado à base</p>
-							<span className="mt-0.5 text-[9px] text-slate-400">
-								{contact.firstContact} · {contact.origin}
-							</span>
-						</div>
+				<div className="mt-4 flex gap-3">
+					<span className="mt-0.5 size-2 rounded-full bg-brand-500 ring-4 ring-white dark:ring-[#0e181e]" />
+					<div>
+						<p className="text-[10px] font-medium">Contato adicionado à base</p>
+						<span className="mt-0.5 flex items-center gap-1 text-[9px] text-slate-400">
+							<MdOutlineAccessTime aria-hidden="true" /> {formatCreatedAt(contact.createdAt)}
+						</span>
 					</div>
 				</div>
 
-				{props.onArchive && (
+				{errorMessage && (
+					<p className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-[10px] text-red-700 dark:bg-red-500/10 dark:text-red-300">
+						{errorMessage}
+					</p>
+				)}
+
+				{deleteConfirmation ? (
+					<div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-500/20 dark:bg-red-500/10">
+						<p className="text-[10px] leading-4 text-red-700 dark:text-red-300">
+							Excluir este contato? Esta ação remove o contato da base.
+						</p>
+						<div className="mt-3 flex justify-end gap-2">
+							<Button
+								theme="ghost"
+								type="button"
+								className="h-8 min-h-8 text-[10px]"
+								disabled={deleting}
+								onClick={() => setDeleteConfirmation(false)}>
+								Cancelar
+							</Button>
+							<Button
+								theme="danger"
+								type="button"
+								className="h-8 min-h-8 text-[10px]"
+								loading={deleting}
+								loadingLabel="Excluindo..."
+								onClick={handleDelete}>
+								Excluir
+							</Button>
+						</div>
+					</div>
+				) : (
 					<Button
 						theme="ghost"
 						type="button"
-						className="mt-5 h-9 min-h-9 w-full rounded-xl text-[10px] text-slate-400 hover:text-amber-600"
-						onClick={() => props.onArchive?.(contact.id)}>
-						<MdArchive aria-hidden="true" />
-						{contact.stageId === 'inactive' ? 'Reativar contato' : 'Arquivar contato'}
+						className="mt-5 h-9 min-h-9 w-full rounded-xl text-[10px] text-slate-400 hover:text-red-600"
+						onClick={() => setDeleteConfirmation(true)}>
+						<MdDeleteOutline aria-hidden="true" />
+						Excluir contato
 					</Button>
 				)}
 			</section>

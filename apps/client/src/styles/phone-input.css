@@ -1,0 +1,230 @@
+.contact-phone-input {
+	position: relative;
+	width: 100% !important;
+	font-family: inherit !important;
+	font-size: 0.75rem !important;
+}
+
+.contact-phone-input .contact-phone-input__field {
+	width: 100% !important;
+	height: 2.5rem !important;
+	margin: 0 !important;
+	padding: 0 0.75rem 0 3.6rem !important;
+	border: 1px solid #e2e8f0 !important;
+	border-radius: 0.75rem !important;
+	background: #f8fafc !important;
+	color: #0f172a !important;
+	font-family: inherit !important;
+	font-size: 0.75rem !important;
+	line-height: 1 !important;
+	outline: none !important;
+	box-shadow: none !important;
+	transition:
+		border-color 150ms ease,
+		background-color 150ms ease !important;
+}
+
+.contact-phone-input .contact-phone-input__field::placeholder {
+	color: #94a3b8 !important;
+}
+
+.contact-phone-input .contact-phone-input__field:focus {
+	border-color: #25d366 !important;
+	background: #fff !important;
+}
+
+.contact-phone-input.is-invalid .contact-phone-input__field {
+	border-color: #ef4444 !important;
+}
+
+.contact-phone-input .contact-phone-input__button {
+	width: 2.95rem !important;
+	border: 0 !important;
+	border-right: 1px solid #e2e8f0 !important;
+	border-radius: 0.75rem 0 0 0.75rem !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.contact-phone-input .contact-phone-input__button:hover,
+.contact-phone-input .contact-phone-input__button.open {
+	background: #f1f5f9 !important;
+}
+
+.contact-phone-input .selected-flag {
+	width: 100% !important;
+	padding: 0 0 0 0.75rem !important;
+	border-radius: 0.75rem 0 0 0.75rem !important;
+	background: transparent !important;
+}
+
+.contact-phone-input .selected-flag .arrow {
+	left: 21px !important;
+	border-top-color: #64748b !important;
+}
+
+.contact-phone-input .selected-flag .arrow.up {
+	border-top: 0 !important;
+	border-bottom-color: #64748b !important;
+}
+
+.contact-phone-input .contact-phone-input__dropdown {
+	z-index: 30 !important;
+	width: min(20rem, calc(100vw - 2rem)) !important;
+	max-height: 17rem !important;
+	margin: 0.4rem 0 0 !important;
+	padding: 0.35rem !important;
+	border: 1px solid #e2e8f0 !important;
+	border-radius: 0.75rem !important;
+	background: #fff !important;
+	box-shadow: 0 18px 45px rgb(15 23 42 / 16%) !important;
+	scrollbar-color: #cbd5e1 transparent;
+	scrollbar-width: thin;
+}
+
+.contact-phone-input .contact-phone-input__dropdown::-webkit-scrollbar {
+	width: 0.3rem;
+}
+
+.contact-phone-input .contact-phone-input__dropdown::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.contact-phone-input .contact-phone-input__dropdown::-webkit-scrollbar-thumb {
+	border-radius: 999px;
+	background: #cbd5e1;
+}
+
+.contact-phone-input .contact-phone-input__dropdown .country {
+	display: flex !important;
+	align-items: center !important;
+	min-height: 2.25rem !important;
+	padding: 0.45rem 0.6rem !important;
+	border-radius: 0.55rem !important;
+	color: #334155 !important;
+	font-family: inherit !important;
+	font-size: 0.7rem !important;
+}
+
+.contact-phone-input .contact-phone-input__dropdown .country:hover,
+.contact-phone-input .contact-phone-input__dropdown .country.highlight {
+	background: #e8fbef !important;
+}
+
+.contact-phone-input .contact-phone-input__dropdown .country-name {
+	margin-right: auto !important;
+}
+
+.contact-phone-input .contact-phone-input__dropdown .dial-code {
+	color: #64748b !important;
+}
+
+.contact-phone-input .contact-phone-input__dropdown .search.contact-phone-input__search {
+	position: sticky !important;
+	top: -0.35rem !important;
+	z-index: 1 !important;
+	width: auto !important;
+	height: auto !important;
+	margin: -0.35rem -0.35rem 0.3rem !important;
+	padding: 0.45rem !important;
+	border: 0 !important;
+	border-bottom: 1px solid #e2e8f0 !important;
+	border-radius: 0 !important;
+	background: #fff !important;
+	box-shadow: none !important;
+}
+
+.contact-phone-input .contact-phone-input__dropdown .search-box.contact-phone-input__search-box {
+	box-sizing: border-box !important;
+	width: 100% !important;
+	height: 2rem !important;
+	margin: 0 !important;
+	padding: 0 0.65rem !important;
+	border: 1px solid #e2e8f0 !important;
+	border-radius: 0.5rem !important;
+	background: #f8fafc !important;
+	color: #0f172a !important;
+	font-family: inherit !important;
+	font-size: 0.6875rem !important;
+	font-weight: 400 !important;
+	line-height: 1 !important;
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+.contact-phone-input .contact-phone-input__dropdown .search-box.contact-phone-input__search-box:focus {
+	border-color: #25d366 !important;
+	background: #fff !important;
+}
+
+.contact-phone-input .contact-phone-input__dropdown .divider {
+	margin: 0.25rem 0.5rem !important;
+	border-bottom-color: #e2e8f0 !important;
+}
+
+.contact-phone-input .contact-phone-input__field:disabled {
+	cursor: not-allowed;
+	opacity: 0.65;
+}
+
+.dark .contact-phone-input .contact-phone-input__field {
+	border-color: #223138 !important;
+	background: #131f26 !important;
+	color: #e2e8f0 !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__field:focus {
+	border-color: #25d366 !important;
+	background: #0e181e !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__button {
+	border-right-color: #223138 !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__button:hover,
+.dark .contact-phone-input .contact-phone-input__button.open {
+	background: #1a2931 !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__dropdown,
+.dark .contact-phone-input .contact-phone-input__dropdown .search.contact-phone-input__search {
+	border-color: #223138 !important;
+	background: #131f26 !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__dropdown {
+	scrollbar-color: #3b4d56 transparent;
+}
+
+.dark .contact-phone-input .contact-phone-input__dropdown::-webkit-scrollbar-thumb {
+	background: #3b4d56;
+}
+
+.dark .contact-phone-input .contact-phone-input__dropdown .country {
+	color: #cbd5e1 !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__dropdown .country:hover,
+.dark .contact-phone-input .contact-phone-input__dropdown .country.highlight {
+	background: #0f3826 !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__dropdown .dial-code {
+	color: #94a3b8 !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__dropdown .search-box.contact-phone-input__search-box {
+	border-color: #2b3c45 !important;
+	background: #0e181e !important;
+	color: #e2e8f0 !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__dropdown .search-box.contact-phone-input__search-box:focus {
+	border-color: #25d366 !important;
+	background: #0b151a !important;
+}
+
+.dark .contact-phone-input .contact-phone-input__dropdown .divider {
+	border-bottom-color: #2b3c45 !important;
+}

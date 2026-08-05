@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MdAdd, MdClose, MdEdit } from 'react-icons/md';
 
+import { isPossiblePhone } from '@/utils';
+
 import { Button } from '@/components/buttons';
+import { PhoneInput } from '@/components/inputs';
 
 import type { Contact, ContactDraft, RelationshipStage } from './types';
 
@@ -9,16 +12,14 @@ interface ContactFormModalProps {
 	contact?: Contact;
 	stages: RelationshipStage[];
 	onClose: () => void;
-	onSave: (draft: ContactDraft, contactId?: string) => void;
+	onSave: (draft: ContactDraft, contactId?: string) => void | Promise<void>;
 }
 
 const createDraft = (contact?: Contact, defaultStageId = ''): ContactDraft => ({
 	name: contact?.name || '',
 	phone: contact?.phone || '',
 	email: contact?.email || '',
-	company: contact?.company || '',
-	city: contact?.city || '',
-	stageId: contact?.stageId || defaultStageId,
+	stageId: contact ? contact.stageId || '' : defaultStageId,
 	tags: contact?.tags.join(', ') || ''
 });
 
@@ -28,6 +29,8 @@ const fieldClassName =
 export const ContactFormModal: React.FC<ContactFormModalProps> = props => {
 	const [draft, setDraft] = useState<ContactDraft>(() => createDraft(props.contact, props.stages[0]?.id));
 	const [submitted, setSubmitted] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
+	const [errorMessage, setErrorMessage] = useState('');
 	const isEditing = Boolean(props.contact);
 
 	useEffect(() => {
@@ -42,7 +45,7 @@ export const ContactFormModal: React.FC<ContactFormModalProps> = props => {
 	const errors = useMemo(
 		() => ({
 			name: draft.name.trim() ? '' : 'Informe o nome do contato.',
-			phone: draft.phone.replace(/\D/g, '').length >= 10 ? '' : 'Informe um telefone válido.',
+			phone: isPossiblePhone(draft.phone) ? '' : 'Informe um telefone válido.',
 			email:
 				!draft.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email) ? '' : 'Informe um e-mail válido.'
 		}),
@@ -53,24 +56,31 @@ export const ContactFormModal: React.FC<ContactFormModalProps> = props => {
 		setDraft(current => ({ ...current, [field]: value }));
 	};
 
-	const handleSubmit = (event: React.FormEvent) => {
+	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
 		setSubmitted(true);
 
 		if (Object.values(errors).some(Boolean)) return;
 
-		props.onSave(
-			{
-				...draft,
-				name: draft.name.trim(),
-				phone: draft.phone.trim(),
-				email: draft.email.trim(),
-				company: draft.company.trim(),
-				city: draft.city.trim(),
-				tags: draft.tags.trim()
-			},
-			props.contact?.id
-		);
+		setSubmitting(true);
+		setErrorMessage('');
+
+		try {
+			await props.onSave(
+				{
+					...draft,
+					name: draft.name.trim(),
+					phone: draft.phone.trim(),
+					email: draft.email.trim(),
+					tags: draft.tags.trim()
+				},
+				props.contact?.id
+			);
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : 'Não foi possível salvar o contato.');
+		} finally {
+			setSubmitting(false);
+		}
 	};
 
 	return (
@@ -113,6 +123,11 @@ export const ContactFormModal: React.FC<ContactFormModalProps> = props => {
 
 				<form onSubmit={handleSubmit} noValidate>
 					<div className="grid gap-4 p-4 mobile:grid-cols-2 mobile:p-5">
+						{errorMessage && (
+							<p className="rounded-xl bg-red-50 px-3 py-2.5 text-[10px] text-red-700 dark:bg-red-500/10 dark:text-red-300 mobile:col-span-2">
+								{errorMessage}
+							</p>
+						)}
 						<label className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 mobile:col-span-2">
 							Nome completo <span className="text-red-500">*</span>
 							<input
@@ -128,14 +143,18 @@ export const ContactFormModal: React.FC<ContactFormModalProps> = props => {
 							)}
 						</label>
 
-						<label className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+						<label
+							htmlFor="contact-phone"
+							className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
 							Telefone / WhatsApp <span className="text-red-500">*</span>
-							<input
+							<PhoneInput
+								id="contact-phone"
+								name="phone"
 								value={draft.phone}
-								onChange={event => updateField('phone', event.target.value)}
+								onChange={value => updateField('phone', value)}
 								placeholder="+55 (31) 99999-9999"
-								aria-invalid={submitted && Boolean(errors.phone)}
-								className={fieldClassName}
+								required
+								invalid={submitted && Boolean(errors.phone)}
 							/>
 							{submitted && errors.phone && (
 								<span className="mt-1 block text-[9px] text-red-500">{errors.phone}</span>
@@ -157,32 +176,13 @@ export const ContactFormModal: React.FC<ContactFormModalProps> = props => {
 							)}
 						</label>
 
-						<label className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
-							Empresa
-							<input
-								value={draft.company}
-								onChange={event => updateField('company', event.target.value)}
-								placeholder="Nome da empresa"
-								className={fieldClassName}
-							/>
-						</label>
-
-						<label className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
-							Cidade
-							<input
-								value={draft.city}
-								onChange={event => updateField('city', event.target.value)}
-								placeholder="Cidade, UF"
-								className={fieldClassName}
-							/>
-						</label>
-
-						<label className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+						<label className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 mobile:col-span-2">
 							Etapa do relacionamento
 							<select
 								value={draft.stageId}
 								onChange={event => updateField('stageId', event.target.value)}
 								className={fieldClassName}>
+								<option value="">Sem etapa</option>
 								{props.stages.map(stage => (
 									<option key={stage.id} value={stage.id}>
 										{stage.name}
@@ -206,10 +206,15 @@ export const ContactFormModal: React.FC<ContactFormModalProps> = props => {
 					</div>
 
 					<footer className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-slate-200 bg-white/95 px-4 py-3.5 backdrop-blur dark:border-[#223138] dark:bg-[#0e181e]/95 mobile:px-5">
-						<Button theme="secondary" type="button" className="min-w-24" onClick={props.onClose}>
+						<Button
+							theme="secondary"
+							type="button"
+							className="min-w-24"
+							disabled={submitting}
+							onClick={props.onClose}>
 							Cancelar
 						</Button>
-						<Button type="submit" className="min-w-32">
+						<Button type="submit" className="min-w-32" loading={submitting} loadingLabel="Salvando...">
 							{isEditing ? 'Salvar alterações' : 'Adicionar contato'}
 						</Button>
 					</footer>

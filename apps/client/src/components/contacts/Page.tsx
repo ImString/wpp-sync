@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MdAdd, MdDownload, MdFilterList, MdGroups, MdStar, MdTune } from 'react-icons/md';
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { MdAdd, MdDownload, MdFilterList, MdGroups, MdTune } from 'react-icons/md';
+import { useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
 import { useShallow } from 'zustand/react/shallow';
 
+import { contactsAPI, getResponseMessage, type ContactData, type ContactOrder } from '@/utils/api';
+
 import { Button } from '@/components/buttons';
-import { Pagination, useClientPagination } from '@/components/pagination';
+import { Pagination } from '@/components/pagination';
 
 import { ContactDetails } from './ContactDetails';
 import { ContactFormModal } from './ContactFormModal';
@@ -13,15 +15,8 @@ import { ContactList } from './ContactList';
 import type { ContactsLayoutContext } from './Layout';
 import { hexToRgba } from './stageColors';
 import { StageIcon } from './stageIcons';
-import { useContactsStore } from './store';
-import type { Contact, ContactDraft, RelationshipStage, StageIconName } from './types';
-
-const normalizeText = (value: string) =>
-	value
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '')
-		.toLowerCase()
-		.trim();
+import { type ContactListQuery, useContactsStore } from './store';
+import type { Contact, ContactDraft, StageIconName } from './types';
 
 const escapeCsvValue = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
 
@@ -70,30 +65,129 @@ const StatCard: React.FC<StatCardProps> = props => {
 
 export const ContactsPage: React.FC = () => {
 	const navigate = useNavigate();
+	const navigateRef = useRef(navigate);
+	navigateRef.current = navigate;
 	const { uid, contactId } = useParams<{ uid: string; contactId?: string }>();
+	const [searchParams, setSearchParams] = useSearchParams();
+	const urlQuery = searchParams.toString();
 	const { search, createRequest } = useOutletContext<ContactsLayoutContext>();
-	const { contacts, stages, createContact, updateContact, toggleFavorite, updateNotes, moveContactToStage } =
-		useContactsStore(
-			useShallow(state => ({
-				contacts: state.contacts,
-				stages: state.stages,
-				createContact: state.createContact,
-				updateContact: state.updateContact,
-				toggleFavorite: state.toggleFavorite,
-				updateNotes: state.updateNotes,
-				moveContactToStage: state.moveContactToStage
-			}))
-		);
-	const [activeStageId, setActiveStageId] = useState('all');
-	const [favoriteOnly, setFavoriteOnly] = useState(false);
-	const [sort, setSort] = useState<'recent' | 'name'>('recent');
+	const {
+		contacts,
+		contactsTotal,
+		workspaceContactsTotal,
+		contactDetails,
+		stages,
+		contactsStatus,
+		contactsError,
+		loadContacts,
+		loadContact,
+		loadData,
+		createContact,
+		updateContact,
+		deleteContact,
+		updateNotes
+	} = useContactsStore(
+		useShallow(state => ({
+			contacts: state.contacts,
+			contactsTotal: state.contactsTotal,
+			workspaceContactsTotal: state.workspaceContactsTotal,
+			contactDetails: state.contactDetails,
+			stages: state.stages,
+			contactsStatus: state.contactsStatus,
+			contactsError: state.contactsError,
+			loadContacts: state.loadContacts,
+			loadContact: state.loadContact,
+			loadData: state.loadData,
+			createContact: state.createContact,
+			updateContact: state.updateContact,
+			deleteContact: state.deleteContact,
+			updateNotes: state.updateNotes
+		}))
+	);
+	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(5);
+	const [debouncedSearch, setDebouncedSearch] = useState(search.trim());
+	const [refreshVersion, setRefreshVersion] = useState(0);
 	const [formOpen, setFormOpen] = useState(false);
 	const [editingContact, setEditingContact] = useState<Contact>();
 	const [toast, setToast] = useState('');
 	const previousCreateRequest = useRef(createRequest);
+	const previousRefreshVersion = useRef(refreshVersion);
+	const currentContactId = useRef(contactId);
+	currentContactId.current = contactId;
 	const orderedStages = useMemo(() => [...stages].sort((first, second) => first.order - second.order), [stages]);
-	const selectedContact = contacts.find(contact => contact.id === contactId);
+	const stepSlug = (searchParams.get('step') || '').trim().toLowerCase();
+	const filteredStage = orderedStages.find(stage => stage.slug === stepSlug);
+	const activeStageId = filteredStage?.id || 'all';
+	const sort: ContactOrder = searchParams.get('order') === 'name' ? 'name' : 'recent';
+	const selectedContact =
+		contacts.find(contact => contact.id === contactId) ||
+		(contactDetails?.id === contactId ? contactDetails : undefined);
 	const selectedStage = orderedStages.find(stage => stage.id === selectedContact?.stageId);
+	const listQuery = useMemo<ContactListQuery>(
+		() => ({
+			page,
+			limit: pageSize,
+			search: debouncedSearch || undefined,
+			stage: activeStageId === 'all' ? undefined : activeStageId,
+			order: sort
+		}),
+		[activeStageId, debouncedSearch, page, pageSize, sort]
+	);
+	const listRequestKey = useMemo(
+		() => JSON.stringify({ uid, ...listQuery, refreshVersion }),
+		[listQuery, refreshVersion, uid]
+	);
+	const previousListRequestKey = useRef<string | undefined>(undefined);
+
+	useEffect(() => {
+		const nextParams = new URLSearchParams(urlQuery);
+		const rawStep = nextParams.get('step');
+		const normalizedStep = rawStep?.trim().toLowerCase() || '';
+		let changed = false;
+
+		if (rawStep && !orderedStages.some(stage => stage.slug === normalizedStep)) {
+			nextParams.delete('step');
+			changed = true;
+		} else if (rawStep && rawStep !== normalizedStep) {
+			nextParams.set('step', normalizedStep);
+			changed = true;
+		}
+
+		if (nextParams.has('order') && nextParams.get('order') !== 'name') {
+			nextParams.delete('order');
+			changed = true;
+		}
+
+		if (changed) setSearchParams(nextParams, { replace: true });
+	}, [orderedStages, setSearchParams, urlQuery]);
+
+	useEffect(() => {
+		const timeout = window.setTimeout(() => {
+			setDebouncedSearch(search.trim());
+			setPage(1);
+		}, 300);
+
+		return () => window.clearTimeout(timeout);
+	}, [search]);
+
+	useEffect(() => {
+		if (!uid) return;
+
+		const isReload =
+			previousListRequestKey.current !== undefined && previousListRequestKey.current !== listRequestKey;
+		const forceReload = previousRefreshVersion.current !== refreshVersion;
+		previousListRequestKey.current = listRequestKey;
+		previousRefreshVersion.current = refreshVersion;
+
+		if (isReload && currentContactId.current) {
+			navigateRef.current(`/w/${uid}/contacts${urlQuery ? `?${urlQuery}` : ''}`, { replace: true });
+		}
+
+		const controller = new AbortController();
+		void loadContacts(uid, listQuery, controller.signal, forceReload).catch(() => undefined);
+		return () => controller.abort();
+	}, [listQuery, listRequestKey, loadContacts, uid, urlQuery]);
 
 	useEffect(() => {
 		if (createRequest !== previousCreateRequest.current) {
@@ -104,8 +198,17 @@ export const ContactsPage: React.FC = () => {
 	}, [createRequest]);
 
 	useEffect(() => {
-		if (contactId && !selectedContact && uid) navigate(`/w/${uid}/contacts`, { replace: true });
-	}, [contactId, navigate, selectedContact, uid]);
+		if (!contactId || selectedContact || !uid) return;
+
+		const controller = new AbortController();
+		void loadContact(uid, contactId, controller.signal).catch(() => {
+			if (!controller.signal.aborted) {
+				navigate(`/w/${uid}/contacts${urlQuery ? `?${urlQuery}` : ''}`, { replace: true });
+			}
+		});
+
+		return () => controller.abort();
+	}, [contactId, loadContact, navigate, selectedContact, uid, urlQuery]);
 
 	useEffect(() => {
 		if (!toast) return;
@@ -114,107 +217,116 @@ export const ContactsPage: React.FC = () => {
 		return () => window.clearTimeout(timeout);
 	}, [toast]);
 
-	useEffect(() => {
-		if (activeStageId !== 'all' && !stages.some(stage => stage.id === activeStageId)) setActiveStageId('all');
-	}, [activeStageId, stages]);
-
-	const filteredContacts = useMemo(() => {
-		const normalizedSearch = normalizeText(search);
-
-		return contacts
-			.filter(contact => {
-				const stage = stages.find(item => item.id === contact.stageId);
-				const searchableText = normalizeText(
-					[
-						contact.name,
-						contact.phone,
-						contact.email,
-						contact.company,
-						contact.city,
-						stage?.name,
-						...contact.tags
-					]
-						.filter(Boolean)
-						.join(' ')
-				);
-				const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch);
-				const matchesStage = activeStageId === 'all' || contact.stageId === activeStageId;
-				const matchesFavorite = !favoriteOnly || contact.favorite;
-
-				return matchesSearch && matchesStage && matchesFavorite;
-			})
-			.sort((first, second) =>
-				sort === 'name'
-					? first.name.localeCompare(second.name, 'pt-BR')
-					: second.lastInteractionOrder - first.lastInteractionOrder
-			);
-	}, [activeStageId, contacts, favoriteOnly, search, sort, stages]);
-	const pagination = useClientPagination(filteredContacts);
+	useEffect(() => setPage(1), [activeStageId, sort]);
 
 	useEffect(() => {
-		pagination.resetPage();
-	}, [activeStageId, favoriteOnly, pagination.resetPage, search, sort]);
+		const totalPages = Math.max(1, Math.ceil(contactsTotal / pageSize));
+		if (page > totalPages) setPage(totalPages);
+	}, [contactsTotal, page, pageSize]);
+
+	const handleStageChange = (stageId: string) => {
+		const stage = orderedStages.find(item => item.id === stageId);
+		setSearchParams(current => {
+			const nextParams = new URLSearchParams(current);
+			if (stage) nextParams.set('step', stage.slug);
+			else nextParams.delete('step');
+			return nextParams;
+		});
+		setPage(1);
+	};
+
+	const handleOrderChange = (order: ContactOrder) => {
+		setSearchParams(current => {
+			const nextParams = new URLSearchParams(current);
+			if (order === 'name') nextParams.set('order', 'name');
+			else nextParams.delete('order');
+			return nextParams;
+		});
+		setPage(1);
+	};
+
+	const refreshListAndCounts = () => {
+		setRefreshVersion(version => version + 1);
+		if (uid) void loadData(uid, undefined, true).catch(() => undefined);
+	};
 
 	const goToContacts = () => {
-		if (uid) navigate(`/w/${uid}/contacts`);
+		if (uid) navigate(`/w/${uid}/contacts${urlQuery ? `?${urlQuery}` : ''}`);
 	};
 
 	const handleSelectContact = (nextContactId: string) => {
-		if (uid) navigate(`/w/${uid}/contacts/${nextContactId}`);
+		if (uid) navigate(`/w/${uid}/contacts/${nextContactId}${urlQuery ? `?${urlQuery}` : ''}`);
 	};
 
-	const handleSaveContact = (draft: ContactDraft, currentContactId?: string) => {
+	const handleSaveContact = async (draft: ContactDraft, currentContactId?: string) => {
+		if (!uid) throw new Error('Área de trabalho não identificada.');
+
 		if (currentContactId) {
-			updateContact(currentContactId, draft);
+			await updateContact(uid, currentContactId, draft);
 			setToast('Contato atualizado com sucesso.');
 		} else {
-			const contact = createContact(draft);
+			const contact = await createContact(uid, draft);
 			setToast('Novo contato adicionado.');
-			pagination.resetPage();
-			if (uid) navigate(`/w/${uid}/contacts/${contact.id}`);
+			setPage(1);
+			navigate(`/w/${uid}/contacts/${contact.id}${urlQuery ? `?${urlQuery}` : ''}`);
 		}
 
+		refreshListAndCounts();
 		setFormOpen(false);
 		setEditingContact(undefined);
 	};
 
-	const handleArchive = (currentContactId: string) => {
-		const inactiveStage = stages.find(stage => stage.id === 'inactive');
-		if (!inactiveStage) return;
-
-		if (selectedContact?.stageId === inactiveStage.id) {
-			const reactivationStage = orderedStages.find(stage => stage.id !== inactiveStage.id);
-			if (!reactivationStage) return;
-			moveContactToStage(currentContactId, reactivationStage.id);
-			setToast('Contato reativado.');
-			return;
-		}
-
-		moveContactToStage(currentContactId, inactiveStage.id);
-		setToast('Contato arquivado.');
+	const handleDelete = async (currentContactId: string) => {
+		if (!uid) throw new Error('Área de trabalho não identificada.');
+		await deleteContact(uid, currentContactId);
+		setToast('Contato excluído.');
+		navigate(`/w/${uid}/contacts${urlQuery ? `?${urlQuery}` : ''}`, { replace: true });
+		refreshListAndCounts();
 	};
 
-	const handleExport = () => {
-		const rows = [
-			['Nome', 'Telefone', 'E-mail', 'Empresa', 'Cidade', 'Etapa', 'Tags'],
-			...filteredContacts.map(contact => [
-				contact.name,
-				contact.phone,
-				contact.email,
-				contact.company || '',
-				contact.city,
-				stages.find(stage => stage.id === contact.stageId)?.name || '',
-				contact.tags.join(' | ')
-			])
-		];
-		const csv = rows.map(row => row.map(escapeCsvValue).join(';')).join('\n');
-		const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = 'contatos-wppsync.csv';
-		link.click();
-		URL.revokeObjectURL(url);
-		setToast(`${filteredContacts.length} contatos exportados.`);
+	const handleExport = async () => {
+		if (!uid) return;
+
+		try {
+			const getPage = async (currentPage: number) => {
+				const response = await contactsAPI.list(uid, { ...listQuery, page: currentPage, limit: 100 });
+				if (!response.success || !response.data) {
+					throw new Error(getResponseMessage(response, 'Não foi possível exportar os contatos.'));
+				}
+				return response.data;
+			};
+
+			const firstPage = await getPage(1);
+			const totalPages = Math.ceil(firstPage.total / 100);
+			const remainingPages = await Promise.all(
+				Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => getPage(index + 2))
+			);
+			const exportContacts: ContactData[] = [
+				...firstPage.items,
+				...remainingPages.flatMap(result => result.items)
+			];
+			const rows = [
+				['Nome', 'Telefone', 'E-mail', 'Etapa', 'Tags', 'Criado em'],
+				...exportContacts.map(contact => [
+					contact.name || contact.pushName || contact.whatsapp,
+					contact.whatsapp,
+					contact.email || '',
+					contact.stage?.name || '',
+					(contact.tags || []).join(' | '),
+					contact.createdAt || ''
+				])
+			];
+			const csv = rows.map(row => row.map(escapeCsvValue).join(';')).join('\n');
+			const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = 'contatos-wppsync.csv';
+			link.click();
+			URL.revokeObjectURL(url);
+			setToast(`${exportContacts.length} contatos exportados.`);
+		} catch (error) {
+			setToast(error instanceof Error ? error.message : 'Não foi possível exportar os contatos.');
+		}
 	};
 
 	return (
@@ -269,23 +381,23 @@ export const ContactsPage: React.FC = () => {
 				<div className="scrollbar-none -mx-3 mt-4 flex gap-2 overflow-x-auto px-3 py-1 mobile:mx-0 mobile:px-0">
 					<StatCard
 						label="Todos"
-						value={contacts.length}
+						value={workspaceContactsTotal}
 						stageId="all"
 						activeStageId={activeStageId}
 						color="#8b5cf6"
 						all
-						onClick={setActiveStageId}
+						onClick={handleStageChange}
 					/>
 					{orderedStages.map(stage => (
 						<StatCard
 							key={stage.id}
 							label={stage.name}
-							value={contacts.filter(contact => contact.stageId === stage.id).length}
+							value={stage.contactCount}
 							stageId={stage.id}
 							activeStageId={activeStageId}
 							color={stage.color}
 							icon={stage.icon}
-							onClick={setActiveStageId}
+							onClick={handleStageChange}
 						/>
 					))}
 				</div>
@@ -297,7 +409,7 @@ export const ContactsPage: React.FC = () => {
 						<div className="flex min-w-0 items-center gap-2">
 							<MdFilterList className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
 							<span className="whitespace-nowrap text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-								{filteredContacts.length} {filteredContacts.length === 1 ? 'contato' : 'contatos'}
+								{contactsTotal} {contactsTotal === 1 ? 'contato' : 'contatos'}
 							</span>
 							<span className="hidden h-4 w-px bg-slate-200 dark:bg-[#223138] mobile:block" />
 							<div className="scrollbar-none hidden gap-1 overflow-x-auto mobile:flex">
@@ -308,43 +420,30 @@ export const ContactsPage: React.FC = () => {
 										activeStageId === 'all' &&
 											'bg-brand-50 text-brand-700 dark:bg-[#0f3826] dark:text-brand-400'
 									)}
-									onClick={() => setActiveStageId('all')}>
+									onClick={() => handleStageChange('all')}>
 									Todos
 								</button>
 								{orderedStages.map(stage => (
 									<button
 										key={stage.id}
 										type="button"
-									className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[9px] font-semibold text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-[#17262e]"
+										className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[9px] font-semibold text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-[#17262e]"
 										style={
 											activeStageId === stage.id
 												? { color: stage.color, backgroundColor: hexToRgba(stage.color, 0.12) }
 												: undefined
 										}
-										onClick={() => setActiveStageId(stage.id)}>
-									<StageIcon name={stage.icon} className="size-3" />
-									{stage.name}
+										onClick={() => handleStageChange(stage.id)}>
+										<StageIcon name={stage.icon} className="size-3" />
+										{stage.name}
 									</button>
 								))}
 							</div>
 						</div>
 						<div className="flex shrink-0 items-center gap-1.5">
-							<Button
-								theme="ghost"
-								type="button"
-								aria-label="Mostrar apenas favoritos"
-								aria-pressed={favoriteOnly}
-								className={twMerge(
-									'size-8 min-h-8 rounded-lg p-0',
-									favoriteOnly &&
-										'bg-amber-50 text-amber-500 dark:bg-amber-500/10 dark:text-amber-400'
-								)}
-								onClick={() => setFavoriteOnly(value => !value)}>
-								<MdStar aria-hidden="true" />
-							</Button>
 							<select
 								value={sort}
-								onChange={event => setSort(event.target.value as 'recent' | 'name')}
+								onChange={event => handleOrderChange(event.target.value as ContactOrder)}
 								aria-label="Ordenar contatos"
 								className="h-8 max-w-28 rounded-lg border border-slate-200 bg-white px-2 text-[9px] font-medium text-slate-500 outline-none focus:border-brand-500 dark:border-[#223138] dark:bg-[#131f26] dark:text-slate-300">
 								<option value="recent">Mais recentes</option>
@@ -354,20 +453,26 @@ export const ContactsPage: React.FC = () => {
 					</div>
 
 					<ContactList
-						contacts={pagination.pageItems}
+						contacts={contacts}
 						stages={orderedStages}
+						loading={contactsStatus === 'loading'}
+						error={contactsStatus === 'error' ? contactsError || undefined : undefined}
+						skeletonCount={pageSize}
 						selectedContactId={contactId}
 						onSelect={handleSelectContact}
-						onToggleFavorite={toggleFavorite}
 					/>
 					<Pagination
-						page={pagination.page}
-						pageSize={pagination.pageSize}
-						totalItems={pagination.totalItems}
+						page={page}
+						pageSize={pageSize}
+						totalItems={contactsStatus === 'error' ? 0 : contactsTotal}
+						disabled={contactsStatus === 'loading'}
 						itemLabel="contatos"
 						singularItemLabel="contato"
-						onPageChange={pagination.setPage}
-						onPageSizeChange={pagination.setPageSize}
+						onPageChange={setPage}
+						onPageSizeChange={nextPageSize => {
+							setPageSize(nextPageSize);
+							setPage(1);
+						}}
 					/>
 				</section>
 
@@ -381,9 +486,11 @@ export const ContactsPage: React.FC = () => {
 							setEditingContact(contact);
 							setFormOpen(true);
 						}}
-						onOpenConversation={contact => navigate(uid ? `/w/${uid}/chats/${contact.id}` : '/')}
-						onSaveNotes={updateNotes}
-						onArchive={stages.some(stage => stage.id === 'inactive') ? handleArchive : undefined}
+						onSaveNotes={(currentContactId, notes) => {
+							if (!uid) return Promise.reject(new Error('Área de trabalho não identificada.'));
+							return updateNotes(uid, currentContactId, notes).then(() => setToast('Nota salva.'));
+						}}
+						onDelete={handleDelete}
 					/>
 				)}
 			</div>

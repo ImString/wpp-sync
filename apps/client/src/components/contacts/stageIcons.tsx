@@ -1,3 +1,4 @@
+import { stageIconNames, type StageIconName } from '@wppsync/shared/contact-stages';
 import type { IconType } from 'react-icons';
 import {
 	MdAccessTime,
@@ -22,41 +23,43 @@ import {
 	MdWarningAmber
 } from 'react-icons/md';
 
-import type { StageIconName } from './types';
-
 export interface StageIconSuggestion {
 	name: StageIconName;
 	label: string;
 	icon: IconType;
 }
 
-export const stageIconSuggestions: StageIconSuggestion[] = [
-	{ name: 'label', label: 'Etiqueta', icon: MdLabelOutline },
-	{ name: 'clock', label: 'Relógio', icon: MdAccessTime },
-	{ name: 'hourglass', label: 'Ampulheta', icon: MdHourglassEmpty },
-	{ name: 'person', label: 'Pessoa', icon: MdPersonOutline },
-	{ name: 'group', label: 'Pessoas', icon: MdGroups },
-	{ name: 'chat', label: 'Conversa', icon: MdChatBubbleOutline },
-	{ name: 'phone', label: 'Telefone', icon: MdPhone },
-	{ name: 'calendar', label: 'Calendário', icon: MdCalendarToday },
-	{ name: 'event', label: 'Compromisso', icon: MdEventAvailable },
-	{ name: 'check', label: 'Concluído', icon: MdCheckCircleOutline },
-	{ name: 'star', label: 'Estrela', icon: MdStarOutline },
-	{ name: 'heart', label: 'Coração', icon: MdFavoriteBorder },
-	{ name: 'flag', label: 'Bandeira', icon: MdFlag },
-	{ name: 'target', label: 'Objetivo', icon: MdGpsFixed },
-	{ name: 'cart', label: 'Carrinho', icon: MdShoppingCart },
-	{ name: 'money', label: 'Financeiro', icon: MdAttachMoney },
-	{ name: 'rocket', label: 'Foguete', icon: MdRocketLaunch },
-	{ name: 'pause', label: 'Pausado', icon: MdPauseCircleOutline },
-	{ name: 'warning', label: 'Atenção', icon: MdWarningAmber },
-	{ name: 'archive', label: 'Arquivado', icon: MdArchive }
-];
+const stageIconDefinitions = {
+	label: { label: 'Etiqueta', icon: MdLabelOutline },
+	clock: { label: 'Relógio', icon: MdAccessTime },
+	hourglass: { label: 'Ampulheta', icon: MdHourglassEmpty },
+	person: { label: 'Pessoa', icon: MdPersonOutline },
+	group: { label: 'Pessoas', icon: MdGroups },
+	chat: { label: 'Conversa', icon: MdChatBubbleOutline },
+	phone: { label: 'Telefone', icon: MdPhone },
+	calendar: { label: 'Calendário', icon: MdCalendarToday },
+	event: { label: 'Compromisso', icon: MdEventAvailable },
+	check: { label: 'Concluído', icon: MdCheckCircleOutline },
+	star: { label: 'Estrela', icon: MdStarOutline },
+	heart: { label: 'Coração', icon: MdFavoriteBorder },
+	flag: { label: 'Bandeira', icon: MdFlag },
+	target: { label: 'Objetivo', icon: MdGpsFixed },
+	cart: { label: 'Carrinho', icon: MdShoppingCart },
+	money: { label: 'Financeiro', icon: MdAttachMoney },
+	rocket: { label: 'Foguete', icon: MdRocketLaunch },
+	pause: { label: 'Pausado', icon: MdPauseCircleOutline },
+	warning: { label: 'Atenção', icon: MdWarningAmber },
+	archive: { label: 'Arquivado', icon: MdArchive }
+} satisfies Record<StageIconName, Omit<StageIconSuggestion, 'name'>>;
 
-const iconByName = Object.fromEntries(stageIconSuggestions.map(suggestion => [suggestion.name, suggestion.icon])) as Record<
-	StageIconName,
-	IconType
->;
+export const stageIconSuggestions: StageIconSuggestion[] = stageIconNames.map(name => ({
+	name,
+	...stageIconDefinitions[name]
+}));
+
+const iconByName = Object.fromEntries(
+	stageIconSuggestions.map(suggestion => [suggestion.name, suggestion.icon])
+) as Record<StageIconName, IconType>;
 
 interface StageIconProps {
 	name?: StageIconName;

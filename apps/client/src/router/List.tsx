@@ -50,9 +50,8 @@ export const RouteList = () => {
 					<Route path=":chatId" element={<ChatConversationRoute />} />
 				</Route>
 				<Route path="contacts" element={<ContactsLayout />}>
-					<Route index element={<ContactsPage />} />
 					<Route path="stages" element={<RelationshipStagesPage />} />
-					<Route path=":contactId" element={<ContactsPage />} />
+					<Route path=":contactId?" element={<ContactsPage />} />
 				</Route>
 				<Route path="integrations" element={<IntegrationsLayout />}>
 					<Route index element={<IntegrationsPage />} />

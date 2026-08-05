@@ -16,8 +16,8 @@ import { Button } from '@/components/buttons';
 
 import type { ContactsLayoutContext } from './Layout';
 import { StageFormModal } from './StageFormModal';
-import { StageIcon } from './stageIcons';
 import { hexToRgba } from './stageColors';
+import { StageIcon } from './stageIcons';
 import { useContactsStore } from './store';
 import type { RelationshipStage, RelationshipStageDraft } from './types';
 
@@ -33,12 +33,25 @@ interface DeleteStageModalProps {
 	stages: RelationshipStage[];
 	contactCount: number;
 	onClose: () => void;
-	onConfirm: (replacementStageId: string) => void;
+	onConfirm: (replacementStageId: string) => Promise<void>;
 }
 
 const DeleteStageModal: React.FC<DeleteStageModalProps> = props => {
 	const replacementStages = props.stages.filter(stage => stage.id !== props.stage.id);
 	const [replacementStageId, setReplacementStageId] = useState(replacementStages[0]?.id || '');
+	const [submitting, setSubmitting] = useState(false);
+	const [errorMessage, setErrorMessage] = useState('');
+
+	const handleConfirm = async () => {
+		setSubmitting(true);
+		setErrorMessage('');
+		try {
+			await props.onConfirm(replacementStageId);
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : 'Não foi possível excluir a etapa.');
+			setSubmitting(false);
+		}
+	};
 
 	return (
 		<div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 p-4 backdrop-blur-[2px]">
@@ -73,15 +86,23 @@ const DeleteStageModal: React.FC<DeleteStageModalProps> = props => {
 					</label>
 				)}
 
+				{errorMessage && (
+					<p className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-[10px] text-red-700 dark:bg-red-500/10 dark:text-red-300">
+						{errorMessage}
+					</p>
+				)}
+
 				<footer className="mt-5 flex justify-end gap-2">
-					<Button theme="secondary" type="button" onClick={props.onClose}>
+					<Button theme="secondary" type="button" disabled={submitting} onClick={props.onClose}>
 						Cancelar
 					</Button>
 					<Button
 						theme="danger"
 						type="button"
 						disabled={!replacementStageId}
-						onClick={() => props.onConfirm(replacementStageId)}>
+						loading={submitting}
+						loadingLabel="Excluindo..."
+						onClick={handleConfirm}>
 						Excluir etapa
 					</Button>
 				</footer>
@@ -94,9 +115,9 @@ export const RelationshipStagesPage: React.FC = () => {
 	const navigate = useNavigate();
 	const { uid } = useParams<{ uid: string }>();
 	const { search, createRequest } = useOutletContext<ContactsLayoutContext>();
-	const { contacts, stages, createStage, updateStage, deleteStage, moveStage } = useContactsStore(
+	const { workspaceContactsTotal, stages, createStage, updateStage, deleteStage, moveStage } = useContactsStore(
 		useShallow(state => ({
-			contacts: state.contacts,
+			workspaceContactsTotal: state.workspaceContactsTotal,
 			stages: state.stages,
 			createStage: state.createStage,
 			updateStage: state.updateStage,
@@ -107,6 +128,7 @@ export const RelationshipStagesPage: React.FC = () => {
 	const [formOpen, setFormOpen] = useState(false);
 	const [editingStage, setEditingStage] = useState<RelationshipStage>();
 	const [deletingStage, setDeletingStage] = useState<RelationshipStage>();
+	const [movingStageId, setMovingStageId] = useState<string>();
 	const [toast, setToast] = useState('');
 	const previousCreateRequest = useRef(createRequest);
 	const orderedStages = useMemo(() => [...stages].sort((first, second) => first.order - second.order), [stages]);
@@ -117,7 +139,7 @@ export const RelationshipStagesPage: React.FC = () => {
 		);
 	}, [orderedStages, search]);
 	const actualLargestStage = orderedStages
-		.map(stage => ({ stage, count: contacts.filter(contact => contact.stageId === stage.id).length }))
+		.map(stage => ({ stage, count: stage.contactCount }))
 		.sort((first, second) => second.count - first.count)[0];
 
 	useEffect(() => {
@@ -134,17 +156,32 @@ export const RelationshipStagesPage: React.FC = () => {
 		return () => window.clearTimeout(timeout);
 	}, [toast]);
 
-	const handleSave = (draft: RelationshipStageDraft, stageId?: string) => {
+	const handleSave = async (draft: RelationshipStageDraft, stageId?: string) => {
+		if (!uid) throw new Error('Área de trabalho não identificada.');
+
 		if (stageId) {
-			updateStage(stageId, draft);
+			await updateStage(uid, stageId, draft);
 			setToast('Etapa atualizada.');
 		} else {
-			createStage(draft);
+			await createStage(uid, draft);
 			setToast('Nova etapa criada.');
 		}
 
 		setFormOpen(false);
 		setEditingStage(undefined);
+	};
+
+	const handleMove = async (stageId: string, direction: 'up' | 'down') => {
+		if (!uid) return;
+		setMovingStageId(stageId);
+		try {
+			await moveStage(uid, stageId, direction);
+			setToast('Ordem das etapas atualizada.');
+		} catch (error) {
+			setToast(error instanceof Error ? error.message : 'Não foi possível reordenar as etapas.');
+		} finally {
+			setMovingStageId(undefined);
+		}
 	};
 
 	return (
@@ -196,7 +233,7 @@ export const RelationshipStagesPage: React.FC = () => {
 						<span className="text-[9px] font-semibold uppercase tracking-[.06em] text-slate-400">
 							Contatos
 						</span>
-						<strong className="mt-1 block text-lg">{contacts.length}</strong>
+						<strong className="mt-1 block text-lg">{workspaceContactsTotal}</strong>
 					</div>
 					<div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 dark:border-[#223138] dark:bg-[#0e181e]">
 						<span className="text-[9px] font-semibold uppercase tracking-[.06em] text-slate-400">
@@ -224,8 +261,9 @@ export const RelationshipStagesPage: React.FC = () => {
 					</div>
 
 					<div className="grid gap-2.5">
-						{filteredStages.map((stage, index) => {
-							const contactCount = contacts.filter(contact => contact.stageId === stage.id).length;
+						{filteredStages.map(stage => {
+							const contactCount = stage.contactCount;
+							const actualIndex = orderedStages.findIndex(item => item.id === stage.id);
 
 							return (
 								<article
@@ -270,8 +308,10 @@ export const RelationshipStagesPage: React.FC = () => {
 												type="button"
 												className="size-8 min-h-8 rounded-lg p-0"
 												aria-label={`Mover ${stage.name} para cima`}
-												disabled={index === 0}
-												onClick={() => moveStage(stage.id, 'up')}>
+												disabled={
+													Boolean(search) || actualIndex === 0 || Boolean(movingStageId)
+												}
+												onClick={() => void handleMove(stage.id, 'up')}>
 												<MdArrowUpward aria-hidden="true" />
 											</Button>
 											<Button
@@ -279,8 +319,12 @@ export const RelationshipStagesPage: React.FC = () => {
 												type="button"
 												className="size-8 min-h-8 rounded-lg p-0"
 												aria-label={`Mover ${stage.name} para baixo`}
-												disabled={index === filteredStages.length - 1}
-												onClick={() => moveStage(stage.id, 'down')}>
+												disabled={
+													Boolean(search) ||
+													actualIndex === orderedStages.length - 1 ||
+													Boolean(movingStageId)
+												}
+												onClick={() => void handleMove(stage.id, 'down')}>
 												<MdArrowDownward aria-hidden="true" />
 											</Button>
 											<Button
@@ -299,7 +343,7 @@ export const RelationshipStagesPage: React.FC = () => {
 												type="button"
 												className="size-8 min-h-8 rounded-lg p-0 hover:text-red-500"
 												aria-label={`Excluir ${stage.name}`}
-												disabled={stages.length <= 1}
+												disabled={stages.length <= 1 || Boolean(movingStageId)}
 												onClick={() => setDeletingStage(stage)}>
 												<MdDeleteOutline aria-hidden="true" />
 											</Button>
@@ -329,9 +373,7 @@ export const RelationshipStagesPage: React.FC = () => {
 								</span>
 								<div className="min-w-0">
 									<strong className="block truncate text-[10px]">{stage.name}</strong>
-									<span className="text-[9px] text-slate-400">
-										{contacts.filter(contact => contact.stageId === stage.id).length} contatos
-									</span>
+									<span className="text-[9px] text-slate-400">{stage.contactCount} contatos</span>
 								</div>
 							</div>
 						))}
@@ -354,10 +396,11 @@ export const RelationshipStagesPage: React.FC = () => {
 				<DeleteStageModal
 					stage={deletingStage}
 					stages={orderedStages}
-					contactCount={contacts.filter(contact => contact.stageId === deletingStage.id).length}
+					contactCount={deletingStage.contactCount}
 					onClose={() => setDeletingStage(undefined)}
-					onConfirm={replacementStageId => {
-						deleteStage(deletingStage.id, replacementStageId);
+					onConfirm={async replacementStageId => {
+						if (!uid) throw new Error('Área de trabalho não identificada.');
+						await deleteStage(uid, deletingStage.id, replacementStageId);
 						setDeletingStage(undefined);
 						setToast('Etapa excluída e contatos realocados.');
 					}}
