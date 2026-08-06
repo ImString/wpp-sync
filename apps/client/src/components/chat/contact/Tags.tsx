@@ -25,7 +25,7 @@ export const ContactTags: React.FC = () => {
 				{conversation.tags.map(tag => (
 					<span
 						key={tag}
-						className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-semibold text-brand-700 dark:bg-[#0f3826] dark:text-brand-400">
+						className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 dark:bg-[#0f3826] dark:text-brand-400">
 						{tag}
 					</span>
 				))}

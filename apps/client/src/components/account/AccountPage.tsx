@@ -201,7 +201,7 @@ export const AccountPage: React.FC = () => {
 							<Button
 								theme="secondary"
 								type="button"
-								className="min-h-10 gap-2 px-3 text-[10px] max-[520px]:size-10 max-[520px]:px-0"
+								className="min-h-10 gap-2 px-3 text-xs max-[520px]:size-10 max-[520px]:px-0"
 								onClick={goBack}>
 								<MdGridView className="size-4.5" aria-hidden="true" />
 								<span className="max-[520px]:sr-only">Áreas de trabalho</span>
@@ -214,7 +214,7 @@ export const AccountPage: React.FC = () => {
 									seed={currentUser?.name}
 									collection="initials"
 								/>
-								<span className="max-w-32 truncate text-[10px] font-semibold text-(--workspace-text) max-[680px]:hidden">
+								<span className="max-w-32 truncate text-xs font-semibold text-(--workspace-text) max-[680px]:hidden">
 									{currentUser?.name || 'Usuário'}
 								</span>
 							</div>
@@ -251,7 +251,7 @@ export const AccountPage: React.FC = () => {
 									<strong className="block truncate text-xs text-slate-900 dark:text-white mobile:text-sm">
 										Configurações
 									</strong>
-									<span className="hidden text-[10px] text-slate-500 dark:text-slate-400 mobile:block">
+									<span className="hidden text-xs text-slate-500 dark:text-slate-400 mobile:block">
 										Perfil, área de trabalho e equipe
 									</span>
 								</div>
@@ -339,7 +339,7 @@ export const AccountPage: React.FC = () => {
 															<Icon className="size-4" aria-hidden="true" />
 														</span>
 														<span className="min-w-0">
-															<strong className="block text-[9px] font-bold leading-3 drawer:truncate drawer:text-[10px]">
+															<strong className="block text-[9px] font-bold leading-3 drawer:truncate drawer:text-xs">
 																{section.label}
 															</strong>
 															<small className="mt-0.5 hidden truncate text-[8px] font-normal opacity-70 drawer:block">
@@ -368,7 +368,7 @@ export const AccountPage: React.FC = () => {
 										<h2 className="mt-1 text-lg font-bold tracking-[-.03em] text-slate-950 dark:text-white mobile:text-xl">
 											{activeDefinition.title}
 										</h2>
-										<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+										<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 											{activeDefinition.description}
 										</p>
 									</header>

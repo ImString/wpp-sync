@@ -12,7 +12,7 @@ export const ChatFileMessage: React.FC<FileMessageProps> = props => {
 			</span>
 			<span className="flex min-w-0 flex-col">
 				<strong className="truncate text-xs">{props.message.name}</strong>
-				<small className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">{props.message.details}</small>
+				<small className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{props.message.details}</small>
 			</span>
 			<time className="self-end whitespace-nowrap text-[9px] text-slate-400">{props.message.time}</time>
 		</article>

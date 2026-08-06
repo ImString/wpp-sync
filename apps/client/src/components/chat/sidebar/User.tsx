@@ -97,9 +97,7 @@ export const SidebarUser: React.FC = () => {
 				/>
 				<span className="flex min-w-0 flex-1 flex-col">
 					<strong className="truncate text-[13px] text-white">{currentUser?.name || 'Usuário'}</strong>
-					<small className="truncate text-[10px] text-emerald-100/60">
-						{getRoleLabel(currentUser?.role)}
-					</small>
+					<small className="truncate text-xs text-emerald-100/60">{getRoleLabel(currentUser?.role)}</small>
 				</span>
 				<MdKeyboardArrowDown
 					className={twMerge('size-4.5 transition-transform', menuOpen && 'rotate-180')}

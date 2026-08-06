@@ -388,13 +388,13 @@ export const IntegrationsPage: React.FC = () => {
 							Conectividade
 						</p>
 						<h1 className="mt-1 text-xl font-bold tracking-[-.04em] mobile:text-2xl">Integrações</h1>
-						<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 mobile:text-[11px]">
+						<p className="mt-1 text-xs text-slate-500 dark:text-slate-400 mobile:text-[11px]">
 							Vincule e gerencie os canais desta área de trabalho.
 						</p>
 					</div>
 					<Button
 						type="button"
-						className="h-9 min-h-9 px-3 text-[10px] shadow-[0_8px_20px_rgba(37,211,102,.2)]"
+						className="h-9 min-h-9 px-3 text-xs shadow-[0_8px_20px_rgba(37,211,102,.2)]"
 						onClick={() => setNewModalOpen(true)}>
 						<MdAdd className="size-4" aria-hidden="true" />
 						<span className="hidden mobile:inline">Nova integração</span>
@@ -432,7 +432,7 @@ export const IntegrationsPage: React.FC = () => {
 					<div className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-3 dark:border-[#223138] mobile:px-4">
 						<div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<MdFilterList className="size-4" aria-hidden="true" />
-							<span className="text-[10px] font-semibold">
+							<span className="text-xs font-semibold">
 								{integrationsTotal} {integrationsTotal === 1 ? 'integração' : 'integrações'}
 							</span>
 						</div>
@@ -465,11 +465,11 @@ export const IntegrationsPage: React.FC = () => {
 									<h3 className="mt-3 text-sm font-semibold">
 										Não foi possível carregar as integrações
 									</h3>
-									<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">{listError}</p>
+									<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{listError}</p>
 									<Button
 										theme="secondary"
 										type="button"
-										className="mt-4 h-9 min-h-9 px-3 text-[10px]"
+										className="mt-4 h-9 min-h-9 px-3 text-xs"
 										onClick={() => setRefreshVersion(version => version + 1)}>
 										Tentar novamente
 									</Button>
@@ -558,12 +558,12 @@ export const IntegrationsPage: React.FC = () => {
 										<MdOutlineSync aria-hidden="true" />
 									</span>
 									<h3 className="mt-3 text-sm font-semibold">Nenhuma integração encontrada</h3>
-									<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+									<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 										Ajuste a busca ou vincule um novo canal.
 									</p>
 									<Button
 										type="button"
-										className="mt-4 h-9 min-h-9 px-3 text-[10px]"
+										className="mt-4 h-9 min-h-9 px-3 text-xs"
 										onClick={() => setNewModalOpen(true)}>
 										<MdAdd aria-hidden="true" /> Nova integração
 									</Button>
@@ -622,11 +622,11 @@ export const IntegrationsPage: React.FC = () => {
 						<h2 id="remove-integration-title" className="mt-4 text-base font-bold">
 							Remover integração?
 						</h2>
-						<p className="mt-2 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+						<p className="mt-2 text-xs leading-4 text-slate-500 dark:text-slate-400">
 							“{removeCandidate.name}” será desvinculada desta área de trabalho.
 						</p>
 						{removeError && (
-							<p role="alert" className="mt-3 text-[10px] text-red-500">
+							<p role="alert" className="mt-3 text-xs text-red-500">
 								{removeError}
 							</p>
 						)}
@@ -655,7 +655,7 @@ export const IntegrationsPage: React.FC = () => {
 				role="status"
 				aria-live="polite"
 				className={twMerge(
-					'pointer-events-none fixed bottom-20 left-1/2 z-70 -translate-x-1/2 translate-y-4 whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-[10px] font-semibold text-white opacity-0 shadow-xl transition mobile:bottom-6 dark:bg-white dark:text-slate-900',
+					'pointer-events-none fixed bottom-20 left-1/2 z-70 -translate-x-1/2 translate-y-4 whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-xl transition mobile:bottom-6 dark:bg-white dark:text-slate-900',
 					toast && 'translate-y-0 opacity-100'
 				)}>
 				{toast}

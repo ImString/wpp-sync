@@ -34,7 +34,7 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = props => {
 					<strong className="flex-1 truncate text-[13px] font-bold">{workspace.name}</strong>
 				</span>
 
-				<small className="mt-1.5 text-[10px] text-(--workspace-muted)">{workspace.slug}</small>
+				<small className="mt-1.5 text-xs text-(--workspace-muted)">{workspace.slug}</small>
 			</span>
 
 			<span

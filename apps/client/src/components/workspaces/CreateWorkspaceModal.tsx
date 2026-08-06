@@ -136,7 +136,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props =
 						/>
 						{nameError && (
 							<small
-								className="text-[10px] font-medium text-red-600 dark:text-red-400"
+								className="text-xs font-medium text-red-600 dark:text-red-400"
 								id="workspace-name-error">
 								{nameError}
 							</small>
@@ -150,7 +150,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props =
 								<MdOutlineCameraAlt className="size-5" aria-hidden="true" />
 							</span>
 							<span className="min-w-0 flex-1">
-								<strong className="block truncate text-[10px]">
+								<strong className="block truncate text-xs">
 									{avatar?.name || 'Nenhuma imagem selecionada'}
 								</strong>
 								<small className="text-[9px] font-normal text-(--workspace-muted)">
@@ -173,15 +173,13 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props =
 							/>
 						</div>
 						{avatarError && (
-							<small className="text-[10px] font-medium text-red-600 dark:text-red-400">
-								{avatarError}
-							</small>
+							<small className="text-xs font-medium text-red-600 dark:text-red-400">{avatarError}</small>
 						)}
 					</div>
 
 					{submitError && (
 						<p
-							className="rounded-[10px] bg-red-50 px-3 py-2.5 text-[10px] font-medium text-red-700 dark:bg-red-950/30 dark:text-red-300"
+							className="rounded-[10px] bg-red-50 px-3 py-2.5 text-xs font-medium text-red-700 dark:bg-red-950/30 dark:text-red-300"
 							role="alert">
 							{submitError}
 						</p>
@@ -195,10 +193,7 @@ export const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = props =
 							onClick={resetAndClose}>
 							Cancelar
 						</button>
-						<button
-							className={workspacePrimaryButtonClassName}
-							type="submit"
-							disabled={isSubmitting}>
+						<button className={workspacePrimaryButtonClassName} type="submit" disabled={isSubmitting}>
 							{isSubmitting ? 'Criando...' : 'Criar área'}
 						</button>
 					</footer>

@@ -175,7 +175,7 @@ export const ContactList: React.FC<ContactListProps> = props => {
 												<strong className="block max-w-40 truncate text-xs font-semibold">
 													{contact.name}
 												</strong>
-												<span className="mt-0.5 block max-w-44 truncate text-[10px] text-slate-500 dark:text-slate-400">
+												<span className="mt-0.5 block max-w-44 truncate text-xs text-slate-500 dark:text-slate-400">
 													{formattedPhone}
 												</span>
 											</div>
@@ -196,7 +196,7 @@ export const ContactList: React.FC<ContactListProps> = props => {
 										</div>
 									</td>
 									<td className="border-b border-slate-100 px-3 py-3 dark:border-[#1b2a31]">
-										<span className="whitespace-nowrap text-[10px] text-slate-500 dark:text-slate-400">
+										<span className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
 											{formatDate(contact.createdAt)}
 										</span>
 									</td>

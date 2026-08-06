@@ -99,7 +99,7 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace,
 			<section className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-panel dark:border-[#223138] dark:bg-[#0e181e]">
 				<header className="border-b border-slate-200 px-5 py-4.5 dark:border-[#223138] mobile:px-6">
 					<h2 className="m-0 text-sm font-bold text-slate-900 dark:text-white">Identidade da área</h2>
-					<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+					<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 						Personalize como esta área de trabalho aparece para toda a equipe.
 					</p>
 				</header>
@@ -125,14 +125,14 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace,
 								<strong className="block text-xs text-slate-900 dark:text-white">
 									Ícone da área de trabalho
 								</strong>
-								<p className="mt-1 max-w-lg text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+								<p className="mt-1 max-w-lg text-xs leading-4 text-slate-500 dark:text-slate-400">
 									Escolha uma imagem quadrada para facilitar a identificação no seletor de áreas.
 								</p>
 								<div className="mt-3 flex flex-wrap gap-2">
 									<Button
 										theme="secondary"
 										type="button"
-										className="min-h-9 px-3 text-[10px]"
+										className="min-h-9 px-3 text-xs"
 										onClick={() => iconInputRef.current?.click()}>
 										<MdOutlineCameraAlt aria-hidden="true" />
 										{icon ? 'Escolher outra' : 'Trocar ícone'}
@@ -141,7 +141,7 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace,
 										<Button
 											theme="ghost"
 											type="button"
-											className="min-h-9 px-3 text-[10px]"
+											className="min-h-9 px-3 text-xs"
 											onClick={() => {
 												setIcon(null);
 												setIconPreview(null);
@@ -160,7 +160,7 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace,
 							</div>
 						</div>
 
-						<label className="mt-6 grid gap-1.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+						<label className="mt-6 grid gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
 							<span>Nome da área de trabalho</span>
 							<span className="relative flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400 transition focus-within:border-brand-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-500/10 dark:border-[#2a3a42] dark:bg-[#131f26] dark:focus-within:bg-[#0e181e]">
 								<MdOutlineWorkspaces className="mx-3 size-4.5 shrink-0" aria-hidden="true" />
@@ -215,7 +215,7 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace,
 						/>
 						<div className="min-w-0">
 							<strong className="block truncate text-sm">{name.trim() || 'Nome da área'}</strong>
-							<span className="block truncate text-[10px] text-emerald-100/60">
+							<span className="block truncate text-xs text-emerald-100/60">
 								{workspace?.slug || 'sua-area-de-trabalho'}
 							</span>
 						</div>

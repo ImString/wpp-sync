@@ -25,7 +25,7 @@ export const MessageList: React.FC = () => {
 			aria-live="polite"
 			className="chat-pattern flex min-h-0 flex-col gap-3.5 overflow-y-auto px-3 py-5 mobile:px-7 mobile:py-6 scrollbar-thin">
 			<div className="flex justify-center">
-				<span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-[10px] text-slate-500 shadow-panel dark:border-[#223138] dark:bg-[#0e181e]/90 dark:text-slate-400">
+				<span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-xs text-slate-500 shadow-panel dark:border-[#223138] dark:bg-[#0e181e]/90 dark:text-slate-400">
 					Hoje
 				</span>
 			</div>

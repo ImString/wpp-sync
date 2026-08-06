@@ -44,13 +44,13 @@ export const BaseInput = <T,>(props: BaseInputProps<T>) => {
 			})}
 
 			{error && !props.hideError && (
-				<p className="text-[10px] text-red-600 dark:text-red-400" aria-live="polite">
+				<p className="text-xs text-red-600 dark:text-red-400" aria-live="polite">
 					{error}
 				</p>
 			)}
 
 			{props.description && !error && (
-				<p className="text-[10px] text-slate-500 dark:text-slate-400">{props.description}</p>
+				<p className="text-xs text-slate-500 dark:text-slate-400">{props.description}</p>
 			)}
 		</div>
 	);

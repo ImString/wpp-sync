@@ -101,7 +101,7 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 							<h2 id="stage-form-title" className="text-base font-bold">
 								{isEditing ? 'Editar etapa' : 'Nova etapa'}
 							</h2>
-							<p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+							<p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
 								Defina como essa fase aparecerá nos contatos.
 							</p>
 						</div>
@@ -119,11 +119,11 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 				<form onSubmit={handleSubmit} noValidate>
 					<div className="grid gap-4 p-4 mobile:p-5">
 						{errorMessage && (
-							<p className="rounded-xl bg-red-50 px-3 py-2.5 text-[10px] text-red-700 dark:bg-red-500/10 dark:text-red-300">
+							<p className="rounded-xl bg-red-50 px-3 py-2.5 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">
 								{errorMessage}
 							</p>
 						)}
-						<label className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+						<label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
 							Nome da etapa <span className="text-red-500">*</span>
 							<input
 								autoFocus
@@ -141,7 +141,7 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 						<div>
 							<div className="flex items-end justify-between gap-3">
 								<div>
-									<span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+									<span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
 										Ícone da etapa
 									</span>
 									<p className="mt-0.5 text-[9px] text-slate-400">
@@ -191,7 +191,7 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 						</div>
 
 						<div>
-							<span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+							<span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
 								Cor da etapa
 							</span>
 							<div className="mt-2 flex flex-wrap gap-2">
@@ -241,7 +241,7 @@ export const StageFormModal: React.FC<StageFormModalProps> = props => {
 							)}
 						</div>
 
-						<label className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+						<label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
 							Descrição
 							<textarea
 								value={draft.description}

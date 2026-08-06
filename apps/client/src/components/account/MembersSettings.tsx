@@ -104,9 +104,7 @@ const SettingsDialog: React.FC<DialogProps> = ({ title, description, onClose, ch
 							{title}
 						</h2>
 						{description && (
-							<p className="mt-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-								{description}
-							</p>
+							<p className="mt-1 text-xs leading-4 text-slate-500 dark:text-slate-400">{description}</p>
 						)}
 					</div>
 					<Button
@@ -514,7 +512,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 				<header className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4.5 dark:border-[#223138] mobile:flex-row mobile:items-center mobile:justify-between mobile:px-6">
 					<div>
 						<h2 className="m-0 text-sm font-bold text-slate-900 dark:text-white">Membros da equipe</h2>
-						<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+						<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 							{membersStatus === 'loading' && membersTotal === 0
 								? 'Carregando pessoas com acesso...'
 								: `${membersTotal} ${membersTotal === 1 ? 'pessoa possui' : 'pessoas possuem'} acesso a esta área.`}
@@ -524,7 +522,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 						<Button
 							theme="primary"
 							type="button"
-							className="min-h-10 self-start px-3 text-[10px] mobile:self-auto"
+							className="min-h-10 self-start px-3 text-xs mobile:self-auto"
 							onClick={() => setInvitesOpen(true)}>
 							<MdOutlineGroupAdd className="size-4.5" aria-hidden="true" />
 							Convites
@@ -553,7 +551,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 						theme="secondary"
 						type="button"
 						aria-label="Atualizar membros"
-						className="size-10 min-h-10 shrink-0 p-0 text-[10px] mobile:h-auto mobile:w-auto mobile:px-3"
+						className="size-10 min-h-10 shrink-0 p-0 text-xs mobile:h-auto mobile:w-auto mobile:px-3"
 						disabled={!resolvedWorkspaceUid || membersStatus === 'loading'}
 						onClick={() => void refreshMembers()}>
 						<MdRefresh
@@ -582,11 +580,11 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 									<strong className="block text-xs text-slate-700 dark:text-slate-200">
 										Não foi possível carregar os membros
 									</strong>
-									<p className="mt-1 text-[10px] text-slate-400">{membersError}</p>
+									<p className="mt-1 text-xs text-slate-400">{membersError}</p>
 									<Button
 										theme="secondary"
 										type="button"
-										className="mt-3 min-h-8 px-3 text-[10px]"
+										className="mt-3 min-h-8 px-3 text-xs"
 										onClick={() => void loadMembers(page, pageSize, debouncedSearch)}>
 										Tentar novamente
 									</Button>
@@ -631,7 +629,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 											</span>
 										</div>
 									</div>
-									<span className="hidden items-center gap-1.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 mobile:flex">
+									<span className="hidden items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 mobile:flex">
 										<MdAdminPanelSettings
 											className={`size-4 ${member.role === 'Proprietário' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}
 											aria-hidden="true"
@@ -668,7 +666,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 												<div className="absolute right-0 top-[calc(100%+4px)] z-20 w-47 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_14px_36px_rgba(15,23,42,.16)] dark:border-[#2a3a42] dark:bg-[#131f26]">
 													{isWorkspaceOwner && (
 														<button
-															className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-[10px] font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-[#17262e]"
+															className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-[#17262e]"
 															type="button"
 															onClick={() => setAction({ type: 'transfer', member })}>
 															<MdSwapHoriz
@@ -680,7 +678,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 													)}
 													{isWorkspaceOwner && (
 														<button
-															className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-[10px] font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-[#17262e]"
+															className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-[#17262e]"
 															type="button"
 															onClick={() =>
 																setAction({
@@ -709,7 +707,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 														</button>
 													)}
 													<button
-														className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-[10px] font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+														className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-xs font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
 														type="button"
 														onClick={() => setAction({ type: 'remove', member })}>
 														<MdDeleteOutline className="size-4" aria-hidden="true" />
@@ -728,7 +726,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 									<strong className="mt-2 block text-xs text-slate-700 dark:text-slate-200">
 										Nenhum membro encontrado
 									</strong>
-									<p className="mt-1 text-[10px] text-slate-400">
+									<p className="mt-1 text-xs text-slate-400">
 										{search
 											? 'Tente buscar com outro termo.'
 											: 'Nenhuma pessoa possui acesso a esta área.'}
@@ -785,7 +783,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 							<Button
 								theme="ghost"
 								type="button"
-								className="min-h-8 shrink-0 px-2 text-[10px]"
+								className="min-h-8 shrink-0 px-2 text-xs"
 								disabled={!resolvedWorkspaceUid || invitesStatus === 'loading'}
 								onClick={() => void refreshPendingInvites()}>
 								<MdRefresh
@@ -800,7 +798,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 					{inviteView === 'new' ? (
 						<form onSubmit={handleInvite}>
 							<div className="grid gap-4 px-5 py-5 mobile:grid-cols-[minmax(0,1fr)_160px] mobile:px-6 mobile:py-6">
-								<label className="grid gap-1.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+								<label className="grid gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
 									<span>E-mail</span>
 									<span className="flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400 focus-within:border-brand-500 focus-within:bg-white dark:border-[#2a3a42] dark:bg-[#131f26] dark:focus-within:bg-[#0e181e]">
 										<MdEmail className="mx-3 size-4.5 shrink-0" aria-hidden="true" />
@@ -819,7 +817,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 										{inviteError}
 									</span>
 								</label>
-								<label className="grid content-start gap-1.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+								<label className="grid content-start gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
 									<span>Função</span>
 									<select
 										className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-normal text-slate-900 outline-none focus:border-brand-500 dark:border-[#2a3a42] dark:bg-[#131f26] dark:text-white"
@@ -834,14 +832,14 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 								<Button
 									theme="secondary"
 									type="button"
-									className="text-[10px]"
+									className="text-xs"
 									onClick={() => setInvitesOpen(false)}>
 									Cancelar
 								</Button>
 								<Button
 									theme="primary"
 									type="submit"
-									className="text-[10px]"
+									className="text-xs"
 									loading={inviteSubmitting}
 									loadingLabel="Enviando...">
 									<MdMailOutline aria-hidden="true" />
@@ -866,11 +864,11 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 										<strong className="block text-xs text-slate-800 dark:text-slate-100">
 											Não foi possível carregar os convites
 										</strong>
-										<p className="mt-1 text-[10px] text-slate-400">{invitesError}</p>
+										<p className="mt-1 text-xs text-slate-400">{invitesError}</p>
 										<Button
 											theme="secondary"
 											type="button"
-											className="mt-3 min-h-8 px-3 text-[10px]"
+											className="mt-3 min-h-8 px-3 text-xs"
 											onClick={() => void loadPendingInvites()}>
 											Tentar novamente
 										</Button>
@@ -915,7 +913,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 										<strong className="mt-3 block text-xs text-slate-800 dark:text-slate-100">
 											Nenhum convite pendente
 										</strong>
-										<p className="mt-1 text-[10px] text-slate-400">
+										<p className="mt-1 text-xs text-slate-400">
 											Todos os convites já foram aceitos ou revogados.
 										</p>
 									</div>

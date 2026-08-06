@@ -43,7 +43,7 @@ export const NewIntegrationModal: React.FC<NewIntegrationModalProps> = props => 
 							<h2 id="new-integration-title" className="text-base font-bold tracking-[-.02em]">
 								Nova integração
 							</h2>
-							<p className="mt-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+							<p className="mt-1 text-xs leading-4 text-slate-500 dark:text-slate-400">
 								Escolha um canal para conectar ao atendimento da sua equipe.
 							</p>
 						</div>
@@ -75,7 +75,7 @@ export const NewIntegrationModal: React.FC<NewIntegrationModalProps> = props => 
 									<strong className="block text-xs font-semibold text-slate-900 dark:text-white">
 										{channel.name}
 									</strong>
-									<span className="mt-0.5 block text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+									<span className="mt-0.5 block text-xs leading-4 text-slate-500 dark:text-slate-400">
 										{channel.description}
 									</span>
 								</span>

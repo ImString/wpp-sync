@@ -45,7 +45,7 @@ export const ChatHeader: React.FC = () => {
 			/>
 			<div className="flex min-w-0 flex-1 flex-col">
 				<strong className="truncate text-sm">{conversation.name}</strong>
-				<span className="mt-0.5 flex items-center gap-1 text-[10px] text-brand-600 dark:text-brand-500">
+				<span className="mt-0.5 flex items-center gap-1 text-xs text-brand-600 dark:text-brand-500">
 					<i className="size-1.5 rounded-full bg-brand-500" /> Cliente
 				</span>
 			</div>

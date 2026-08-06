@@ -26,7 +26,7 @@ export const SearchInput: React.FC<SearchInputProps> = props => {
 				)}
 			/>
 			{shortcut && (
-				<kbd className="hidden rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-400 mobile:block dark:border-[#223138] dark:bg-[#0e181e]">
+				<kbd className="hidden rounded-md border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-400 mobile:block dark:border-[#223138] dark:bg-[#0e181e]">
 					{shortcut}
 				</kbd>
 			)}

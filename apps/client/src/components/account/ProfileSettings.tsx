@@ -193,7 +193,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 			<section className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-panel dark:border-[#223138] dark:bg-[#0e181e]">
 				<header className="border-b border-slate-200 px-5 py-4.5 dark:border-[#223138] mobile:px-6">
 					<h2 className="m-0 text-sm font-bold text-slate-900 dark:text-white">Informações pessoais</h2>
-					<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+					<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 						Esses dados aparecem para os membros das suas áreas de trabalho.
 					</p>
 				</header>
@@ -212,14 +212,14 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 					</div>
 					<div className="min-w-0 flex-1">
 						<strong className="block text-xs text-slate-900 dark:text-white">Foto do perfil</strong>
-						<p className="mt-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+						<p className="mt-1 text-xs leading-4 text-slate-500 dark:text-slate-400">
 							JPG, PNG ou WEBP, com até 5 MB.
 						</p>
 						<div className="mt-3 flex flex-wrap gap-2">
 							<Button
 								theme="secondary"
 								type="button"
-								className="min-h-9 px-3 text-[10px]"
+								className="min-h-9 px-3 text-xs"
 								onClick={() => avatarInputRef.current?.click()}>
 								<MdOutlineCameraAlt aria-hidden="true" />
 								{avatar ? 'Escolher outra' : 'Trocar foto'}
@@ -228,7 +228,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 								<Button
 									theme="ghost"
 									type="button"
-									className="min-h-9 px-3 text-[10px]"
+									className="min-h-9 px-3 text-xs"
 									onClick={() => setAvatar(null)}>
 									Remover seleção
 								</Button>
@@ -242,16 +242,14 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 							/>
 						</div>
 						{errors.avatar && (
-							<p className="mt-2 text-[10px] font-medium text-red-600 dark:text-red-400">
-								{errors.avatar}
-							</p>
+							<p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">{errors.avatar}</p>
 						)}
 					</div>
 				</div>
 
 				<form onSubmit={handleSubmit}>
 					<div className="grid gap-4 px-5 py-5 mobile:grid-cols-2 mobile:px-6 mobile:py-6">
-						<label className="grid gap-1.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+						<label className="grid gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
 							<span>Nome completo</span>
 							<span className={fieldClassName}>
 								<MdOutlinePerson className="mx-3 size-4.5 shrink-0" aria-hidden="true" />
@@ -269,7 +267,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 							</span>
 						</label>
 
-						<label className="grid gap-1.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+						<label className="grid gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
 							<span>E-mail de acesso</span>
 							<span className="relative flex h-11 items-center rounded-xl border border-slate-200 bg-slate-100 text-slate-400 dark:border-[#223138] dark:bg-[#101c22]">
 								<MdEmail className="mx-3 size-4.5 shrink-0" aria-hidden="true" />
@@ -285,7 +283,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 							</span>
 						</label>
 
-						<label className="grid gap-1.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+						<label className="grid gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
 							<span>Telefone</span>
 							<span className={fieldClassName}>
 								<MdPhone className="mx-3 size-4.5 shrink-0" aria-hidden="true" />
@@ -304,7 +302,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 							</span>
 						</label>
 
-						<label className="grid gap-1.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+						<label className="grid gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
 							<span>Empresa</span>
 							<span className={fieldClassName}>
 								<MdBusiness className="mx-3 size-4.5 shrink-0" aria-hidden="true" />
@@ -361,12 +359,12 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 						/>
 						<div className="min-w-0">
 							<strong className="block truncate text-sm">{form.name.trim() || 'Seu nome'}</strong>
-							<span className="block truncate text-[10px] text-emerald-100/60">
+							<span className="block truncate text-xs text-emerald-100/60">
 								{form.enterprise.trim() || getRoleLabel(currentUser?.role)}
 							</span>
 						</div>
 					</div>
-					<div className="mt-5 grid gap-2 border-t border-white/10 pt-4 text-[10px] text-emerald-100/65">
+					<div className="mt-5 grid gap-2 border-t border-white/10 pt-4 text-xs text-emerald-100/65">
 						<div className="flex items-center gap-2">
 							<MdEmail className="size-4 text-brand-400" aria-hidden="true" />
 							<span className="truncate">{currentUser?.email}</span>

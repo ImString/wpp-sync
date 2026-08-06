@@ -37,7 +37,7 @@ export const CheckboxInput: React.FC<CheckboxInputProps> = props => {
 			</label>
 
 			{error && (
-				<p className="text-[10px] text-red-600 dark:text-red-400" aria-live="polite">
+				<p className="text-xs text-red-600 dark:text-red-400" aria-live="polite">
 					{error}
 				</p>
 			)}

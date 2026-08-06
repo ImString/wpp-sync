@@ -342,7 +342,7 @@ export const ContactsPage: React.FC = () => {
 							Relacionamento
 						</p>
 						<h1 className="mt-1 text-xl font-bold tracking-[-.04em] mobile:text-2xl">Contatos</h1>
-						<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 mobile:text-[11px]">
+						<p className="mt-1 text-xs text-slate-500 dark:text-slate-400 mobile:text-[11px]">
 							Gerencie pessoas, leads e clientes em um só lugar.
 						</p>
 					</div>
@@ -351,7 +351,7 @@ export const ContactsPage: React.FC = () => {
 							theme="secondary"
 							type="button"
 							aria-label="Gerenciar etapas"
-							className="h-9 min-h-9 px-2.5 text-[10px] mobile:px-3"
+							className="h-9 min-h-9 px-2.5 text-xs mobile:px-3"
 							onClick={() => uid && navigate(`/w/${uid}/contacts/stages`)}>
 							<MdTune aria-hidden="true" />
 							<span className="hidden mobile:inline">Etapas</span>
@@ -359,14 +359,14 @@ export const ContactsPage: React.FC = () => {
 						<Button
 							theme="secondary"
 							type="button"
-							className="hidden h-9 min-h-9 px-3 text-[10px] mobile:inline-flex"
+							className="hidden h-9 min-h-9 px-3 text-xs mobile:inline-flex"
 							onClick={handleExport}>
 							<MdDownload aria-hidden="true" />
 							Exportar
 						</Button>
 						<Button
 							type="button"
-							className="h-9 min-h-9 px-3 text-[10px] shadow-[0_8px_20px_rgba(37,211,102,.2)]"
+							className="h-9 min-h-9 px-3 text-xs shadow-[0_8px_20px_rgba(37,211,102,.2)]"
 							onClick={() => {
 								setEditingContact(undefined);
 								setFormOpen(true);
@@ -408,7 +408,7 @@ export const ContactsPage: React.FC = () => {
 					<div className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-3 dark:border-[#223138] mobile:px-4">
 						<div className="flex min-w-0 items-center gap-2">
 							<MdFilterList className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
-							<span className="whitespace-nowrap text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+							<span className="whitespace-nowrap text-xs font-semibold text-slate-500 dark:text-slate-400">
 								{contactsTotal} {contactsTotal === 1 ? 'contato' : 'contatos'}
 							</span>
 							<span className="hidden h-4 w-px bg-slate-200 dark:bg-[#223138] mobile:block" />
@@ -511,7 +511,7 @@ export const ContactsPage: React.FC = () => {
 				role="status"
 				aria-live="polite"
 				className={twMerge(
-					'pointer-events-none fixed bottom-20 left-1/2 z-60 -translate-x-1/2 translate-y-4 rounded-full bg-slate-900 px-4 py-2 text-[10px] font-semibold text-white opacity-0 shadow-xl transition mobile:bottom-6 dark:bg-white dark:text-slate-900',
+					'pointer-events-none fixed bottom-20 left-1/2 z-60 -translate-x-1/2 translate-y-4 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-xl transition mobile:bottom-6 dark:bg-white dark:text-slate-900',
 					toast && 'translate-y-0 opacity-100'
 				)}>
 				{toast}

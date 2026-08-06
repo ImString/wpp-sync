@@ -71,7 +71,7 @@ const DeleteStageModal: React.FC<DeleteStageModalProps> = props => {
 				</p>
 
 				{props.contactCount > 0 && (
-					<label className="mt-4 block text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+					<label className="mt-4 block text-xs font-semibold text-slate-600 dark:text-slate-300">
 						Mover {props.contactCount} {props.contactCount === 1 ? 'contato' : 'contatos'} para
 						<select
 							value={replacementStageId}
@@ -87,7 +87,7 @@ const DeleteStageModal: React.FC<DeleteStageModalProps> = props => {
 				)}
 
 				{errorMessage && (
-					<p className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-[10px] text-red-700 dark:bg-red-500/10 dark:text-red-300">
+					<p className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">
 						{errorMessage}
 					</p>
 				)}
@@ -204,14 +204,14 @@ export const RelationshipStagesPage: React.FC = () => {
 							<h1 className="mt-1 text-xl font-bold tracking-[-.04em] mobile:text-2xl">
 								Etapas de relacionamento
 							</h1>
-							<p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 mobile:text-[11px]">
+							<p className="mt-1 text-xs text-slate-500 dark:text-slate-400 mobile:text-[11px]">
 								Crie fases personalizadas para organizar sua jornada de atendimento.
 							</p>
 						</div>
 					</div>
 					<Button
 						type="button"
-						className="h-9 min-h-9 shrink-0 px-3 text-[10px]"
+						className="h-9 min-h-9 shrink-0 px-3 text-xs"
 						onClick={() => {
 							setEditingStage(undefined);
 							setFormOpen(true);
@@ -294,7 +294,7 @@ export const RelationshipStagesPage: React.FC = () => {
 													{stage.color}
 												</span>
 											</div>
-											<p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+											<p className="mt-1 line-clamp-2 text-xs leading-4 text-slate-500 dark:text-slate-400">
 												{stage.description || 'Sem descrição.'}
 											</p>
 											<span className="mt-2 inline-flex items-center gap-1 text-[9px] text-slate-400">
@@ -360,7 +360,7 @@ export const RelationshipStagesPage: React.FC = () => {
 						<MdRoute className="size-5" aria-hidden="true" />
 					</span>
 					<h2 className="mt-3 text-sm font-semibold">Prévia da jornada</h2>
-					<p className="mt-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+					<p className="mt-1 text-xs leading-4 text-slate-500 dark:text-slate-400">
 						Cada contato pode estar em uma etapa. Edite a ordem para adaptar o fluxo da sua equipe.
 					</p>
 					<div className="relative mt-5 grid gap-4 pl-1 before:absolute before:bottom-3 before:left-3 before:top-3 before:w-px before:bg-slate-200 dark:before:bg-[#223138]">
@@ -372,7 +372,7 @@ export const RelationshipStagesPage: React.FC = () => {
 									<StageIcon name={stage.icon} className="size-3.5" />
 								</span>
 								<div className="min-w-0">
-									<strong className="block truncate text-[10px]">{stage.name}</strong>
+									<strong className="block truncate text-xs">{stage.name}</strong>
 									<span className="text-[9px] text-slate-400">{stage.contactCount} contatos</span>
 								</div>
 							</div>
@@ -410,7 +410,7 @@ export const RelationshipStagesPage: React.FC = () => {
 			<div
 				role="status"
 				aria-live="polite"
-				className={`pointer-events-none fixed bottom-20 left-1/2 z-60 -translate-x-1/2 rounded-full bg-slate-900 px-4 py-2 text-[10px] font-semibold text-white shadow-xl transition mobile:bottom-6 dark:bg-white dark:text-slate-900 ${toast ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+				className={`pointer-events-none fixed bottom-20 left-1/2 z-60 -translate-x-1/2 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xl transition mobile:bottom-6 dark:bg-white dark:text-slate-900 ${toast ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
 				{toast}
 			</div>
 		</div>

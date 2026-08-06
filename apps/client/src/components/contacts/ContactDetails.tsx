@@ -203,12 +203,12 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 						contact.tags.map(tag => (
 							<span
 								key={tag}
-								className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-semibold text-brand-700 dark:bg-[#0f3826] dark:text-brand-400">
+								className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 dark:bg-[#0f3826] dark:text-brand-400">
 								{tag}
 							</span>
 						))
 					) : (
-						<span className="text-[10px] text-slate-400">Nenhuma tag adicionada.</span>
+						<span className="text-xs text-slate-400">Nenhuma tag adicionada.</span>
 					)}
 				</div>
 			</section>
@@ -228,7 +228,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 				<div className="mt-2 flex justify-end">
 					<Button
 						type="button"
-						className="h-8 min-h-8 rounded-lg px-3 text-[10px]"
+						className="h-8 min-h-8 rounded-lg px-3 text-xs"
 						disabled={!notesChanged}
 						loading={savingNotes}
 						loadingLabel="Salvando..."
@@ -247,7 +247,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 				<div className="mt-4 flex gap-3">
 					<span className="mt-0.5 size-2 rounded-full bg-brand-500 ring-4 ring-white dark:ring-[#0e181e]" />
 					<div>
-						<p className="text-[10px] font-medium">Contato adicionado à base</p>
+						<p className="text-xs font-medium">Contato adicionado à base</p>
 						<span className="mt-0.5 flex items-center gap-1 text-[9px] text-slate-400">
 							<MdOutlineAccessTime aria-hidden="true" /> {formatCreatedAt(contact.createdAt)}
 						</span>
@@ -255,21 +255,21 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 				</div>
 
 				{errorMessage && (
-					<p className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-[10px] text-red-700 dark:bg-red-500/10 dark:text-red-300">
+					<p className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">
 						{errorMessage}
 					</p>
 				)}
 
 				{deleteConfirmation ? (
 					<div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-500/20 dark:bg-red-500/10">
-						<p className="text-[10px] leading-4 text-red-700 dark:text-red-300">
+						<p className="text-xs leading-4 text-red-700 dark:text-red-300">
 							Excluir este contato? Esta ação remove o contato da base.
 						</p>
 						<div className="mt-3 flex justify-end gap-2">
 							<Button
 								theme="ghost"
 								type="button"
-								className="h-8 min-h-8 text-[10px]"
+								className="h-8 min-h-8 text-xs"
 								disabled={deleting}
 								onClick={() => setDeleteConfirmation(false)}>
 								Cancelar
@@ -277,7 +277,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 							<Button
 								theme="danger"
 								type="button"
-								className="h-8 min-h-8 text-[10px]"
+								className="h-8 min-h-8 text-xs"
 								loading={deleting}
 								loadingLabel="Excluindo..."
 								onClick={handleDelete}>
@@ -289,7 +289,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = props => {
 					<Button
 						theme="ghost"
 						type="button"
-						className="mt-5 h-9 min-h-9 w-full rounded-xl text-[10px] text-slate-400 hover:text-red-600"
+						className="mt-5 h-9 min-h-9 w-full rounded-xl text-xs text-slate-400 hover:text-red-600"
 						onClick={() => setDeleteConfirmation(true)}>
 						<MdDeleteOutline aria-hidden="true" />
 						Excluir contato

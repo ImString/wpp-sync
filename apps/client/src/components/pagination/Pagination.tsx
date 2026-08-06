@@ -72,7 +72,7 @@ export const Pagination: React.FC<PaginationProps> = props => {
 							theme="ghost"
 							type="button"
 							className={twMerge(
-								'size-8 min-h-8 rounded-lg p-0 text-[10px]',
+								'size-8 min-h-8 rounded-lg p-0 text-xs',
 								item === currentPage &&
 									'bg-brand-50 text-brand-700 dark:bg-[#0f3826] dark:text-brand-400'
 							)}
@@ -85,7 +85,7 @@ export const Pagination: React.FC<PaginationProps> = props => {
 					) : (
 						<span
 							key={item}
-							className="grid size-6 place-items-center text-[10px] text-slate-400"
+							className="grid size-6 place-items-center text-xs text-slate-400"
 							aria-hidden="true">
 							…
 						</span>

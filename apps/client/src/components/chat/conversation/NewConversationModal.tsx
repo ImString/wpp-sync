@@ -205,7 +205,7 @@ export const NewConversationModal: React.FC = () => {
 								<h2 id="new-conversation-title" className="truncate text-base font-bold">
 									Nova conversa
 								</h2>
-								<p className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-slate-400">
+								<p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
 									Escolha um contato ou adicione uma nova pessoa.
 								</p>
 							</div>
@@ -231,7 +231,7 @@ export const NewConversationModal: React.FC = () => {
 						/>
 						<Button
 							type="button"
-							className="h-10 min-h-10 whitespace-nowrap px-3 text-[10px]"
+							className="h-10 min-h-10 whitespace-nowrap px-3 text-xs"
 							onClick={() => setContactFormOpen(true)}>
 							<MdPersonAddAlt1 className="size-4" aria-hidden="true" />
 							Novo contato
@@ -246,7 +246,7 @@ export const NewConversationModal: React.FC = () => {
 								<div className="max-w-72">
 									<MdErrorOutline className="mx-auto size-8 text-red-500" aria-hidden="true" />
 									<h3 className="mt-3 text-sm font-semibold">Não foi possível listar os contatos</h3>
-									<p className="mt-1.5 text-[10px] leading-5 text-slate-500 dark:text-slate-400">
+									<p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
 										{error}
 									</p>
 								</div>
@@ -275,7 +275,7 @@ export const NewConversationModal: React.FC = () => {
 														</span>
 													)}
 												</span>
-												<span className="mt-1 block truncate text-[10px] text-slate-500 dark:text-slate-400">
+												<span className="mt-1 block truncate text-xs text-slate-500 dark:text-slate-400">
 													{formatNationalPhone(contact.whatsapp) || contact.whatsapp}
 													{contact.email ? ` · ${contact.email}` : ''}
 												</span>
@@ -298,12 +298,12 @@ export const NewConversationModal: React.FC = () => {
 									<h3 className="mt-3 text-sm font-semibold">
 										{debouncedSearch ? 'Nenhum contato encontrado' : 'Nenhum contato cadastrado'}
 									</h3>
-									<p className="mt-1.5 text-[10px] leading-5 text-slate-500 dark:text-slate-400">
+									<p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
 										Crie um contato para começar uma nova conversa.
 									</p>
 									<Button
 										type="button"
-										className="mt-4 h-9 min-h-9 px-3 text-[10px]"
+										className="mt-4 h-9 min-h-9 px-3 text-xs"
 										onClick={() => setContactFormOpen(true)}>
 										<MdPersonAddAlt1 aria-hidden="true" /> Criar contato
 									</Button>

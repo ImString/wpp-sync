@@ -89,7 +89,7 @@ export const ReceivedInvitesModal: React.FC<ReceivedInvitesModalProps> = ({
 						<h2 id="received-invites-title" className="mt-1 text-base font-bold">
 							Meus convites
 						</h2>
-						<p className="mt-1 text-[10px] text-(--workspace-muted)">
+						<p className="mt-1 text-xs text-(--workspace-muted)">
 							Convites enviados para o seu e-mail por outras equipes.
 						</p>
 					</div>
@@ -128,7 +128,7 @@ export const ReceivedInvitesModal: React.FC<ReceivedInvitesModalProps> = ({
 						<div className="grid min-h-45 place-items-center text-center" role="alert">
 							<div>
 								<strong className="block text-xs">Não foi possível carregar os convites</strong>
-								<p className="mt-1 text-[10px] text-(--workspace-muted)">{error}</p>
+								<p className="mt-1 text-xs text-(--workspace-muted)">{error}</p>
 								<button
 									className={`${workspaceSecondaryButtonClassName} mt-3`}
 									type="button"
@@ -168,7 +168,7 @@ export const ReceivedInvitesModal: React.FC<ReceivedInvitesModalProps> = ({
 										</div>
 										<div className="flex shrink-0 gap-2 self-stretch min-[560px]:self-auto">
 											<button
-												className={`${workspaceSecondaryButtonClassName} min-h-9 flex-1 px-2.5 text-[10px] disabled:cursor-not-allowed disabled:opacity-60 min-[560px]:flex-none`}
+												className={`${workspaceSecondaryButtonClassName} min-h-9 flex-1 px-2.5 text-xs disabled:cursor-not-allowed disabled:opacity-60 min-[560px]:flex-none`}
 												type="button"
 												disabled={Boolean(processingInvite)}
 												onClick={() => onReject(invite)}>
@@ -180,7 +180,7 @@ export const ReceivedInvitesModal: React.FC<ReceivedInvitesModalProps> = ({
 												{/* {isRejecting ? 'Recusando...' : 'Recusar'} */}
 											</button>
 											<button
-												className={`${workspacePrimaryButtonClassName} min-h-9 flex-1 px-2.5 text-[10px] disabled:cursor-not-allowed disabled:opacity-60 min-[560px]:flex-none`}
+												className={`${workspacePrimaryButtonClassName} min-h-9 flex-1 px-2.5 text-xs disabled:cursor-not-allowed disabled:opacity-60 min-[560px]:flex-none`}
 												type="button"
 												disabled={Boolean(processingInvite)}
 												onClick={() => onAccept(invite)}>
@@ -205,7 +205,7 @@ export const ReceivedInvitesModal: React.FC<ReceivedInvitesModalProps> = ({
 								<strong className="mt-3 block text-xs">
 									{search ? 'Nenhum convite encontrado' : 'Nenhum convite pendente'}
 								</strong>
-								<p className="mt-1 text-[10px] text-(--workspace-muted)">
+								<p className="mt-1 text-xs text-(--workspace-muted)">
 									{search ? 'Tente buscar por outro nome.' : 'Novos convites aparecerão aqui.'}
 								</p>
 							</div>

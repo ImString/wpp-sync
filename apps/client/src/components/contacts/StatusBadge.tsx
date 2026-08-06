@@ -14,7 +14,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = props => {
 		return (
 			<span
 				className={twMerge(
-					'inline-flex w-fit items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-500 dark:bg-[#17262e] dark:text-slate-400',
+					'inline-flex w-fit items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 dark:bg-[#17262e] dark:text-slate-400',
 					props.compact && 'px-2 py-0.5 text-[9px]'
 				)}>
 				Sem etapa
@@ -25,7 +25,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = props => {
 	return (
 		<span
 			className={twMerge(
-				'inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold',
+				'inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
 				props.compact && 'px-2 py-0.5 text-[9px]'
 			)}
 			style={{ color: props.stage.color, backgroundColor: hexToRgba(props.stage.color, 0.12) }}>
