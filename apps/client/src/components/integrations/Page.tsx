@@ -19,6 +19,8 @@ import { getResponseMessage, integrationsAPI } from '@/utils/api';
 
 import { Button } from '@/components/buttons';
 import { Pagination } from '@/components/pagination';
+import { useSocketStore } from '@/stores';
+import type { IntegrationUpdateData } from '@/stores/socket/types';
 
 import { ChannelIcon } from './ChannelIcon';
 import { IntegrationFormModal } from './IntegrationFormModal';
@@ -212,6 +214,31 @@ export const IntegrationsPage: React.FC = () => {
 	const previousCreateRequest = useRef(createRequest);
 
 	const [workspaceTotal, setWorkspaceTotal] = useState(0);
+	const socket = useSocketStore(state => state.socket);
+
+	useEffect(() => {
+		if (!socket) return;
+
+		const handleIntegrationUpdate = (data: IntegrationUpdateData) => {
+			setIntegrations(prev =>
+				prev.map(item => {
+					if (item.id !== data.integrationId) return item;
+					return {
+						...item,
+						...(data.status && { status: data.status }),
+						...(data.name && { name: data.name }),
+						...(data.type && { type: data.type })
+					};
+				})
+			);
+			setRefreshVersion(v => v + 1);
+		};
+
+		socket.on('integration:update', handleIntegrationUpdate);
+		return () => {
+			socket.off('integration:update', handleIntegrationUpdate);
+		};
+	}, [socket]);
 
 	useEffect(() => {
 		if (createRequest !== previousCreateRequest.current) {

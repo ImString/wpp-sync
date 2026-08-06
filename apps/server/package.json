@@ -20,11 +20,14 @@
 		"@wppsync/shared": "workspace:*",
 		"ansicolor": "^2.0.3",
 		"bcrypt": "^6.0.0",
+		"bullmq": "^6.0.8",
 		"cacheable": "^2.5.0",
 		"fastify": "^5.10.0",
+		"ioredis": "^5.0.0",
 		"jsonwebtoken": "^9.0.3",
 		"reflect-metadata": "0.2.2",
 		"sharp": "^0.35.3",
+		"socket.io": "^4.8.3",
 		"sqids": "^0.3.0"
 	},
 	"devDependencies": {

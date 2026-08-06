@@ -22,6 +22,8 @@ export class ServerModuleBase extends BaseModule {
 		if (!this.server) return;
 
 		this.server.setNotFoundHandler((request, reply) => {
+			if (request.raw.url?.startsWith('/socket.io')) return;
+
 			reply.status(404).send({
 				success: false,
 				code: 'NOT_FOUND',

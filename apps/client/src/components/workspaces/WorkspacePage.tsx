@@ -83,6 +83,12 @@ export const WorkspacePage: React.FC = () => {
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [toast, setToast] = useState(locationState?.workspaceNotFound ? 'A área solicitada não foi encontrada.' : '');
 
+	useEffect(() => {
+		if (locationState?.workspaceNotFound) {
+			window.history.replaceState({}, document.title);
+		}
+	}, [locationState?.workspaceNotFound]);
+
 	const { theme, toggleTheme } = useInterfaceStore(
 		useShallow(state => ({ theme: state.theme, toggleTheme: state.toggleTheme }))
 	);

@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { ChatConversationRoute, ChatEmptyRoute, ChatLayout } from '@/components/chat';
-import { AuthenticationMiddleware } from '@/components/middlewares';
+import { AuthenticationMiddleware, WorkspaceSocketMiddleware } from '@/components/middlewares';
 import { RouteManagerRoute } from '@/components/routerManager';
 
 import { AuthRoutes } from './routes/auth';
@@ -41,7 +41,9 @@ export const RouteList = () => {
 				path="/w/:uid"
 				element={
 					<AuthenticationMiddleware onlyLogged>
-						<WorkspaceChatRoute />
+						<WorkspaceSocketMiddleware>
+							<WorkspaceChatRoute />
+						</WorkspaceSocketMiddleware>
 					</AuthenticationMiddleware>
 				}>
 				<Route index element={<Navigate to="chats" replace />} />
@@ -61,7 +63,9 @@ export const RouteList = () => {
 				path="/w/:uid/settings/:settingsSection?"
 				element={
 					<AuthenticationMiddleware onlyLogged>
-						<AccountPage />
+						<WorkspaceSocketMiddleware>
+							<AccountPage />
+						</WorkspaceSocketMiddleware>
 					</AuthenticationMiddleware>
 				}
 			/>
@@ -69,7 +73,9 @@ export const RouteList = () => {
 				path="/w/:uid/my-profile"
 				element={
 					<AuthenticationMiddleware onlyLogged>
-						<AccountPage />
+						<WorkspaceSocketMiddleware>
+							<AccountPage />
+						</WorkspaceSocketMiddleware>
 					</AuthenticationMiddleware>
 				}
 			/>

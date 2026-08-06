@@ -12,6 +12,9 @@ import { Provider } from '@/core/index.js';
 import { IntegrationEntity } from '@/entities/data/index.js';
 import { IntegrationNotFoundError } from '@/entities/errors/integration/IntegrationNotFoundError.js';
 
+import { WebIntegrationService } from './WebIntegrationService.js';
+import { WhatsAppIntegrationService } from './WhatsAppIntegrationService.js';
+
 export type IntegrationServiceWhereInput = Prisma.IntegrationWhereInput;
 
 export type IntegrationServiceWhereOptions = {
@@ -29,6 +32,11 @@ export type IntegrationServiceWhereOptions = {
 
 @Provider()
 export class IntegrationService {
+	constructor(
+		private readonly webIntegrationService: WebIntegrationService,
+		private readonly whatsappIntegrationService: WhatsAppIntegrationService
+	) {}
+
 	private mountWhere(options: IntegrationServiceWhereOptions): IntegrationServiceWhereInput {
 		return {
 			...(options.id && { id: options.id }),
@@ -130,6 +138,12 @@ export class IntegrationService {
 
 		const integrationEntity = new IntegrationEntity(integration);
 
+		if (document.type === 'WHATSAPP') {
+			await this.whatsappIntegrationService.initializing(integrationEntity);
+		} else if (document.type === 'WEB') {
+			await this.webIntegrationService.initializing(integrationEntity);
+		}
+
 		return integrationEntity;
 	}
 
@@ -137,11 +151,13 @@ export class IntegrationService {
 		integration: IntegrationEntity,
 		document: {
 			name?: string;
+			status?: IntegrationStatus;
 			isDeleted?: boolean;
 		}
 	) {
 		integration.addChanges({
-			name: document.name,
+			...(document.name && { name: document.name }),
+			...(document.status && { status: document.status }),
 			isDeleted: document.isDeleted || false
 		});
 

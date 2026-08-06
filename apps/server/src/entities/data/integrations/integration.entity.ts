@@ -1,20 +1,29 @@
-import { Integration, Prisma } from '@wppsync/database';
+import { Integration, Prisma, Workspace } from '@wppsync/database';
 
 import { Entity } from '../Entity.js';
 import { EntityGroup } from '../Group.js';
+import { WorkspaceEntity } from '../workspaces/workspace.entity.js';
 
 export type IntegrationEntityRaw = Partial<Integration>;
-export type IntegrationEntityExtra = {};
-export type IntegrationEntityEntities = {};
+export type IntegrationEntityExtra = {
+	workspace?: Workspace | null;
+};
+export type IntegrationEntityEntities = {
+	workspace?: WorkspaceEntity | null;
+};
 
 export type IntegrationEntityPopulated = IntegrationEntityRaw & IntegrationEntityExtra;
 
 export class IntegrationEntity extends Entity<IntegrationEntityRaw, IntegrationEntityExtra, IntegrationEntityEntities> {
 	constructor(data: IntegrationEntityPopulated = {}, entities: IntegrationEntityEntities = {}) {
-		const normalData = { ...data };
-		const extra = {};
+		const normalData = { ...data, workspace: undefined };
+		const extra = { workspace: data.workspace };
 
 		const dataEntities: IntegrationEntityEntities = { ...entities };
+
+		if (data.workspace) {
+			dataEntities.workspace = new WorkspaceEntity(data.workspace);
+		}
 
 		super({ data: normalData, extra, entities: dataEntities });
 	}
