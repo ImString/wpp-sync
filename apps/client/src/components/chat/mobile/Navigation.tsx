@@ -1,4 +1,4 @@
-import { MdAdd, MdCampaign, MdChatBubbleOutline, MdMenu, MdOutlineContacts } from 'react-icons/md';
+import { MdAdd, MdChatBubbleOutline, MdGridView, MdMenu, MdOutlineContacts } from 'react-icons/md';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { Button } from '@/components/buttons';
@@ -45,7 +45,12 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = props => {
 				onClick={props.onPrimaryAction}>
 				<MdAdd className="size-6" aria-hidden="true" />
 			</Button>
-			<MobileNavigationItem icon={MdCampaign} label="Campanhas" />
+			<MobileNavigationItem
+				icon={MdGridView}
+				label="Integrações"
+				active={activeSection === 'integrations'}
+				onClick={() => navigate(uid ? `/w/${uid}/integrations` : '/')}
+			/>
 			<MobileNavigationItem icon={MdMenu} label="Mais" onClick={openSidebar} />
 		</nav>
 	);

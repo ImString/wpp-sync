@@ -404,7 +404,7 @@ export const ContactsPage: React.FC = () => {
 			</header>
 
 			<div className="contacts-content flex min-h-0 flex-none gap-3 px-3 pb-3 mobile:flex-1 mobile:px-5 mobile:pb-5">
-				<section className="contacts-list-shell flex min-h-0 min-w-0 flex-1 flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-panel mobile:overflow-hidden dark:border-[#223138] dark:bg-[#0e181e]">
+				<section className="contacts-list-shell flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-panel dark:border-[#223138] dark:bg-[#0e181e]">
 					<div className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-3 dark:border-[#223138] mobile:px-4">
 						<div className="flex min-w-0 items-center gap-2">
 							<MdFilterList className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
