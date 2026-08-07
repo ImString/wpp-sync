@@ -4,11 +4,17 @@ import type { ServerResponse } from '../types';
 export type IntegrationTypeData = 'WHATSAPP' | 'WEB';
 export type IntegrationStatusData = 'INITIALIZING' | 'AWAITING_LOGIN' | 'CONNECTED' | 'DISCONNECTED';
 
+export interface IntegrationWebConfig {
+	headerName?: string;
+	headerPhoto?: string | null;
+}
+
 export interface IntegrationData {
 	id: string;
 	name: string;
 	type: IntegrationTypeData;
 	status: IntegrationStatusData;
+	config?: IntegrationWebConfig | null;
 }
 
 export interface IntegrationListData {
@@ -73,6 +79,14 @@ export const integrationsAPI = {
 	update: async (uid: string, integrationId: string, data: { name: string }) => {
 		const response = await mainAPI.put<ServerResponse>(
 			`${workspacePath(uid)}/${encodeURIComponent(integrationId)}/update`,
+			data
+		);
+		return response.data;
+	},
+
+	updateWebConfig: async (uid: string, integrationId: string, data: FormData) => {
+		const response = await mainAPI.put<ServerResponse<IntegrationData>>(
+			`${workspacePath(uid)}/${encodeURIComponent(integrationId)}/web`,
 			data
 		);
 		return response.data;

@@ -39,6 +39,34 @@ export namespace IntegrationDTO {
 		})
 	});
 
+	export const WebConfigFields = z
+		.object({
+			name: z.string().trim().min(1).max(128).optional(),
+			headerName: z.string().trim().min(1).max(64),
+			removeHeaderPhoto: z.boolean().optional()
+		})
+		.strict();
+
+	export const WebConfig = new RouteSchema({
+		params: z.object({
+			uid: z.string(),
+			dataId: z.string()
+		}),
+		form: {
+			fields: WebConfigFields,
+			options: {
+				limits: {
+					fields: 3,
+					files: 1,
+					parts: 4,
+					fileSize: 5 * 1024 * 1024
+				}
+			}
+		}
+	});
+
+	export type WebConfigDocument = z.infer<typeof WebConfigFields>;
+
 	export const Delete = new RouteSchema({
 		params: z.object({
 			uid: z.string(),

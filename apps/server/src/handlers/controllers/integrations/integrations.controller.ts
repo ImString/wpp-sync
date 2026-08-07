@@ -1,6 +1,6 @@
 import { Controller, Delete, Get, HttpResponse, Post, Put } from '@/modules/index.js';
 
-import { IntegrationService } from '@/services/index.js';
+import { IntegrationService, WebIntegrationService } from '@/services/index.js';
 
 import { IntegrationDTO } from '@/entities/dtos/integrations/integration.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
@@ -13,7 +13,10 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 	middlewares: [AuthenticationMiddleware, WorkspaceAccessMiddleware]
 })
 export class IntegrationsController {
-	constructor(private readonly integrationService: IntegrationService) {}
+	constructor(
+		private readonly integrationService: IntegrationService,
+		private readonly webIntegrationService: WebIntegrationService
+	) {}
 
 	@Get('/', IntegrationDTO.List)
 	async list(context: typeof IntegrationDTO.List.context) {
@@ -77,6 +80,7 @@ export class IntegrationsController {
 
 		const integration = await this.integrationService.get({
 			id: context.params.dataId,
+			include: { workspace: true },
 			workspace: workspace.id
 		});
 
@@ -94,12 +98,17 @@ export class IntegrationsController {
 
 		const integration = await this.integrationService.get({
 			id: context.params.dataId,
+			include: { workspace: true },
 			workspace: workspace.id
 		});
 
-		await this.integrationService.update(integration, {
-			isDeleted: true
-		});
+		if (integration.data.type === 'WEB') {
+			await this.webIntegrationService.delete(integration);
+		} else {
+			await this.integrationService.update(integration, {
+				isDeleted: true
+			});
+		}
 
 		return HttpResponse.success();
 	}

@@ -1,15 +1,17 @@
-export interface IntegrationWebData {
-	widgetName: string;
-	widgetPhoto: string;
+export interface IntegrationWebConfig {
+	headerName: string;
+	headerPhotoId?: string;
 }
 
-export interface IntegrationWhatsAppData {
+export interface IntegrationWhatsAppConfig {
 	instanceId: string;
 	phoneNumber?: string;
 }
 
+export type IntegrationConfig = IntegrationWebConfig | IntegrationWhatsAppConfig;
+
 declare global {
 	namespace PrismaJson {
-		type IntegrationData = IntegrationWebData | IntegrationWhatsAppData;
+		type IntegrationConfig = import('./prisma-json.js').IntegrationConfig;
 	}
 }

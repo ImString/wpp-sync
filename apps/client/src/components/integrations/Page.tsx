@@ -10,7 +10,8 @@ import {
 	MdHourglassTop,
 	MdHub,
 	MdLogin,
-	MdOutlineSync
+	MdOutlineSync,
+	MdSettings
 } from 'react-icons/md';
 import { useOutletContext, useParams } from 'react-router-dom';
 import { twMerge } from 'tailwind-merge';
@@ -26,6 +27,7 @@ import { ChannelIcon } from './ChannelIcon';
 import { IntegrationFormModal } from './IntegrationFormModal';
 import type { IntegrationsLayoutContext } from './Layout';
 import { NewIntegrationModal } from './NewIntegrationModal';
+import { SiteChannelConfigModal } from './SiteChannelConfigModal';
 import { channels } from './data';
 import type { ChannelDefinition, Integration, IntegrationDraft, IntegrationFilter, IntegrationStatus } from './types';
 
@@ -61,7 +63,7 @@ const statusMeta: Record<
 		color: '#f59e0b'
 	},
 	AWAITING_LOGIN: {
-		label: 'Aguardando login',
+		label: 'Aguardando Conexão',
 		shortLabel: 'Aguardando',
 		description: 'A integração aguarda a autenticação do canal.',
 		icon: MdLogin,
@@ -138,18 +140,31 @@ interface IntegrationActionsProps {
 	integration: Integration;
 	onEdit: (integration: Integration) => void;
 	onRemove: (integration: Integration) => void;
+	onConfigure?: (integration: Integration) => void;
 }
 
 const IntegrationActions: React.FC<IntegrationActionsProps> = props => (
 	<div className="flex items-center justify-end gap-1">
-		<Button
-			theme="ghost"
-			type="button"
-			aria-label={`Editar ${props.integration.name}`}
-			className="size-8 min-h-8 rounded-lg p-0"
-			onClick={() => props.onEdit(props.integration)}>
-			<MdEdit aria-hidden="true" />
-		</Button>
+		{props.integration.type === 'WEB' && props.integration.status !== 'INITIALIZING' && props.onConfigure && (
+			<Button
+				theme="ghost"
+				type="button"
+				aria-label={`Configurar ${props.integration.name}`}
+				className="size-8 min-h-8 rounded-lg p-0 hover:text-violet-600 dark:hover:text-violet-400"
+				onClick={() => props.onConfigure!(props.integration)}>
+				<MdSettings aria-hidden="true" />
+			</Button>
+		)}
+		{(props.integration.type !== 'WEB' || props.integration.status === 'INITIALIZING') && (
+			<Button
+				theme="ghost"
+				type="button"
+				aria-label={`Editar ${props.integration.name}`}
+				className="size-8 min-h-8 rounded-lg p-0"
+				onClick={() => props.onEdit(props.integration)}>
+				<MdEdit aria-hidden="true" />
+			</Button>
+		)}
 		<Button
 			theme="ghost"
 			type="button"
@@ -211,6 +226,7 @@ export const IntegrationsPage: React.FC = () => {
 	const [removing, setRemoving] = useState(false);
 	const [removeError, setRemoveError] = useState('');
 	const [toast, setToast] = useState('');
+	const [configCandidate, setConfigCandidate] = useState<Integration>();
 	const previousCreateRequest = useRef(createRequest);
 
 	const [workspaceTotal, setWorkspaceTotal] = useState(0);
@@ -511,6 +527,7 @@ export const IntegrationsPage: React.FC = () => {
 													integration={integration}
 													onEdit={handleEdit}
 													onRemove={setRemoveCandidate}
+													onConfigure={setConfigCandidate}
 												/>
 											</article>
 										);
@@ -544,6 +561,7 @@ export const IntegrationsPage: React.FC = () => {
 														integration={integration}
 														onEdit={handleEdit}
 														onRemove={setRemoveCandidate}
+														onConfigure={setConfigCandidate}
 													/>
 												</div>
 											</article>
@@ -601,6 +619,18 @@ export const IntegrationsPage: React.FC = () => {
 						setEditingIntegration(undefined);
 					}}
 					onSave={handleSave}
+				/>
+			)}
+			{configCandidate && (
+				<SiteChannelConfigModal
+					integration={configCandidate}
+					onClose={() => setConfigCandidate(undefined)}
+					onSaved={updated => {
+						setConfigCandidate(updated);
+						setIntegrations(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+						setRefreshVersion(v => v + 1);
+						setToast('Configurações salvas.');
+					}}
 				/>
 			)}
 

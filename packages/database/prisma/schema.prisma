@@ -118,8 +118,8 @@ model Integration {
     name   String
     type   IntegrationType
     status IntegrationStatus
-    /// [IntegrationData]
-    data   Json?
+    /// [IntegrationConfig]
+    config Json? @map("data")
 
     isDeleted   Boolean?  @default(false) @map("is_deleted")
     workspace   Workspace @relation(fields: [workspaceId], references: [id])

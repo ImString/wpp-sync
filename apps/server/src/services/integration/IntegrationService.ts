@@ -1,5 +1,6 @@
 import {
 	applyPrismaPagination,
+	type Integration,
 	IntegrationStatus,
 	IntegrationType,
 	PaginationOptions,
@@ -9,11 +10,13 @@ import {
 
 import { Provider } from '@/core/index.js';
 
-import { IntegrationEntity } from '@/entities/data/index.js';
-import { IntegrationNotFoundError } from '@/entities/errors/integration/IntegrationNotFoundError.js';
+import { SocketRooms } from '@/modules/index.js';
+import { BullModule, SocketModule } from '@/modules/modules.js';
 
-import { WebIntegrationService } from './WebIntegrationService.js';
-import { WhatsAppIntegrationService } from './WhatsAppIntegrationService.js';
+import { IntegrationEntity } from '@/entities/data/index.js';
+import { IntegrationJobDTO } from '@/entities/dtos/jobs/integration.dto.js';
+import { IntegrationSocketDTO } from '@/entities/dtos/sockets/integration.dto.js';
+import { IntegrationNotFoundError } from '@/entities/errors/integration/IntegrationNotFoundError.js';
 
 export type IntegrationServiceWhereInput = Prisma.IntegrationWhereInput;
 
@@ -23,6 +26,7 @@ export type IntegrationServiceWhereOptions = {
 
 	search?: string;
 	status?: IntegrationStatus;
+	type?: IntegrationType;
 	isDeleted?: boolean;
 
 	workspace?: string;
@@ -30,13 +34,15 @@ export type IntegrationServiceWhereOptions = {
 	include?: Prisma.IntegrationInclude;
 };
 
+export interface IntegrationUpdateDocument {
+	name?: string;
+	status?: IntegrationStatus;
+	isDeleted?: boolean;
+	config?: Integration['config'];
+}
+
 @Provider()
 export class IntegrationService {
-	constructor(
-		private readonly webIntegrationService: WebIntegrationService,
-		private readonly whatsappIntegrationService: WhatsAppIntegrationService
-	) {}
-
 	private mountWhere(options: IntegrationServiceWhereOptions): IntegrationServiceWhereInput {
 		return {
 			...(options.id && { id: options.id }),
@@ -49,6 +55,7 @@ export class IntegrationService {
 				}
 			}),
 			...(options.status && { status: options.status }),
+			...(options.type && { type: options.type }),
 
 			isDeleted: options.isDeleted || false,
 
@@ -137,31 +144,36 @@ export class IntegrationService {
 		});
 
 		const integrationEntity = new IntegrationEntity(integration);
+		const initializationData = { integrationId: integrationEntity.id };
 
 		if (document.type === 'WHATSAPP') {
-			await this.whatsappIntegrationService.initializing(integrationEntity);
+			BullModule.add(IntegrationJobDTO.WhatsappCreate, initializationData);
 		} else if (document.type === 'WEB') {
-			await this.webIntegrationService.initializing(integrationEntity);
+			BullModule.add(IntegrationJobDTO.WebCreate, initializationData);
 		}
 
 		return integrationEntity;
 	}
 
-	async update(
-		integration: IntegrationEntity,
-		document: {
-			name?: string;
-			status?: IntegrationStatus;
-			isDeleted?: boolean;
-		}
-	) {
+	async update(integration: IntegrationEntity, document: IntegrationUpdateDocument) {
 		integration.addChanges({
 			...(document.name && { name: document.name }),
 			...(document.status && { status: document.status }),
-			isDeleted: document.isDeleted || false
+			...(document.config !== undefined && { config: document.config }),
+			...(document.isDeleted !== undefined && { isDeleted: document.isDeleted })
 		});
 
 		await integration.save();
+
+		const workspaceUID = integration.entities.workspace?.data.uid;
+
+		if (workspaceUID) {
+			SocketModule.emitTo(SocketRooms.workspace(workspaceUID), IntegrationSocketDTO.Update, {
+				integrationId: integration.id,
+				...(document.name && { name: document.name }),
+				...(document.status && { status: document.status })
+			});
+		}
 
 		return integration;
 	}

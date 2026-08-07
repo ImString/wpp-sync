@@ -1,4 +1,6 @@
-import { Integration, Prisma, Workspace } from '@wppsync/database';
+import { Integration, type IntegrationWebConfig, Prisma, Workspace } from '@wppsync/database';
+
+import { FilesService } from '@/services/FilesService.js';
 
 import { Entity } from '../Entity.js';
 import { EntityGroup } from '../Group.js';
@@ -28,13 +30,30 @@ export class IntegrationEntity extends Entity<IntegrationEntityRaw, IntegrationE
 		super({ data: normalData, extra, entities: dataEntities });
 	}
 
+	get config() {
+		return this.data.config;
+	}
+
+	private async toPublicConfig() {
+		if (!this.config || this.data.type !== 'WEB') return this.config;
+
+		const { headerPhotoId, ...config } = this.config as IntegrationWebConfig;
+		const headerPhoto = headerPhotoId ? await FilesService.generateSignedFileURLById(headerPhotoId) : undefined;
+
+		return {
+			...config,
+			...(headerPhoto && { headerPhoto })
+		};
+	}
+
 	async toObject(options: {}) {
 		return {
 			id: this.id,
 
 			name: this.data.name,
 			type: this.data.type,
-			status: this.data.status
+			status: this.data.status,
+			config: await this.toPublicConfig()
 		};
 	}
 
