@@ -23,10 +23,19 @@ const IntegrationsLayout = lazy(() =>
 const IntegrationsPage = lazy(() =>
 	import('@/components/integrations').then(module => ({ default: module.IntegrationsPage }))
 );
+const WidgetPage = lazy(() => import('@/components/widget').then(module => ({ default: module.WidgetPage })));
 
 export const RouteList = () => {
 	return (
 		<Routes>
+			<Route
+				path="/widget"
+				element={
+					<RouteManagerRoute title="Chat" bodyClassName="widget-page">
+						<WidgetPage />
+					</RouteManagerRoute>
+				}
+			/>
 			<Route
 				path="/"
 				element={

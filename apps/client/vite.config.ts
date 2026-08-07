@@ -14,10 +14,12 @@ export default defineConfig({
 	},
 	server: {
 		port,
-		strictPort: true
+		strictPort: true,
+		cors: true
 	},
 	preview: {
 		port,
-		strictPort: true
+		strictPort: true,
+		cors: true
 	}
 });

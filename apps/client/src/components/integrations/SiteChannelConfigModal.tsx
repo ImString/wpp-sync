@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { MdChatBubbleOutline, MdClose, MdCode, MdEdit, MdLanguage, MdOutlineCameraAlt } from 'react-icons/md';
+import { MdClose, MdEdit, MdLanguage, MdOutlineCameraAlt } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 
 import { getResponseMessage, integrationsAPI } from '@/utils/api';
@@ -8,6 +8,7 @@ import { getResponseMessage, integrationsAPI } from '@/utils/api';
 import { Button } from '@/components/buttons';
 
 import { Image } from '../shared/Image';
+import { SiteInstallationCodes } from './SiteInstallationCodes';
 import type { Integration } from './types';
 
 interface SiteChannelConfigModalProps {
@@ -315,61 +316,11 @@ export const SiteChannelConfigModal: React.FC<SiteChannelConfigModalProps> = pro
 						</div>
 
 						{isConnected && (
-							<section
-								aria-labelledby="site-installation-title"
-								className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-[#223138] dark:bg-[#101b21]">
-								<div className="flex items-start justify-between gap-3 px-4 py-3.5">
-									<div>
-										<h3
-											id="site-installation-title"
-											className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-											Códigos de instalação
-										</h3>
-										<p className="mt-1 text-xs leading-4 text-slate-500 dark:text-slate-400">
-											Escolha como o chat será adicionado ao seu site.
-										</p>
-									</div>
-									<span className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[8px] font-bold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-										Conectado
-									</span>
-								</div>
-
-								<div
-									className="grid divide-y divide-slate-200 border-t border-slate-200 bg-slate-50/70 dark:divide-[#223138] dark:border-[#223138] dark:bg-[#0e181e] mobile:grid-cols-2 mobile:divide-x mobile:divide-y-0"
-									role="list">
-									<div
-										role="listitem"
-										className="flex min-w-0 items-center gap-3 px-4 py-3.5 cursor-pointer">
-										<span className="grid size-9 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
-											<MdCode className="size-5" aria-hidden="true" />
-										</span>
-										<div className="min-w-0">
-											<strong className="block text-xs font-semibold text-slate-900 dark:text-slate-100">
-												Código Incorporável
-											</strong>
-											<p className="mt-0.5 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-												Chat integrado ao conteúdo da página.
-											</p>
-										</div>
-									</div>
-
-									<div
-										role="listitem"
-										className="flex min-w-0 items-center gap-3 px-4 py-3.5 cursor-pointer">
-										<span className="grid size-9 shrink-0 place-items-center rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
-											<MdChatBubbleOutline className="size-5" aria-hidden="true" />
-										</span>
-										<div className="min-w-0">
-											<strong className="block text-xs font-semibold text-slate-900 dark:text-slate-100">
-												Código do Balão
-											</strong>
-											<p className="mt-0.5 text-[10px] leading-4 text-slate-500 dark:text-slate-400">
-												Atalho flutuante no canto do site.
-											</p>
-										</div>
-									</div>
-								</div>
-							</section>
+							<SiteInstallationCodes
+								workspaceUid={uid ?? ''}
+								integrationId={props.integration.id}
+								headerName={form.headerName.trim() || 'Atendimento'}
+							/>
 						)}
 
 						{errorMessage && (

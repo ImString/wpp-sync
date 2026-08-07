@@ -1,0 +1,67 @@
+body.widget-page {
+	margin: 0;
+	overflow: hidden;
+	background: transparent;
+	font-family: 'Inter', system-ui, sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+body.widget-page,
+body.widget-page #root {
+	width: 100%;
+	height: 100dvh;
+	min-width: 0;
+	min-height: 420px;
+}
+
+.widget-chat-pattern {
+	background-color: #f7f4ef;
+	background-image: radial-gradient(circle at center, rgba(100, 116, 139, 0.12) 1px, transparent 1px);
+	background-size: 24px 24px;
+}
+
+.dark .widget-chat-pattern {
+	background-color: #0b151a;
+	background-image: radial-gradient(circle at center, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+}
+
+@keyframes widget-typing-bounce {
+	0%,
+	60%,
+	100% {
+		opacity: 0.35;
+		transform: translateY(0);
+	}
+
+	30% {
+		opacity: 1;
+		transform: translateY(-3px);
+	}
+}
+
+.widget-typing-dot {
+	display: block;
+	width: 6px;
+	height: 6px;
+	border-radius: 999px;
+	background: rgb(100 116 139);
+	animation: widget-typing-bounce 1.2s infinite ease-in-out;
+}
+
+.widget-typing-dot:nth-child(2) {
+	animation-delay: 160ms;
+}
+
+.widget-typing-dot:nth-child(3) {
+	animation-delay: 320ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	body.widget-page *,
+	body.widget-page *::before,
+	body.widget-page *::after {
+		scroll-behavior: auto !important;
+		transition-duration: 0.001ms !important;
+		animation-duration: 0.001ms !important;
+	}
+}
