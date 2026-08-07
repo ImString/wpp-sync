@@ -11,7 +11,9 @@ export class EntityGroup<T extends Entity<any>> {
 		return this.items.map(item => item.toRaw(...args));
 	}
 
-	async toObject(...args: Parameters<T['toObject']>): Promise<ReturnType<T['toObject']>[]> {
-		return await Promise.all(this.items.map(item => item.toObject(...args)));
+	async toObject(...args: Parameters<T['toObject']>): Promise<Awaited<ReturnType<T['toObject']>>[]> {
+		return (await Promise.all(this.items.map(item => item.toObject(...args)))) as Awaited<
+			ReturnType<T['toObject']>
+		>[];
 	}
 }

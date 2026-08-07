@@ -1,5 +1,6 @@
 import type { AuthenticationErrorCode } from './authentication/AuthenticationErrorCode.js';
 import type { ContactErrorCode } from './contact/ContactErrorCode.js';
+import type { ConversationErrorCode } from './conversation/ConversationErrorCode.js';
 import type { ImageErrorCode } from './image/ImageErrorCode.js';
 import type { IntegrationErrorCode } from './integration/IntegrationErrorCode.js';
 import type { InviteErrorCode } from './invite/InviteErrorCode.js';
@@ -9,6 +10,7 @@ import type { WorkspaceErrorCode } from './workspace/WorkspaceErrorCode.js';
 export type ApplicationErrorCode =
 	| AuthenticationErrorCode
 	| ContactErrorCode
+	| ConversationErrorCode
 	| InviteErrorCode
 	| IntegrationErrorCode
 	| ImageErrorCode

@@ -54,10 +54,11 @@ model Member {
     role     Role    @default(MEMBER)
     disabled Boolean @default(false)
 
-    user        User      @relation(fields: [userId], references: [id])
-    workspace   Workspace @relation(fields: [workspaceId], references: [id])
-    userId      String
-    workspaceId String
+    user                     User                      @relation(fields: [userId], references: [id])
+    workspace                Workspace                 @relation(fields: [workspaceId], references: [id])
+    userId                   String
+    workspaceId              String
+    conversationParticipants ConversationParticipant[]
 
     @@map("members")
 }
@@ -96,6 +97,7 @@ model Workspace {
     contacts      Contact[]
     contactStages ContactStage[]
     integrations  Integration[]
+    conversations Conversation[]
 
     @@map("workspaces")
 }
@@ -119,12 +121,13 @@ model Integration {
     type   IntegrationType
     status IntegrationStatus
     /// [IntegrationConfig]
-    config Json? @map("data")
+    config Json?             @map("data")
 
-    isDeleted   Boolean?  @default(false) @map("is_deleted")
-    workspace   Workspace @relation(fields: [workspaceId], references: [id])
-    createdAt   DateTime  @default(now()) @map("created_at")
-    workspaceId String
+    isDeleted     Boolean?       @default(false) @map("is_deleted")
+    workspace     Workspace      @relation(fields: [workspaceId], references: [id])
+    createdAt     DateTime       @default(now()) @map("created_at")
+    workspaceId   String
+    conversations Conversation[]
 
     @@map("integrations")
 }
@@ -134,7 +137,7 @@ model Contact {
 
     name     String?
     pushName String?       @map("push_name")
-    whatsapp String
+    whatsapp String?
     email    String?
     stage    ContactStage? @relation(fields: [contactStageId], references: [id])
     tags     String[]
@@ -146,9 +149,10 @@ model Contact {
     updatedAt DateTime @updatedAt @map("updated_at")
     createdAt DateTime @default(now()) @map("created_at")
 
-    workspace      Workspace @relation(fields: [workspaceId], references: [id])
-    workspaceId    String
-    contactStageId String?
+    workspace                Workspace                 @relation(fields: [workspaceId], references: [id])
+    workspaceId              String
+    contactStageId           String?
+    conversationParticipants ConversationParticipant[]
 
     @@map("contacts")
 }
@@ -172,4 +176,105 @@ model ContactStage {
 
     @@unique([workspaceId, slug])
     @@map("contacts_stages")
+}
+
+enum ConversationStatus {
+    OPEN
+    CLOSED
+    ARCHIVED
+}
+
+enum MessageType {
+    TEXT
+    IMAGE
+    AUDIO
+    VIDEO
+    FILE
+    SYSTEM
+}
+
+model Conversation {
+    id String @id @default(cuid())
+
+    name           String?
+    status         ConversationStatus @default(OPEN)
+    lastActivityAt DateTime           @default(now()) @map("last_activity_at")
+    closedAt       DateTime?          @map("closed_at")
+    createdAt      DateTime           @default(now()) @map("created_at")
+    updatedAt      DateTime           @updatedAt @map("updated_at")
+
+    workspaceId   String @map("workspace_id")
+    integrationId String @map("integration_id")
+
+    workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+    integration Integration @relation(fields: [integrationId], references: [id])
+
+    participants ConversationParticipant[]
+    messages     Message[]
+
+    @@index([workspaceId, status, lastActivityAt])
+    @@index([integrationId, lastActivityAt])
+    @@map("conversations")
+}
+
+enum ConversationParticipantType {
+    MEMBER
+    CONTACT
+    VISITOR
+}
+
+model ConversationParticipant {
+    id String @id @default(cuid())
+
+    type           ConversationParticipantType
+    name           String?
+    email          String?
+    conversationId String  @map("conversation_id")
+    memberId       String? @map("member_id")
+    contactId      String? @map("contact_id")
+
+    joinedAt DateTime  @default(now()) @map("joined_at")
+    leftAt   DateTime? @map("left_at")
+
+    lastReadPosition BigInt    @default(0) @map("last_read_position")
+    lastReadAt       DateTime? @map("last_read_at")
+
+    conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+    member       Member?      @relation(fields: [memberId], references: [id])
+    contact      Contact?     @relation(fields: [contactId], references: [id])
+
+    sentMessages Message[] @relation("MessageSender")
+
+    @@unique([conversationId, memberId])
+    @@unique([conversationId, contactId])
+    @@unique([conversationId, email])
+    @@index([conversationId, leftAt])
+    @@index([memberId, leftAt])
+    @@index([contactId, leftAt])
+    @@map("conversation_participants")
+}
+
+model Message {
+    id String @id @default(cuid())
+
+    position BigInt @unique @default(autoincrement())
+
+    type    MessageType @default(TEXT)
+    text    String?
+    payload Json?
+
+    externalId String?   @map("external_id")
+    createdAt  DateTime  @default(now()) @map("created_at")
+    editedAt   DateTime? @map("edited_at")
+    deletedAt  DateTime? @map("deleted_at")
+
+    conversationId      String  @map("conversation_id")
+    senderParticipantId String? @map("sender_participant_id")
+
+    conversation Conversation             @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+    sender       ConversationParticipant? @relation("MessageSender", fields: [senderParticipantId], references: [id])
+
+    @@unique([conversationId, externalId])
+    @@index([conversationId, position])
+    @@map("messages")
 }
