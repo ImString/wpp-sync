@@ -229,9 +229,9 @@ model ConversationParticipant {
     type           ConversationParticipantType
     name           String?
     email          String?
-    conversationId String  @map("conversation_id")
-    memberId       String? @map("member_id")
-    contactId      String? @map("contact_id")
+    conversationId String                      @map("conversation_id")
+    memberId       String?                     @map("member_id")
+    contactId      String?                     @map("contact_id")
 
     joinedAt DateTime  @default(now()) @map("joined_at")
     leftAt   DateTime? @map("left_at")

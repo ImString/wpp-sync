@@ -4,6 +4,7 @@ import { Provider } from '@/core/index.js';
 
 import { ContactEntity, ConversationEntity, IntegrationEntity, MemberEntity } from '@/entities/data/index.js';
 import { ContactNotFoundError } from '@/entities/errors/contact/ContactNotFoundError.js';
+import { ConversationNotFoundError } from '@/entities/errors/conversation/ConversationNotFoundError.js';
 import { InvalidConversationParticipantError } from '@/entities/errors/conversation/index.js';
 import { IntegrationNotFoundError } from '@/entities/errors/integration/IntegrationNotFoundError.js';
 import { MemberNotFoundError } from '@/entities/errors/workspace/index.js';
@@ -183,6 +184,21 @@ export class ConversationService {
 			items,
 			...(!options.ignore_count && { total: dataListTotal })
 		};
+	}
+
+	async get(options: ConversationServiceWhereOptions) {
+		const data = await prisma.conversation.findFirst({
+			where: {
+				...this.mountWhere(options)
+			},
+			include: {
+				...this.mountInclude(options)
+			}
+		});
+
+		if (!data) throw new ConversationNotFoundError();
+
+		return new ConversationEntity(data);
 	}
 
 	async create(document: {
