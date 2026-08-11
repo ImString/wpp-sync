@@ -11,6 +11,7 @@
 	"dependencies": {
 		"@wppsync/shared": "workspace:*",
 		"axios": "^1.18.1",
+		"emoji-picker-react": "^4.19.1",
 		"formik": "^2.4.9",
 		"libphonenumber-js": "1.13.9",
 		"react": "^19.2.8",
