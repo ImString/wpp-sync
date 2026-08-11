@@ -80,6 +80,12 @@ export interface ConversationMessageListOptions {
 	signal?: AbortSignal;
 }
 
+export interface ConversationMessageSendOptions {
+	text?: string;
+	files?: File[];
+	signature?: boolean;
+}
+
 const workspacePath = (uid: string) => `/workspace/${encodeURIComponent(uid)}/conversations`;
 
 export const conversationsAPI = {
@@ -106,6 +112,22 @@ export const conversationsAPI = {
 				}
 			}
 		);
+		return response.data;
+	},
+
+	sendMessage: async (uid: string, conversationId: string, options: ConversationMessageSendOptions) => {
+		const form = new FormData();
+
+		if (options.text?.trim()) form.append('text', options.text.trim());
+		if (options.signature !== undefined) form.append('signature', JSON.stringify(options.signature));
+		for (const file of options.files || []) form.append('files', file, file.name);
+
+		const response = await mainAPI.post<ServerResponse<ConversationMessageData[]>>(
+			`${workspacePath(uid)}/${encodeURIComponent(conversationId)}/send`,
+			form,
+			{ timeout: 120_000 }
+		);
+
 		return response.data;
 	}
 };

@@ -3,13 +3,24 @@ import { create } from 'zustand';
 import { formatNationalPhone } from '@/utils';
 import { conversationsAPI, getResponseMessage, type ConversationData, type ConversationMessageData } from '@/utils/api';
 
-import type { ChatMessage, ChatStore, Conversation, MessagePaginationState } from './types';
+import { formatMessageSummary } from './format-message-summary';
+import type {
+	ChatMessage,
+	ChatStore,
+	Conversation,
+	FileMessage,
+	MessageFileKind,
+	MessagePaginationState,
+	MessageSendInput,
+	MessageSendRequest
+} from './types';
 
 const CONVERSATION_PAGE_SIZE = 20;
 const PRELOADED_MESSAGE_LIMIT = 4;
 const MESSAGE_PAGE_SIZE = 30;
 
 let conversationsRequest: AbortController | undefined;
+const messageSendRequests = new Map<string, MessageSendRequest>();
 
 const currentTime = () => {
 	return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
@@ -86,6 +97,29 @@ const getPayloadString = (payload: Record<string, unknown> | undefined, keys: st
 	return undefined;
 };
 
+const getPayloadNumber = (payload: Record<string, unknown> | undefined, key: string) => {
+	const value = payload?.[key];
+	return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+};
+
+const getFileKind = (mimeType?: string): MessageFileKind => {
+	if (mimeType?.startsWith('image/')) return 'image';
+	if (mimeType?.startsWith('audio/')) return 'audio';
+	if (mimeType?.startsWith('video/')) return 'video';
+	return 'file';
+};
+
+const formatFileSize = (size?: number) => {
+	if (size === undefined) return '';
+	if (size < 1024) return `${size} B`;
+	if (size < 1024 * 1024) return `${(size / 1024).toFixed(size < 10 * 1024 ? 1 : 0)} KB`;
+	return `${(size / (1024 * 1024)).toFixed(size < 10 * 1024 * 1024 ? 1 : 0)} MB`;
+};
+
+const getFileDetails = (mimeType?: string, size?: number) => {
+	return [mimeType, formatFileSize(size)].filter(Boolean).join(' · ');
+};
+
 const mapMessage = (message: ConversationMessageData): ChatMessage => {
 	const direction = message.sender?.type === 'MEMBER' ? 'sent' : 'received';
 	const time = formatMessageTime(message.createdAt);
@@ -102,6 +136,8 @@ const mapMessage = (message: ConversationMessageData): ChatMessage => {
 	}
 
 	const payload = getPayloadRecord(message.payload);
+	const mimeType = getPayloadString(payload, ['mimeType', 'mimetype']);
+	const size = getPayloadNumber(payload, 'size');
 	const defaultName =
 		message.type === 'IMAGE'
 			? 'Imagem'
@@ -116,9 +152,94 @@ const mapMessage = (message: ConversationMessageData): ChatMessage => {
 		type: 'file',
 		direction,
 		name: getPayloadString(payload, ['name', 'filename', 'fileName']) || message.text || defaultName,
-		details: getPayloadString(payload, ['mimeType', 'mimetype', 'type', 'size']) || message.type,
-		time
+		details: getFileDetails(mimeType, size) || getPayloadString(payload, ['type']) || message.type,
+		caption: message.text,
+		fileKind:
+			message.type === 'IMAGE'
+				? 'image'
+				: message.type === 'AUDIO'
+					? 'audio'
+					: message.type === 'VIDEO'
+						? 'video'
+						: getFileKind(mimeType),
+		mimeType,
+		size,
+		time,
+		url: getPayloadString(payload, ['url']),
+		...(direction === 'sent' && { status: 'sent' as const })
 	};
+};
+
+const createRequestId = () => {
+	if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+	return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const createFilePreview = (file: File) => {
+	return file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined;
+};
+
+export const createMessageSendRequest = (
+	workspaceUid: string,
+	conversationId: string,
+	input: MessageSendInput
+): MessageSendRequest => {
+	const requestId = createRequestId();
+	const text = input.text.trim();
+	const optimisticMessages: ChatMessage[] =
+		input.files.length > 0
+			? input.files.map<FileMessage>((file, index) => ({
+					id: `optimistic-${requestId}-${index}`,
+					type: 'file',
+					direction: 'sent',
+					name: file.name,
+					details: getFileDetails(file.type || 'application/octet-stream', file.size),
+					...(index === input.files.length - 1 && text && { caption: text }),
+					fileKind: getFileKind(file.type),
+					mimeType: file.type || 'application/octet-stream',
+					previewUrl: createFilePreview(file),
+					requestId,
+					size: file.size,
+					status: 'sending',
+					time: currentTime()
+				}))
+			: [
+					{
+						id: `optimistic-${requestId}`,
+						type: 'text',
+						direction: 'sent',
+						text,
+						time: currentTime(),
+						requestId,
+						status: 'sending'
+					}
+				];
+
+	const request = {
+		requestId,
+		workspaceUid,
+		conversationId,
+		text,
+		files: input.files,
+		optimisticMessages
+	};
+
+	messageSendRequests.set(requestId, request);
+	return request;
+};
+
+export const getMessageSendRequest = (requestId: string) => messageSendRequests.get(requestId);
+
+const releaseMessageSendRequest = (request: MessageSendRequest) => {
+	messageSendRequests.delete(request.requestId);
+	window.setTimeout(
+		() => {
+			for (const message of request.optimisticMessages) {
+				if (message.type === 'file' && message.previewUrl) URL.revokeObjectURL(message.previewUrl);
+			}
+		},
+		5 * 60 * 1000
+	);
 };
 
 const avatarGradients = [
@@ -173,9 +294,7 @@ const normalizeConversation = (data: ConversationData): NormalizedConversation =
 			...(data.integration?.type && { channel: data.integration.type }),
 			name,
 			initials: getInitials(name) || 'C',
-			preview:
-				latestMessage?.text ||
-				(latestMessage ? `Mensagem ${latestMessage.type?.toLocaleLowerCase('pt-BR') || ''}`.trim() : ''),
+			preview: formatMessageSummary(latestMessage),
 			time: formatConversationTime(data.lastActivityAt || latestMessage?.createdAt || data.createdAt),
 			type: isGroup ? 'groups' : isUnread ? 'unread' : isWaiting ? 'waiting' : 'all',
 			...(isUnread && { unread: 1 }),
@@ -490,40 +609,96 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
 		return conversationId;
 	},
-	sendMessage: text => {
-		const messageId = `message-${Date.now()}`;
+	sendMessage: async request => {
+		try {
+			const response = await conversationsAPI.sendMessage(request.workspaceUid, request.conversationId, {
+				text: request.text,
+				files: request.files
+			});
 
-		set(state => ({
-			messages: {
-				...state.messages,
-				[state.selectedConversationId]: [
-					...(state.messages[state.selectedConversationId] || []),
-					{
-						id: messageId,
-						type: 'text',
-						direction: 'sent',
-						text,
-						time: currentTime(),
-						status: 'sent'
-					}
-				]
+			if (!response.success || !response.data) {
+				throw new Error(getResponseMessage(response, 'Não foi possível enviar a mensagem.'));
 			}
-		}));
 
-		window.setTimeout(() => {
-			set(state => ({
-				messages: Object.fromEntries(
-					Object.entries(state.messages).map(([conversationId, messages]) => [
-						conversationId,
-						messages.map(message =>
-							message.id === messageId && message.type === 'text'
-								? { ...message, status: 'read' }
-								: message
-						)
-					])
-				)
+			const sentMessages = response.data.map((message, index) => {
+				const mappedMessage = mapMessage(message);
+				const optimisticMessage = request.optimisticMessages[index];
+
+				return {
+					...mappedMessage,
+					clientId: optimisticMessage?.id,
+					requestId: request.requestId,
+					...(mappedMessage.type === 'file' &&
+						optimisticMessage?.type === 'file' &&
+						optimisticMessage.previewUrl && {
+							previewUrl: optimisticMessage.previewUrl
+						})
+				};
+			});
+			const latestMessage = sentMessages.at(-1);
+			const preview = formatMessageSummary(latestMessage);
+
+			set(state => {
+				if (state.workspaceUid !== request.workspaceUid) return state;
+
+				const currentMessages = state.messages[request.conversationId] || [];
+				const withoutRequest = currentMessages.filter(message => message.requestId !== request.requestId);
+				const knownIds = new Set(withoutRequest.map(message => message.id));
+				const newMessages = sentMessages.filter(message => !knownIds.has(message.id));
+				const currentConversation = state.conversations.find(
+					conversation => conversation.id === request.conversationId
+				);
+				const conversations = currentConversation
+					? [
+							{
+								...currentConversation,
+								preview,
+								time: latestMessage?.time || currentTime(),
+								type:
+									currentConversation.type === 'unread' ? ('all' as const) : currentConversation.type,
+								unread: undefined
+							},
+							...state.conversations.filter(conversation => conversation.id !== request.conversationId)
+						]
+					: state.conversations;
+
+				return {
+					conversations,
+					messages: {
+						...state.messages,
+						[request.conversationId]: [...withoutRequest, ...newMessages]
+					}
+				};
+			});
+
+			releaseMessageSendRequest(request);
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Não foi possível enviar a mensagem.';
+			const failedMessages = request.optimisticMessages.map(message => ({
+				...message,
+				error: errorMessage,
+				status: 'error' as const
 			}));
-		}, 900);
+
+			set(state => {
+				if (state.workspaceUid !== request.workspaceUid) {
+					releaseMessageSendRequest(request);
+					return state;
+				}
+
+				return {
+					messages: {
+						...state.messages,
+						[request.conversationId]: [
+							...(state.messages[request.conversationId] || []).filter(
+								message => message.requestId !== request.requestId
+							),
+							...failedMessages
+						]
+					}
+				};
+			});
+		}
 	},
 	setActiveFilter: activeFilter => set({ activeFilter }),
 	setActiveSection: activeSection => set({ activeSection, sidebarOpen: false }),

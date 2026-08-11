@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -6,8 +6,22 @@ import { Button } from '@/components/buttons';
 import { useInfiniteScroll } from '@/components/infiniteScroll';
 
 import { useChatStore } from '../store';
+import type { ChatMessage } from '../types';
 import { ChatFileMessage } from './FileMessage';
 import { ChatTextMessage } from './TextMessage';
+
+interface ForceMessageScrollRequest {
+	requestId: string;
+	token: number;
+}
+
+interface MessageListProps {
+	messages: ChatMessage[];
+	onRetry: (requestId: string) => void;
+	forceScrollRequest?: ForceMessageScrollRequest;
+}
+
+const messageScrollPositions = new Map<string, number>();
 
 export const MessageListSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => (
 	<div
@@ -32,22 +46,25 @@ export const MessageListSkeleton: React.FC<{ count?: number }> = ({ count = 3 })
 	</div>
 );
 
-export const MessageList: React.FC = () => {
+export const MessageList: React.FC<MessageListProps> = ({ messages, onRetry, forceScrollRequest }) => {
 	const { uid } = useParams<{ uid: string }>();
-	const { loadOlderMessages, messagesByConversation, messagesPagination, selectedConversationId } = useChatStore(
+	const { loadOlderMessages, messagesPagination, selectedConversationId } = useChatStore(
 		useShallow(state => ({
 			loadOlderMessages: state.loadOlderMessages,
-			messagesByConversation: state.messages,
 			messagesPagination: state.messagesPagination,
 			selectedConversationId: state.selectedConversationId
 		}))
 	);
-	const messages = messagesByConversation[selectedConversationId] || [];
 	const pagination = messagesPagination[selectedConversationId];
 	const listRef = useRef<HTMLDivElement>(null);
-	const previousConversationRef = useRef('');
+	const contentRef = useRef<HTMLDivElement>(null);
+	const initializedScrollRef = useRef(false);
+	const restoredFromMemoryRef = useRef(false);
+	const userInteractedWithScrollRef = useRef(false);
+	const lastAppliedForceScrollRef = useRef<number | undefined>(undefined);
 	const previousMessageCountRef = useRef(0);
 	const nearBottomRef = useRef(true);
+	const scrollMemoryKey = `${uid || ''}:${selectedConversationId}`;
 	const pendingScrollRef = useRef<
 		| {
 				conversationId: string;
@@ -79,16 +96,37 @@ export const MessageList: React.FC = () => {
 		rootMargin: '140px 0px 0px'
 	});
 
+	const rememberScrollPosition = useCallback(
+		(area: HTMLDivElement) => {
+			messageScrollPositions.set(scrollMemoryKey, area.scrollTop);
+		},
+		[scrollMemoryKey]
+	);
+
+	const scrollToBottom = useCallback(
+		(area: HTMLDivElement) => {
+			area.scrollTop = area.scrollHeight;
+			nearBottomRef.current = true;
+			rememberScrollPosition(area);
+		},
+		[rememberScrollPosition]
+	);
+
 	useLayoutEffect(() => {
 		const area = listRef.current;
 		if (!area) return;
 
-		if (previousConversationRef.current !== selectedConversationId) {
-			area.scrollTop = area.scrollHeight;
-			previousConversationRef.current = selectedConversationId;
+		if (!initializedScrollRef.current) {
+			const savedScrollTop = messageScrollPositions.get(scrollMemoryKey);
+			restoredFromMemoryRef.current = savedScrollTop !== undefined;
+			if (savedScrollTop === undefined) scrollToBottom(area);
+			else area.scrollTop = savedScrollTop;
+
+			nearBottomRef.current = area.scrollHeight - area.scrollTop - area.clientHeight < 80;
+			rememberScrollPosition(area);
+			initializedScrollRef.current = true;
 			previousMessageCountRef.current = messages.length;
 			pendingScrollRef.current = undefined;
-			nearBottomRef.current = true;
 			return;
 		}
 
@@ -100,16 +138,64 @@ export const MessageList: React.FC = () => {
 			area.scrollTop = area.scrollHeight - pendingScroll.scrollHeight + pendingScroll.scrollTop;
 			pendingScrollRef.current = undefined;
 		} else if (messages.length > previousMessageCountRef.current && nearBottomRef.current) {
-			area.scrollTop = area.scrollHeight;
+			scrollToBottom(area);
 		}
 
 		previousMessageCountRef.current = messages.length;
-	}, [messages.length, selectedConversationId]);
+		rememberScrollPosition(area);
+	}, [messages.length, rememberScrollPosition, scrollMemoryKey, scrollToBottom, selectedConversationId]);
+
+	useLayoutEffect(() => {
+		const area = listRef.current;
+		if (!area || !forceScrollRequest || lastAppliedForceScrollRef.current === forceScrollRequest.token) return;
+		if (!messages.some(message => message.requestId === forceScrollRequest.requestId)) return;
+
+		scrollToBottom(area);
+		lastAppliedForceScrollRef.current = forceScrollRequest.token;
+	}, [forceScrollRequest, messages, scrollToBottom]);
+
+	useLayoutEffect(() => {
+		return () => {
+			const area = listRef.current;
+			if (area) rememberScrollPosition(area);
+		};
+	}, [rememberScrollPosition]);
+
+	useEffect(() => {
+		const area = listRef.current;
+		const content = contentRef.current;
+		if (!area || !content || typeof ResizeObserver === 'undefined') return;
+
+		let firstObservation = true;
+		const observer = new ResizeObserver(() => {
+			if (firstObservation) {
+				firstObservation = false;
+				if (!restoredFromMemoryRef.current && nearBottomRef.current) scrollToBottom(area);
+				return;
+			}
+			if (pendingScrollRef.current || !nearBottomRef.current) return;
+			scrollToBottom(area);
+		});
+		observer.observe(content);
+
+		return () => observer.disconnect();
+	}, [scrollToBottom]);
 
 	const handleScroll = () => {
 		const area = listRef.current;
 		if (!area) return;
 		nearBottomRef.current = area.scrollHeight - area.scrollTop - area.clientHeight < 80;
+		rememberScrollPosition(area);
+	};
+
+	const handleUserScrollIntent = () => {
+		userInteractedWithScrollRef.current = true;
+	};
+
+	const handleMediaLoad = () => {
+		const area = listRef.current;
+		if (!area || restoredFromMemoryRef.current || userInteractedWithScrollRef.current) return;
+		scrollToBottom(area);
 	};
 
 	return (
@@ -117,33 +203,43 @@ export const MessageList: React.FC = () => {
 			ref={listRef}
 			aria-live="polite"
 			onScroll={handleScroll}
-			className="chat-pattern flex min-h-0 flex-col gap-3.5 overflow-y-auto px-3 py-5 mobile:px-7 mobile:py-6 scrollbar-thin">
-			<div ref={sentinelRef} className="flex min-h-1 shrink-0 flex-col" aria-live="polite">
-				{pagination?.isLoading && <MessageListSkeleton count={2} />}
-				{pagination?.error && !pagination.isLoading && (
-					<Button
-						theme="ghost"
-						type="button"
-						className="min-h-8 bg-white/90 px-3 text-xs shadow-sm dark:bg-[#18242b]/90"
-						onClick={loadOlder}>
-						Tentar carregar mensagens anteriores
-					</Button>
+			onWheel={handleUserScrollIntent}
+			onTouchStart={handleUserScrollIntent}
+			onPointerDown={handleUserScrollIntent}
+			className="chat-pattern min-h-0 overflow-y-auto px-3 py-5 mobile:px-7 mobile:py-6 scrollbar-thin">
+			<div ref={contentRef} className="flex min-h-full flex-col gap-3.5">
+				<div ref={sentinelRef} className="flex min-h-1 shrink-0 flex-col" aria-live="polite">
+					{pagination?.isLoading && <MessageListSkeleton count={2} />}
+					{pagination?.error && !pagination.isLoading && (
+						<Button
+							theme="ghost"
+							type="button"
+							className="min-h-8 bg-white/90 px-3 text-xs shadow-sm dark:bg-[#18242b]/90"
+							onClick={loadOlder}>
+							Tentar carregar mensagens anteriores
+						</Button>
+					)}
+				</div>
+
+				<div className="flex justify-center">
+					<span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-xs text-slate-500 shadow-panel dark:border-[#223138] dark:bg-[#0e181e]/90 dark:text-slate-400">
+						Hoje
+					</span>
+				</div>
+
+				{messages.map(message =>
+					message.type === 'file' ? (
+						<ChatFileMessage
+							key={message.clientId || message.id}
+							message={message}
+							onRetry={onRetry}
+							onMediaLoad={handleMediaLoad}
+						/>
+					) : (
+						<ChatTextMessage key={message.clientId || message.id} message={message} onRetry={onRetry} />
+					)
 				)}
 			</div>
-
-			<div className="flex justify-center">
-				<span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-xs text-slate-500 shadow-panel dark:border-[#223138] dark:bg-[#0e181e]/90 dark:text-slate-400">
-					Hoje
-				</span>
-			</div>
-
-			{messages.map(message =>
-				message.type === 'file' ? (
-					<ChatFileMessage key={message.id} message={message} />
-				) : (
-					<ChatTextMessage key={message.id} message={message} />
-				)
-			)}
 		</div>
 	);
 };

@@ -1,6 +1,7 @@
 export * from './contact';
 export * from './conversation';
 export * from './data';
+export * from './format-message-summary';
 export * from './hooks';
 export * from './layout';
 export * from './messages';

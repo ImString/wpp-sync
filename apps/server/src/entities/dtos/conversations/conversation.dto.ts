@@ -5,7 +5,7 @@ import { RouteSchema } from '@/modules/index.js';
 export namespace ConversationDTO {
 	const SendFields = z
 		.object({
-			text: z.string().trim().min(1).max(1000).optional(),
+			text: z.coerce.string().trim().min(1).max(1000).optional(),
 			signature: z.boolean().optional()
 		})
 		.strict();

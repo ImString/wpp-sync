@@ -3,7 +3,13 @@ export type ConversationChannel = 'WHATSAPP' | 'WEB' | 'INSTAGRAM' | 'MESSENGER'
 export type MobileView = 'conversations' | 'chat' | 'contact';
 export type ChatLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type NavigationSection =
-	'chats' | 'contacts' | 'campaigns' | 'automations' | 'reports' | 'integrations' | 'settings';
+	| 'chats'
+	| 'contacts'
+	| 'campaigns'
+	| 'automations'
+	| 'reports'
+	| 'integrations'
+	| 'settings';
 
 export interface Conversation {
 	id: string;
@@ -27,22 +33,37 @@ export interface ConversationContact {
 	tags?: string[];
 }
 
-export interface TextMessage {
+export type MessageDeliveryStatus = 'sending' | 'sent' | 'read' | 'error';
+export type MessageFileKind = 'image' | 'audio' | 'video' | 'file';
+
+export interface MessageDeliveryState {
+	status?: MessageDeliveryStatus;
+	requestId?: string;
+	clientId?: string;
+	error?: string;
+}
+
+export interface TextMessage extends MessageDeliveryState {
 	id: string;
 	type: 'text';
 	direction: 'received' | 'sent';
 	text: string;
 	time: string;
-	status?: 'sent' | 'read';
 }
 
-export interface FileMessage {
+export interface FileMessage extends MessageDeliveryState {
 	id: string;
 	type: 'file';
 	direction: 'received' | 'sent';
 	name: string;
 	details: string;
+	caption?: string;
+	fileKind?: MessageFileKind;
+	mimeType?: string;
+	previewUrl?: string;
+	size?: number;
 	time: string;
+	url?: string;
 }
 
 export type ChatMessage = TextMessage | FileMessage;
@@ -52,6 +73,18 @@ export interface MessagePaginationState {
 	isLoading: boolean;
 	nextCursor?: string;
 	error?: string;
+}
+
+export interface MessageSendInput {
+	text: string;
+	files: File[];
+}
+
+export interface MessageSendRequest extends MessageSendInput {
+	requestId: string;
+	workspaceUid: string;
+	conversationId: string;
+	optimisticMessages: ChatMessage[];
 }
 
 export interface ChatStore {
@@ -84,7 +117,7 @@ export interface ChatStore {
 	openSidebar: () => void;
 	selectConversation: (conversationId: string) => void;
 	startConversation: (contact: ConversationContact) => string;
-	sendMessage: (text: string) => void;
+	sendMessage: (request: MessageSendRequest) => Promise<void>;
 	setActiveFilter: (filter: ConversationFilter) => void;
 	setActiveSection: (section: NavigationSection) => void;
 	setMobileView: (view: MobileView) => void;
