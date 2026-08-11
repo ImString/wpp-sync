@@ -1,8 +1,11 @@
+import type { MultipartFile } from '@fastify/multipart';
 import { MessageType, prisma, Prisma } from '@wppsync/database';
 
 import { Provider } from '@/core/index.js';
 
-import { ConversationEntity, ConversationParticipantEntity, MessageEntity } from '@/entities/data/index.js';
+import { FilesService } from '@/services/FilesService.js';
+
+import { ConversationEntity, ConversationParticipantEntity, FileEntity, MessageEntity } from '@/entities/data/index.js';
 import {
 	ConversationClosedError,
 	ConversationNotFoundError,
@@ -30,6 +33,7 @@ export type MessageSendDocument = {
 	text?: string;
 	payload?: Prisma.InputJsonValue;
 	externalId?: string;
+	files?: MultipartFile[];
 } & (
 	| {
 			type?: Exclude<MessageType, 'SYSTEM'>;
@@ -40,6 +44,20 @@ export type MessageSendDocument = {
 			sender?: never;
 	  }
 );
+
+interface UploadedMessageFile {
+	entity: FileEntity;
+	mimeType: string;
+	name: string;
+	size: number;
+}
+
+interface MessageCreateDocument {
+	type: MessageType;
+	text?: string;
+	payload?: Prisma.InputJsonValue;
+	externalId?: string;
+}
 
 @Provider()
 export class MessageService {
@@ -140,12 +158,17 @@ export class MessageService {
 
 		const type = document.type ?? 'TEXT';
 		const text = document.text?.trim();
+		const files = document.files ?? [];
 
-		if (type === 'TEXT' && !text) {
+		if (files.length === 0 && type === 'TEXT' && !text) {
 			throw new InvalidMessageError();
 		}
 
-		if (type !== 'TEXT' && !text && document.payload === undefined) {
+		if (files.length === 0 && type !== 'TEXT' && !text && document.payload === undefined) {
+			throw new InvalidMessageError();
+		}
+
+		if (files.length > 0 && type === 'SYSTEM') {
 			throw new InvalidMessageError();
 		}
 
@@ -156,9 +179,45 @@ export class MessageService {
 			throw new ConversationParticipantNotFoundError();
 		}
 
+		const uploadedFiles = await this.uploadFiles(document, files);
+		const messages =
+			uploadedFiles.length > 0
+				? uploadedFiles.map<MessageCreateDocument>((file, index) => ({
+						type: this.getFileMessageType(file.mimeType),
+						...(index === uploadedFiles.length - 1 && text && { text }),
+						payload: {
+							fileId: file.entity.id,
+							name: file.name,
+							mimeType: file.mimeType,
+							size: file.size
+						},
+						...(index === uploadedFiles.length - 1 &&
+							document.externalId && {
+								externalId: document.externalId
+							})
+					}))
+				: [
+						{
+							type,
+							...(text && { text }),
+							...(document.payload !== undefined && { payload: document.payload }),
+							...(document.externalId && { externalId: document.externalId })
+						}
+					];
+
+		try {
+			const messageData = await this.createMessages(document, messages);
+			return messageData.map(data => new MessageEntity(data));
+		} catch (error) {
+			await this.deleteUploadedFiles(uploadedFiles);
+			throw error;
+		}
+	}
+
+	private async createMessages(document: MessageSendDocument, messages: MessageCreateDocument[]) {
 		const createdAt = new Date();
 
-		const messageData = await prisma.$transaction(async transaction => {
+		return prisma.$transaction(async transaction => {
 			if (document.sender) {
 				const senderExists = await transaction.conversationParticipant.findFirst({
 					where: {
@@ -191,28 +250,70 @@ export class MessageService {
 				throw new ConversationClosedError();
 			}
 
-			return transaction.message.create({
-				data: {
-					type,
-					createdAt,
-					conversationId: document.conversation.id,
+			const createdMessages = [];
 
-					...(document.sender && {
-						senderParticipantId: document.sender.id
-					}),
+			for (const message of messages) {
+				createdMessages.push(
+					await transaction.message.create({
+						data: {
+							type: message.type,
+							createdAt,
+							conversationId: document.conversation.id,
 
-					...(text && { text }),
-					...(document.payload !== undefined && {
-						payload: document.payload
-					}),
-					...(document.externalId && {
-						externalId: document.externalId
+							...(document.sender && {
+								senderParticipantId: document.sender.id
+							}),
+
+							...(message.text && { text: message.text }),
+							...(message.payload !== undefined && { payload: message.payload }),
+							...(message.externalId && { externalId: message.externalId })
+						},
+						include: this.mountInclude()
 					})
-				},
-				include: this.mountInclude()
-			});
-		});
+				);
+			}
 
-		return new MessageEntity(messageData);
+			return createdMessages;
+		});
+	}
+
+	private async uploadFiles(document: MessageSendDocument, files: MultipartFile[]) {
+		const uploadedFiles: UploadedMessageFile[] = [];
+
+		try {
+			for (const file of files) {
+				const buffer = await file.toBuffer();
+				const entity = await FilesService.upload({
+					buffer,
+					name: file.filename,
+					mime_type: file.mimetype,
+					prefix: `workspaces/${document.workspace}/conversations/messages`
+				});
+
+				uploadedFiles.push({
+					entity,
+					mimeType: file.mimetype || 'application/octet-stream',
+					name: file.filename,
+					size: buffer.byteLength
+				});
+			}
+
+			return uploadedFiles;
+		} catch (error) {
+			await this.deleteUploadedFiles(uploadedFiles);
+			throw error;
+		}
+	}
+
+	private async deleteUploadedFiles(files: UploadedMessageFile[]) {
+		await Promise.allSettled(files.map(file => file.entity.delete()));
+	}
+
+	private getFileMessageType(mimeType: string): Exclude<MessageType, 'TEXT' | 'SYSTEM'> {
+		if (mimeType.startsWith('image/')) return 'IMAGE';
+		if (mimeType.startsWith('audio/')) return 'AUDIO';
+		if (mimeType.startsWith('video/')) return 'VIDEO';
+
+		return 'FILE';
 	}
 }

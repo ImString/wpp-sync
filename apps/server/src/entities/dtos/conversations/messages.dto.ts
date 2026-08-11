@@ -13,14 +13,4 @@ export namespace ConversationMessagesDTO {
 			limit: z.coerce.number().min(1).max(100).optional()
 		})
 	});
-
-	export const Send = new RouteSchema({
-		params: z.object({
-			uid: z.string(),
-			dataId: z.string()
-		}),
-		body: z.object({
-			message: z.string().trim().min(1).max(1000)
-		})
-	});
 }

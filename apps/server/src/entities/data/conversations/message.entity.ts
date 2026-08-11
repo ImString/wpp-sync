@@ -1,13 +1,15 @@
 import { Conversation, Message, Prisma } from '@wppsync/database';
 
+import { FilesService } from '@/services/FilesService.js';
+
 import { Entity } from '../Entity.js';
 import { EntityGroup } from '../Group.js';
-import { ConversationEntity } from './conversation.entity.js';
 import {
 	ConversationParticipantEntity,
 	ConversationParticipantEntityObject,
 	ConversationParticipantEntityPopulated
 } from './conversation-participant.entity.js';
+import { ConversationEntity } from './conversation.entity.js';
 
 export type MessageEntityRaw = Partial<Message>;
 export type MessageEntityExtra = {
@@ -56,24 +58,28 @@ export class MessageEntity extends Entity<MessageEntityRaw, MessageEntityExtra, 
 	}
 
 	async toObject(options: { sign_files?: boolean } = {}): Promise<MessageEntityObject> {
+		const payload = await this.getPayload(options);
+
 		return {
 			id: this.id,
 			position: this.data.position?.toString(),
 			type: this.data.type,
 			...(this.data.text != null && { text: this.data.text }),
-			...(this.data.payload != null && { payload: this.data.payload }),
+			...(payload != null && { payload }),
 			...(this.data.externalId != null && { externalId: this.data.externalId }),
 
-			...(!this.entities.conversation && this.data.conversationId != null && {
-				conversationId: this.data.conversationId
-			}),
+			...(!this.entities.conversation &&
+				this.data.conversationId != null && {
+					conversationId: this.data.conversationId
+				}),
 			...(this.entities.conversation && {
 				conversation: await this.entities.conversation.toObject(options)
 			}),
 
-			...(!this.entities.sender && this.data.senderParticipantId != null && {
-				senderParticipantId: this.data.senderParticipantId
-			}),
+			...(!this.entities.sender &&
+				this.data.senderParticipantId != null && {
+					senderParticipantId: this.data.senderParticipantId
+				}),
 			...(this.entities.sender && {
 				sender: await this.entities.sender.toObject(options)
 			}),
@@ -81,6 +87,22 @@ export class MessageEntity extends Entity<MessageEntityRaw, MessageEntityExtra, 
 			createdAt: this.data.createdAt,
 			...(this.data.editedAt != null && { editedAt: this.data.editedAt }),
 			...(this.data.deletedAt != null && { deletedAt: this.data.deletedAt })
+		};
+	}
+
+	private async getPayload(options: { sign_files?: boolean }) {
+		const payload = this.data.payload;
+		if (!options.sign_files || payload == null || Array.isArray(payload) || typeof payload !== 'object') {
+			return payload;
+		}
+
+		const fileId = (payload as Record<string, unknown>).fileId;
+		if (typeof fileId !== 'string' || !fileId) return payload;
+
+		const url = await FilesService.generateSignedFileURLById(fileId);
+		return {
+			...payload,
+			...(url && { url })
 		};
 	}
 

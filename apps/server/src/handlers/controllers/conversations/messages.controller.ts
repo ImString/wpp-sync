@@ -1,6 +1,6 @@
-import { Controller, Get, HttpResponse, Post } from '@/modules/index.js';
+import { Controller, Get, HttpResponse } from '@/modules/index.js';
 
-import { ConversationParticipantService, ConversationService, MessageService } from '@/services/index.js';
+import { ConversationService, MessageService } from '@/services/index.js';
 
 import { ConversationMessagesDTO } from '@/entities/dtos/conversations/messages.dto.js';
 import { WorkspaceNotFoundError } from '@/entities/errors/workspace/WorkspaceNotFoundError.js';
@@ -15,7 +15,6 @@ import { WorkspaceAccessMiddleware } from '@/handlers/middlewares/workspace.js';
 export class MessagesController {
 	constructor(
 		private readonly conversationService: ConversationService,
-		private readonly participantService: ConversationParticipantService,
 		private readonly messageService: MessageService
 	) {}
 
@@ -37,36 +36,5 @@ export class MessagesController {
 		});
 
 		return HttpResponse.success(messages);
-	}
-
-	@Post('/send', ConversationMessagesDTO.Send)
-	async send(context: typeof ConversationMessagesDTO.Send.context) {
-		const workspace = context.state.workspaceAccess?.workspace;
-		const membership = context.state.workspaceAccess?.membership;
-		if (!workspace || !membership) throw new WorkspaceNotFoundError();
-
-		const conversation = await this.conversationService.get({
-			id: context.params.dataId,
-			workspace: workspace.id
-		});
-
-		const sender = await this.participantService.joinMember({
-			conversation,
-			member: membership
-		});
-
-		const message = await this.messageService.sendMessage({
-			conversation,
-			sender,
-			type: 'TEXT',
-			text: context.body.message,
-			workspace: workspace.id
-		});
-
-		return HttpResponse.success(
-			await message.toObject({
-				sign_files: true
-			})
-		);
 	}
 }
