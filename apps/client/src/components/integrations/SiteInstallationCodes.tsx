@@ -156,7 +156,7 @@ export const SiteInstallationCodes: React.FC<SiteInstallationCodesProps> = props
 								<strong className="block text-xs font-semibold text-slate-900 dark:text-slate-100">
 									{option.label}
 								</strong>
-								<span className="mt-0.5 block text-[10px] leading-4 text-slate-500 dark:text-slate-400">
+								<span className="mt-0.5 block text-xs leading-4 text-slate-500 dark:text-slate-400">
 									{option.description}
 								</span>
 							</span>
@@ -177,7 +177,7 @@ export const SiteInstallationCodes: React.FC<SiteInstallationCodesProps> = props
 					id="site-installation-code"
 					className="border-t border-slate-200 bg-white p-3 dark:border-[#223138] dark:bg-[#101b21]">
 					<div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
-						<span className="min-w-36 flex-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+						<span className="min-w-36 flex-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
 							{selectedType === 'embed'
 								? 'Cole onde o chat será exibido'
 								: 'Cole antes de fechar a tag </body>'}
@@ -186,7 +186,7 @@ export const SiteInstallationCodes: React.FC<SiteInstallationCodesProps> = props
 							<Button
 								theme="ghost"
 								type="button"
-								className="h-8 min-h-8 px-2.5 text-[10px]"
+								className="h-8 min-h-8 px-2.5 text-xs"
 								onClick={handleCopy}>
 								{copiedType === selectedType ? (
 									<>
@@ -201,7 +201,7 @@ export const SiteInstallationCodes: React.FC<SiteInstallationCodesProps> = props
 							<Button
 								theme="ghost"
 								type="button"
-								className="h-8 min-h-8 px-2.5 text-[10px]"
+								className="h-8 min-h-8 px-2.5 text-xs"
 								onClick={() => {
 									setSelectedType(undefined);
 									setCopiedType(undefined);
@@ -210,7 +210,7 @@ export const SiteInstallationCodes: React.FC<SiteInstallationCodesProps> = props
 							</Button>
 						</div>
 					</div>
-					<pre className="max-h-48 overflow-auto rounded-xl border border-slate-200 bg-slate-950 p-3 text-[10px] leading-4 text-slate-200 dark:border-[#223138] scrollbar-thin">
+					<pre className="max-h-48 overflow-auto rounded-xl border border-slate-200 bg-slate-950 p-3 text-xs leading-4 text-slate-200 dark:border-[#223138] scrollbar-thin">
 						<code>{selectedSnippet}</code>
 					</pre>
 				</div>

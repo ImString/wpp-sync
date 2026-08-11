@@ -1,16 +1,13 @@
 export type ConversationFilter = 'all' | 'unread' | 'waiting' | 'groups';
+export type ConversationChannel = 'WHATSAPP' | 'WEB' | 'INSTAGRAM' | 'MESSENGER';
 export type MobileView = 'conversations' | 'chat' | 'contact';
+export type ChatLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type NavigationSection =
-	| 'chats'
-	| 'contacts'
-	| 'campaigns'
-	| 'automations'
-	| 'reports'
-	| 'integrations'
-	| 'settings';
+	'chats' | 'contacts' | 'campaigns' | 'automations' | 'reports' | 'integrations' | 'settings';
 
 export interface Conversation {
 	id: string;
+	channel?: ConversationChannel;
 	name: string;
 	displayName?: string;
 	initials: string;
@@ -42,7 +39,7 @@ export interface TextMessage {
 export interface FileMessage {
 	id: string;
 	type: 'file';
-	direction: 'received';
+	direction: 'received' | 'sent';
 	name: string;
 	details: string;
 	time: string;
@@ -50,20 +47,38 @@ export interface FileMessage {
 
 export type ChatMessage = TextMessage | FileMessage;
 
+export interface MessagePaginationState {
+	hasMore: boolean;
+	isLoading: boolean;
+	nextCursor?: string;
+	error?: string;
+}
+
 export interface ChatStore {
 	activeFilter: ConversationFilter;
 	activeSection: NavigationSection;
 	contactPanelOpen: boolean;
 	conversations: Conversation[];
+	conversationsError?: string;
+	conversationsHasMore: boolean;
+	conversationsIsLoadingMore: boolean;
+	conversationsPage: number;
+	conversationsStatus: ChatLoadStatus;
+	conversationsTotal: number;
 	messages: Record<string, ChatMessage[]>;
+	messagesPagination: Record<string, MessagePaginationState>;
 	mobileView: MobileView;
 	newConversationOpen: boolean;
 	search: string;
 	selectedConversationId: string;
 	sidebarOpen: boolean;
+	workspaceUid?: string;
 	closeContactPanel: () => void;
 	closeNewConversation: () => void;
 	closeSidebar: () => void;
+	initializeConversations: (workspaceUid: string, force?: boolean) => Promise<void>;
+	loadMoreConversations: (workspaceUid: string) => Promise<void>;
+	loadOlderMessages: (workspaceUid: string, conversationId: string) => Promise<number>;
 	openContactPanel: () => void;
 	openNewConversation: () => void;
 	openSidebar: () => void;

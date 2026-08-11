@@ -232,7 +232,7 @@ export const WidgetPage: React.FC = () => {
 					) : (
 						<>
 							<div className="flex justify-center pb-4">
-								<span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-[10px] font-medium text-slate-500 shadow-sm dark:border-[#223138] dark:bg-[#0e181e]/90 dark:text-slate-400">
+								<span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs font-medium text-slate-500 shadow-sm dark:border-[#223138] dark:bg-[#0e181e]/90 dark:text-slate-400">
 									Hoje
 								</span>
 							</div>

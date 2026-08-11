@@ -24,6 +24,7 @@ export class ConversationsController {
 			search: context.query.search,
 			...(context.query.page && { page: context.query.page }),
 			...(context.query.limit && { limit: context.query.limit }),
+			include: { integration: true },
 			status: 'OPEN',
 			populate_participants: true,
 			populate_messages: true,
