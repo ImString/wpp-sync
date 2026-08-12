@@ -286,6 +286,7 @@ const normalizeConversation = (data: ConversationData): NormalizedConversation =
 	const phone = contact?.whatsapp
 		? formatNationalPhone(contact.whatsapp) || contact.whatsapp
 		: primaryParticipant?.email || (isGroup ? `${externalParticipants.length} participantes` : '');
+	const email = contact?.email?.trim() || primaryParticipant?.email?.trim();
 	const nextCursor = sortedMessages[0]?.position;
 
 	return {
@@ -299,8 +300,17 @@ const normalizeConversation = (data: ConversationData): NormalizedConversation =
 			type: isGroup ? 'groups' : isUnread ? 'unread' : isWaiting ? 'waiting' : 'all',
 			...(isUnread && { unread: 1 }),
 			phone,
+			...(email && { email }),
 			avatarClassName: getAvatarGradient(data.id),
-			tags: contact?.tags || []
+			tags: contact?.tags || [],
+			notes: contact?.notes || '',
+			...((contact?.createdAt || primaryParticipant?.joinedAt || data.createdAt) && {
+				firstContactAt: contact?.createdAt || primaryParticipant?.joinedAt || data.createdAt
+			}),
+			...((data.lastActivityAt || latestMessage?.createdAt || data.createdAt) && {
+				lastActivityAt: data.lastActivityAt || latestMessage?.createdAt || data.createdAt
+			}),
+			...(data.integration?.name?.trim() && { origin: data.integration.name.trim() })
 		},
 		messages: sortedMessages.map(mapMessage),
 		pagination: {
@@ -588,7 +598,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 				type: 'all' as const,
 				phone: formatNationalPhone(contact.phone) || contact.phone,
 				avatarClassName: 'from-brand-500 to-emerald-700',
-				tags: contact.tags || []
+				tags: contact.tags || [],
+				notes: ''
 			};
 
 			return {

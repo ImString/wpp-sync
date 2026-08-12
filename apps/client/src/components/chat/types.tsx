@@ -22,8 +22,13 @@ export interface Conversation {
 	type: Exclude<ConversationFilter, 'all'> | 'all';
 	unread?: number;
 	phone: string;
+	email?: string;
 	avatarClassName: string;
 	tags: string[];
+	notes?: string;
+	firstContactAt?: string;
+	lastActivityAt?: string;
+	origin?: string;
 }
 
 export interface ConversationContact {

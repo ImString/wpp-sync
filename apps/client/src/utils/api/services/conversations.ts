@@ -12,6 +12,8 @@ export interface ConversationContactData {
 	whatsapp?: string;
 	email?: string;
 	tags?: string[];
+	notes?: string;
+	createdAt?: string;
 }
 
 export interface ConversationParticipantData {
@@ -30,6 +32,7 @@ export interface ConversationParticipantData {
 		};
 	};
 	contact?: ConversationContactData;
+	joinedAt?: string;
 }
 
 export interface ConversationMessageData {

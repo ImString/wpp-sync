@@ -8,6 +8,7 @@ export const ContactProfile: React.FC = () => {
 	const conversations = useChatStore(state => state.conversations);
 	const selectedConversationId = useChatStore(state => state.selectedConversationId);
 	const conversation = conversations.find(item => item.id === selectedConversationId) || conversations[0];
+	const secondaryContact = conversation.email || conversation.phone || 'Não informado';
 
 	return (
 		<section className="flex items-center gap-3 border-b border-slate-200 px-4.5 py-5 dark:border-[#223138]">
@@ -21,9 +22,7 @@ export const ContactProfile: React.FC = () => {
 			/>
 			<div className="flex min-w-0 flex-col">
 				<strong className="truncate text-[15px]">{conversation.name}</strong>
-				<span className="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">
-					{conversation.phone}
-				</span>
+				<span className="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">{secondaryContact}</span>
 			</div>
 		</section>
 	);
