@@ -84,7 +84,9 @@ export class IntegrationService {
 		]);
 
 		const integrations = IntegrationEntity.fromList(dataList);
-		const items = await Promise.all(integrations.items.map(integration => integration.toObject({})));
+		const items = await Promise.all(
+			integrations.items.map(integration => integration.toObject({ sign_files: true }))
+		);
 
 		return {
 			items,

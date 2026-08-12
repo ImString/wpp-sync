@@ -56,7 +56,7 @@ export class IntegrationsController {
 			workspace: workspace.id
 		});
 
-		return HttpResponse.success(await integration.toObject({}));
+		return HttpResponse.success(await integration.toObject({ sign_files: true }));
 	}
 
 	@Post('/create', IntegrationDTO.Create)

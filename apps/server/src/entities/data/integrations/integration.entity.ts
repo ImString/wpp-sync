@@ -34,11 +34,14 @@ export class IntegrationEntity extends Entity<IntegrationEntityRaw, IntegrationE
 		return this.data.config;
 	}
 
-	private async toPublicConfig() {
+	private async toPublicConfig(options: { sign_files?: boolean } = {}) {
 		if (!this.config || this.data.type !== 'WEB') return this.config;
 
 		const { headerPhotoId, ...config } = this.config as IntegrationWebConfig;
-		const headerPhoto = headerPhotoId ? await FilesService.generateSignedFileURLById(headerPhotoId) : undefined;
+		const headerPhoto =
+			options.sign_files && headerPhotoId
+				? await FilesService.generateSignedFileURLById(headerPhotoId)
+				: undefined;
 
 		return {
 			...config,
@@ -46,14 +49,14 @@ export class IntegrationEntity extends Entity<IntegrationEntityRaw, IntegrationE
 		};
 	}
 
-	async toObject(options: {}) {
+	async toObject(options: { sign_files?: boolean } = {}) {
 		return {
 			id: this.id,
 
 			name: this.data.name,
 			type: this.data.type,
 			status: this.data.status,
-			config: await this.toPublicConfig()
+			config: await this.toPublicConfig(options)
 		};
 	}
 
