@@ -110,7 +110,7 @@ export const Pagination: React.FC<PaginationProps> = props => {
 					disabled={props.disabled}
 					onChange={event => props.onPageSizeChange(Number(event.target.value))}
 					aria-label="Itens por página"
-					className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-2 text-[9px] font-semibold text-slate-600 outline-none focus:border-brand-500 dark:border-[#2a3a42] dark:bg-[#131f26] dark:text-slate-300">
+					className="h-8 rounded-lg border cursor-pointer border-slate-200 bg-slate-50 px-2 text-[9px] font-semibold text-slate-600 outline-none focus:border-brand-500 dark:border-[#2a3a42] dark:bg-[#131f26] dark:text-slate-300">
 					{pageSizeOptions.map(option => (
 						<option key={option} value={option}>
 							{option} / pág.

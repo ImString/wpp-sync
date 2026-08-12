@@ -68,7 +68,7 @@ export const NewIntegrationModal: React.FC<NewIntegrationModalProps> = props => 
 								key={channel.type}
 								type="button"
 								disabled={channel.disabled}
-								className="group flex w-full items-center gap-3 rounded-2xl border border-transparent p-3 text-left transition hover:border-slate-200 hover:bg-slate-50 focus-visible:border-brand-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:hover:border-[#2d414a] dark:hover:bg-[#131f26]"
+								className="group flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-transparent p-3 text-left transition hover:border-slate-200 hover:bg-slate-50 focus-visible:border-brand-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:hover:border-[#2d414a] dark:hover:bg-[#131f26]"
 								onClick={() => props.onSelect(channel)}>
 								<ChannelIcon type={channel.type} />
 								<span className="min-w-0 flex-1">

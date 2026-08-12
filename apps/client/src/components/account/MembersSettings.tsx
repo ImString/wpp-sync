@@ -820,7 +820,7 @@ export const MembersSettings: React.FC<MembersSettingsProps> = ({
 								<label className="grid content-start gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
 									<span>Função</span>
 									<select
-										className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-normal text-slate-900 outline-none focus:border-brand-500 dark:border-[#2a3a42] dark:bg-[#131f26] dark:text-white"
+										className="h-11 rounded-xl cursor-pointer border border-slate-200 bg-slate-50 px-3 text-xs font-normal text-slate-900 outline-none focus:border-brand-500 dark:border-[#2a3a42] dark:bg-[#131f26] dark:text-white"
 										value={inviteRole}
 										onChange={event => setInviteRole(event.target.value as PendingInvite['role'])}>
 										<option>Membro</option>

@@ -97,7 +97,7 @@ const StatCard: React.FC<StatCardProps> = props => {
 		<button
 			type="button"
 			className={twMerge(
-				'integrations-stat-card flex min-w-38.5 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-[#223138] dark:bg-[#0e181e] dark:hover:border-[#344851] dark:hover:bg-[#101c22]',
+				'integrations-stat-card cursor-pointer flex min-w-38.5 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-[#223138] dark:bg-[#0e181e] dark:hover:border-[#344851] dark:hover:bg-[#101c22]',
 				active && 'is-active'
 			)}
 			style={
@@ -458,7 +458,7 @@ export const IntegrationsPage: React.FC = () => {
 									key={filter}
 									type="button"
 									className={twMerge(
-										'shrink-0 rounded-md px-2 py-1.5 text-[9px] font-semibold text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200',
+										'shrink-0 cursor-pointer rounded-md px-2 py-1.5 text-[9px] font-semibold text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200',
 										activeFilter === filter &&
 											'bg-white text-slate-900 shadow-sm dark:bg-[#0e181e] dark:text-white'
 									)}

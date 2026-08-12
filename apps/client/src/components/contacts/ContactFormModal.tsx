@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MdAdd, MdClose, MdEdit } from 'react-icons/md';
+import { twMerge } from 'tailwind-merge';
 
 import { isPossiblePhone } from '@/utils';
 
@@ -181,7 +182,7 @@ export const ContactFormModal: React.FC<ContactFormModalProps> = props => {
 							<select
 								value={draft.stageId}
 								onChange={event => updateField('stageId', event.target.value)}
-								className={fieldClassName}>
+								className={twMerge(fieldClassName, 'cursor-pointer')}>
 								<option value="">Sem etapa</option>
 								{props.stages.map(stage => (
 									<option key={stage.id} value={stage.id}>
