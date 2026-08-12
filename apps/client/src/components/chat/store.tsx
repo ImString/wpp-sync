@@ -416,6 +416,33 @@ const mergeChatMessages = (base: ChatMessage[], incoming: ChatMessage[]) => {
 	return [...messagesById.values()];
 };
 
+const removeConversationFromState = (state: ChatStore, conversationId: string): Partial<ChatStore> => {
+	const conversations = state.conversations.filter(conversation => conversation.id !== conversationId);
+	if (conversations.length === state.conversations.length) return {};
+
+	const messages = { ...state.messages };
+	const messagesPagination = { ...state.messagesPagination };
+	delete messages[conversationId];
+	delete messagesPagination[conversationId];
+
+	const conversationsTotal = Math.max(0, state.conversationsTotal - 1);
+	const isSelected = state.selectedConversationId === conversationId;
+
+	return {
+		conversations,
+		conversationsHasMore: conversations.length < conversationsTotal,
+		conversationsPage: Math.max(0, state.conversationsPage - 1),
+		conversationsTotal,
+		messages,
+		messagesPagination,
+		...(isSelected && {
+			contactPanelOpen: false,
+			mobileView: 'conversations',
+			selectedConversationId: ''
+		})
+	};
+};
+
 export const useChatStore = create<ChatStore>((set, get) => ({
 	activeFilter: 'all',
 	activeSection: 'chats',
@@ -433,6 +460,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 	search: '',
 	selectedConversationId: '',
 	sidebarOpen: false,
+	closeConversation: async (workspaceUid, conversationId) => {
+		const response = await conversationsAPI.close(workspaceUid, conversationId);
+
+		if (!response.success) {
+			throw new Error(getResponseMessage(response, 'Não foi possível fechar a conversa.'));
+		}
+
+		set(state =>
+			state.workspaceUid === workspaceUid
+				? removeConversationFromState(state, conversationId)
+				: state
+		);
+	},
 	closeContactPanel: () =>
 		set(state => ({
 			contactPanelOpen: false,
@@ -676,6 +716,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 	openContactPanel: () => set({ contactPanelOpen: true, mobileView: 'contact' }),
 	openNewConversation: () => set({ newConversationOpen: true }),
 	openSidebar: () => set({ sidebarOpen: true }),
+	receiveConversationClosed: (workspaceUid, conversationId) =>
+		set(state =>
+			state.workspaceUid === workspaceUid
+				? removeConversationFromState(state, conversationId)
+				: state
+		),
 	receiveNewConversation: (workspaceUid, data) =>
 		set(state => {
 			if (state.workspaceUid !== workspaceUid || !data.id) return state;

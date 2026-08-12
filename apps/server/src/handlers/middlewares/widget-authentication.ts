@@ -50,6 +50,7 @@ export class WidgetAuthenticationMiddleware extends RouterMiddleware {
 				integration: integration.id,
 				participantId: tokenPayload.id,
 				populate_participants: true,
+				status: 'OPEN',
 				workspace: integration.data.workspaceId!
 			});
 			const participant = conversation.entities.participants?.items.find(

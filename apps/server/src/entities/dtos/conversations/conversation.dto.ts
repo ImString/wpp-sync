@@ -36,4 +36,11 @@ export namespace ConversationDTO {
 			}
 		}
 	});
+
+	export const Close = new RouteSchema({
+		params: z.object({
+			uid: z.string(),
+			dataId: z.string()
+		})
+	});
 }

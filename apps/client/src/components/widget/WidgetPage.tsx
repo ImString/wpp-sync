@@ -24,7 +24,7 @@ import type { FileMessage, MessageFileKind, MessageSendInput, TextMessage } from
 import { useInfiniteScroll } from '@/components/infiniteScroll';
 
 import { getWidgetConversationToken, removeWidgetConversationToken, saveWidgetConversationToken } from './storage';
-import { useWidgetSocket, type WidgetReceiveMessageData } from './useWidgetSocket';
+import { useWidgetSocket, type WidgetConversationClosedData, type WidgetReceiveMessageData } from './useWidgetSocket';
 
 type WidgetStage =
 	| 'restoring'
@@ -61,6 +61,7 @@ interface WidgetMessageSendRequest extends MessageSendInput {
 let messageSequence = 0;
 const AUTOMATIC_REPLY_DELAY = 3200;
 const INVALID_WIDGET_SESSION_CODES = new Set([
+	'CONVERSATION_CLOSED',
 	'INVALID_TOKEN',
 	'CONVERSATION_NOT_FOUND',
 	'CONVERSATION_PARTICIPANT_NOT_FOUND'
@@ -326,6 +327,8 @@ export const WidgetPage: React.FC = () => {
 	const emailInputRef = useRef<HTMLInputElement>(null);
 	const messageSendRequestsRef = useRef(new Map<string, WidgetMessageSendRequest>());
 	const automaticReplyTimerRef = useRef<number>(undefined);
+	const activeConversationRef = useRef(false);
+	const conversationSessionRevisionRef = useRef(0);
 	const pendingOlderScrollRef = useRef<{ scrollHeight: number; scrollTop: number } | undefined>(undefined);
 	const previousMessageCountRef = useRef(0);
 	const initializedChatScrollRef = useRef(false);
@@ -336,11 +339,47 @@ export const WidgetPage: React.FC = () => {
 	const initials = useMemo(() => getInitials(title), [title]);
 	const isTyping = stage === 'typing-name' || stage === 'typing-email' || stage === 'typing-chat';
 	const currentDate = new Date();
+	const clearPendingMessageRequests = useCallback(() => {
+		for (const request of messageSendRequestsRef.current.values()) {
+			for (const message of request.optimisticMessages) {
+				if (message.type === 'file' && message.previewUrl) URL.revokeObjectURL(message.previewUrl);
+			}
+		}
+		messageSendRequestsRef.current.clear();
+	}, []);
+	const resetConversation = useCallback(() => {
+		conversationSessionRevisionRef.current += 1;
+		activeConversationRef.current = false;
+
+		if (automaticReplyTimerRef.current !== undefined) {
+			window.clearTimeout(automaticReplyTimerRef.current);
+			automaticReplyTimerRef.current = undefined;
+		}
+
+		clearPendingMessageRequests();
+		if (integrationId) removeWidgetConversationToken(integrationId);
+
+		setRestorationError('');
+		setMessages([]);
+		setMessagesPagination({ hasMore: false, isLoading: false });
+		setName('');
+		setNameError('');
+		setEmail('');
+		setEmailError('');
+		setSocketToken(undefined);
+		setIsStarting(false);
+		pendingOlderScrollRef.current = undefined;
+		previousMessageCountRef.current = 0;
+		initializedChatScrollRef.current = false;
+		nearBottomRef.current = true;
+		setStage('welcome');
+	}, [clearPendingMessageRequests, integrationId]);
 	const recoverWidget = useCallback(
 		async (signal?: AbortSignal) => {
 			setRestorationError('');
 			setSocketToken(undefined);
 			setWidgetIntegration(undefined);
+			activeConversationRef.current = false;
 
 			if (!integrationId || !workspaceUid) {
 				setStage('welcome');
@@ -369,15 +408,13 @@ export const WidgetPage: React.FC = () => {
 						isLoading: false,
 						nextCursor: response.data.messages.nextCursor
 					});
+					activeConversationRef.current = true;
 					setSocketToken(storedToken);
 					setStage('chat');
 					return;
 				}
 
-				if (storedToken) removeWidgetConversationToken(integrationId);
-				setMessages([]);
-				setMessagesPagination({ hasMore: false, isLoading: false });
-				setStage('welcome');
+				resetConversation();
 			} catch (error) {
 				if (signal?.aborted) return;
 
@@ -387,9 +424,11 @@ export const WidgetPage: React.FC = () => {
 				setStage('restore-error');
 			}
 		},
-		[integrationId, workspaceUid]
+		[integrationId, resetConversation, workspaceUid]
 	);
 	const receiveMessage = useCallback((data: WidgetReceiveMessageData) => {
+		if (!activeConversationRef.current) return;
+
 		const realtimeMessage = data?.message;
 		if (!realtimeMessage) return;
 
@@ -408,10 +447,18 @@ export const WidgetPage: React.FC = () => {
 		});
 		setStage(current => (current === 'typing-chat' ? 'chat' : current));
 	}, []);
+	const receiveConversationClosed = useCallback(
+		(data: WidgetConversationClosedData) => {
+			if (!data?.conversationId || !activeConversationRef.current) return;
+			resetConversation();
+		},
+		[resetConversation]
+	);
 
 	const { connectionState: socketConnectionState } = useWidgetSocket({
 		workspaceUid,
 		token: socketToken,
+		onConversationClosed: receiveConversationClosed,
 		onMessage: receiveMessage
 	});
 	const loadOlderMessages = useCallback(async () => {
@@ -426,6 +473,7 @@ export const WidgetPage: React.FC = () => {
 		) {
 			return;
 		}
+		const sessionRevision = conversationSessionRevisionRef.current;
 
 		pendingOlderScrollRef.current = {
 			scrollHeight: area.scrollHeight,
@@ -438,15 +486,11 @@ export const WidgetPage: React.FC = () => {
 				cursor: messagesPagination.nextCursor,
 				limit: 30
 			});
+			if (sessionRevision !== conversationSessionRevisionRef.current) return;
 
 			if (!response.success || !response.data) {
 				if (response.code && INVALID_WIDGET_SESSION_CODES.has(response.code)) {
-					removeWidgetConversationToken(integrationId);
-					setSocketToken(undefined);
-					setMessages([]);
-					setMessagesPagination({ hasMore: false, isLoading: false });
-					setStage('welcome');
-					pendingOlderScrollRef.current = undefined;
+					resetConversation();
 					return;
 				}
 
@@ -464,6 +508,7 @@ export const WidgetPage: React.FC = () => {
 				nextCursor: response.data.nextCursor
 			});
 		} catch (error) {
+			if (sessionRevision !== conversationSessionRevisionRef.current) return;
 			pendingOlderScrollRef.current = undefined;
 			setMessagesPagination(current => ({
 				...current,
@@ -476,6 +521,7 @@ export const WidgetPage: React.FC = () => {
 		messagesPagination.hasMore,
 		messagesPagination.isLoading,
 		messagesPagination.nextCursor,
+		resetConversation,
 		socketToken
 	]);
 	const { sentinelRef: olderMessagesSentinelRef } = useInfiniteScroll({
@@ -507,11 +553,7 @@ export const WidgetPage: React.FC = () => {
 				setWidgetIntegration(response.data.integration);
 
 				if (!response.data.recovered) {
-					removeWidgetConversationToken(integrationId);
-					setSocketToken(undefined);
-					setMessages([]);
-					setMessagesPagination({ hasMore: false, isLoading: false });
-					setStage('welcome');
+					resetConversation();
 					return;
 				}
 
@@ -523,7 +565,7 @@ export const WidgetPage: React.FC = () => {
 			.catch(() => {});
 
 		return () => controller.abort();
-	}, [integrationId, socketConnectionState, socketToken, stage]);
+	}, [integrationId, resetConversation, socketConnectionState, socketToken, stage]);
 
 	useEffect(() => {
 		const previousDark = document.documentElement.classList.contains('dark');
@@ -599,21 +641,14 @@ export const WidgetPage: React.FC = () => {
 		};
 	}, []);
 
-	useEffect(
-		() => () => {
+	useEffect(() => {
+		return () => {
 			if (automaticReplyTimerRef.current !== undefined) {
 				window.clearTimeout(automaticReplyTimerRef.current);
 			}
-
-			for (const request of messageSendRequestsRef.current.values()) {
-				for (const message of request.optimisticMessages) {
-					if (message.type === 'file' && message.previewUrl) URL.revokeObjectURL(message.previewUrl);
-				}
-			}
-			messageSendRequestsRef.current.clear();
-		},
-		[]
-	);
+			clearPendingMessageRequests();
+		};
+	}, [clearPendingMessageRequests]);
 
 	useEffect(() => {
 		if (stage === 'name') nameInputRef.current?.focus();
@@ -632,6 +667,8 @@ export const WidgetPage: React.FC = () => {
 	};
 
 	const startConversation = () => {
+		activeConversationRef.current = false;
+		conversationSessionRevisionRef.current += 1;
 		setMessages([]);
 		setMessagesPagination({ hasMore: false, isLoading: false });
 		setName('');
@@ -702,6 +739,7 @@ export const WidgetPage: React.FC = () => {
 			setMessages(current => [...current, createMessage('sent', normalizedEmail)]);
 			setWidgetIntegration(response.data.integration);
 			saveWidgetConversationToken(integrationId, response.data.token);
+			activeConversationRef.current = true;
 			setSocketToken(response.data.token);
 			setStage('typing-chat');
 			scheduleAutomaticReply(() => {
@@ -731,6 +769,8 @@ export const WidgetPage: React.FC = () => {
 	};
 
 	const dispatchMessage = (request: WidgetMessageSendRequest) => {
+		const sessionRevision = conversationSessionRevisionRef.current;
+
 		startTransition(async () => {
 			addOptimisticMessages({
 				requestId: request.requestId,
@@ -750,7 +790,12 @@ export const WidgetPage: React.FC = () => {
 					text: request.text,
 					files: request.files
 				});
+				if (sessionRevision !== conversationSessionRevisionRef.current) return;
 				if (!response.success || !response.data?.length) {
+					if (response.code && INVALID_WIDGET_SESSION_CODES.has(response.code)) {
+						resetConversation();
+						return;
+					}
 					throw new Error(getResponseMessage(response, 'Não foi possível enviar a mensagem.'));
 				}
 
@@ -781,6 +826,7 @@ export const WidgetPage: React.FC = () => {
 				);
 				releaseMessageSendRequest(request);
 			} catch (error) {
+				if (sessionRevision !== conversationSessionRevisionRef.current) return;
 				const errorMessage = error instanceof Error ? error.message : 'Não foi possível enviar a mensagem.';
 				const failedMessages = request.optimisticMessages.map<WidgetMessage>(message => ({
 					...message,

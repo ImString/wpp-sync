@@ -118,6 +118,13 @@ export const conversationsAPI = {
 		return response.data;
 	},
 
+	close: async (uid: string, conversationId: string) => {
+		const response = await mainAPI.put<ServerResponse>(
+			`${workspacePath(uid)}/${encodeURIComponent(conversationId)}/close`
+		);
+		return response.data;
+	},
+
 	sendMessage: async (uid: string, conversationId: string, options: ConversationMessageSendOptions) => {
 		const form = new FormData();
 

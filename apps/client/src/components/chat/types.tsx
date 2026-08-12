@@ -113,6 +113,7 @@ export interface ChatStore {
 	selectedConversationId: string;
 	sidebarOpen: boolean;
 	workspaceUid?: string;
+	closeConversation: (workspaceUid: string, conversationId: string) => Promise<void>;
 	closeContactPanel: () => void;
 	closeNewConversation: () => void;
 	closeSidebar: () => void;
@@ -127,6 +128,7 @@ export interface ChatStore {
 		conversation: ConversationData,
 		message: ConversationMessageData
 	) => void;
+	receiveConversationClosed: (workspaceUid: string, conversationId: string) => void;
 	receiveNewConversation: (workspaceUid: string, conversation: ConversationData) => void;
 	selectConversation: (conversationId: string) => void;
 	startConversation: (contact: ConversationContact) => string;

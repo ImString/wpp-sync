@@ -329,4 +329,26 @@ export class ConversationService {
 
 		return conversation;
 	}
+
+	async close(conversation: ConversationEntity) {
+		conversation.addChanges({
+			status: 'CLOSED',
+			closedAt: new Date()
+		});
+
+		await conversation.save();
+
+		if (conversation.data.workspaceId) {
+			SocketModule.emitTo(
+				[
+					SocketRooms.workspace(conversation.data.workspaceId),
+					SocketRooms.conversation(conversation.id)
+				],
+				ConversationSocketDTO.Closed,
+				{ conversationId: conversation.id }
+			);
+		}
+
+		return conversation;
+	}
 }

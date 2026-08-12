@@ -9,7 +9,12 @@ export type WidgetSocketConnectionState = 'connected' | 'connecting' | 'disconne
 interface WidgetSocketOptions {
 	workspaceUid: string;
 	token?: string;
+	onConversationClosed: (data: WidgetConversationClosedData) => void;
 	onMessage: (data: WidgetReceiveMessageData) => void;
+}
+
+export interface WidgetConversationClosedData {
+	conversationId: string;
 }
 
 export interface WidgetReceiveMessageData {
@@ -17,9 +22,14 @@ export interface WidgetReceiveMessageData {
 	message: ConversationMessageData;
 }
 
-export const useWidgetSocket = ({ workspaceUid, token, onMessage }: WidgetSocketOptions) => {
+export const useWidgetSocket = ({ workspaceUid, token, onConversationClosed, onMessage }: WidgetSocketOptions) => {
 	const [connectionState, setConnectionState] = useState<WidgetSocketConnectionState>('disconnected');
+	const onConversationClosedRef = useRef(onConversationClosed);
 	const onMessageRef = useRef(onMessage);
+
+	useEffect(() => {
+		onConversationClosedRef.current = onConversationClosed;
+	}, [onConversationClosed]);
 
 	useEffect(() => {
 		onMessageRef.current = onMessage;
@@ -50,11 +60,14 @@ export const useWidgetSocket = ({ workspaceUid, token, onMessage }: WidgetSocket
 			setConnectionState(reason === 'io client disconnect' ? 'disconnected' : 'connecting');
 		const handleReconnectAttempt = () => setConnectionState('connecting');
 		const handleReconnectFailed = () => setConnectionState('error');
+		const handleConversationClosed = (data: WidgetConversationClosedData) =>
+			onConversationClosedRef.current(data);
 		const handleMessage = (data: WidgetReceiveMessageData) => onMessageRef.current(data);
 
 		socket.on('connect', handleConnect);
 		socket.on('connect_error', handleConnectError);
 		socket.on('disconnect', handleDisconnect);
+		socket.on('conversation:closed', handleConversationClosed);
 		socket.on('conversation:receiveMessage', handleMessage);
 		socket.io.on('reconnect_attempt', handleReconnectAttempt);
 		socket.io.on('reconnect_failed', handleReconnectFailed);
@@ -67,6 +80,7 @@ export const useWidgetSocket = ({ workspaceUid, token, onMessage }: WidgetSocket
 			socket.off('connect', handleConnect);
 			socket.off('connect_error', handleConnectError);
 			socket.off('disconnect', handleDisconnect);
+			socket.off('conversation:closed', handleConversationClosed);
 			socket.off('conversation:receiveMessage', handleMessage);
 			socket.io.off('reconnect_attempt', handleReconnectAttempt);
 			socket.io.off('reconnect_failed', handleReconnectFailed);

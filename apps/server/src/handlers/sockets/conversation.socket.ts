@@ -67,6 +67,7 @@ export class ConversationSocket {
 				...(data.conversationID && { id: data.conversationID }),
 				...(!data.conversationID && { participantId: userData.userID }),
 				populate_participants: true,
+				status: 'OPEN',
 				...(userData.workspaceID
 					? { workspace: userData.workspaceID }
 					: { workspaceUID: userData.workspaceUID })

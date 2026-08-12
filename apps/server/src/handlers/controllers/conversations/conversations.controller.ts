@@ -1,4 +1,4 @@
-import { Controller, Get, HttpResponse, Post } from '@/modules/index.js';
+import { Controller, Get, HttpResponse, Post, Put } from '@/modules/index.js';
 
 import { ConversationParticipantService, ConversationService, MessageService } from '@/services/index.js';
 
@@ -67,5 +67,21 @@ export class ConversationsController {
 		});
 
 		return HttpResponse.success(await Promise.all(messages.map(message => message.toObject({ sign_files: true }))));
+	}
+
+	@Put('/:dataId/close', ConversationDTO.Close)
+	async close(context: typeof ConversationDTO.Close.context) {
+		const workspace = context.state.workspaceAccess?.workspace;
+		if (!workspace) throw new WorkspaceNotFoundError();
+
+		const conversation = await this.conversationService.get({
+			id: context.params.dataId,
+			status: 'OPEN',
+			workspace: workspace.id
+		});
+
+		await this.conversationService.close(conversation);
+
+		return HttpResponse.success();
 	}
 }

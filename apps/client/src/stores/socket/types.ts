@@ -19,12 +19,17 @@ export interface ConversationNewData {
 	conversation: ConversationData;
 }
 
+export interface ConversationClosedData {
+	conversationId: string;
+}
+
 export interface ConversationReceiveMessageData {
 	conversation: ConversationData;
 	message: ConversationMessageData;
 }
 
 export interface ServerToClientEvents {
+	'conversation:closed': (data: ConversationClosedData) => void;
 	'conversation:new': (data: ConversationNewData) => void;
 	'conversation:receiveMessage': (data: ConversationReceiveMessageData) => void;
 	'integration:update': (data: IntegrationUpdateData) => void;

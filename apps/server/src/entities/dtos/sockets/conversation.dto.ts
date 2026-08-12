@@ -27,6 +27,15 @@ export namespace ConversationSocketDTO {
 			.strict()
 	});
 
+	export const Closed = new SocketEventSchema({
+		name: 'conversation:closed',
+		data: z
+			.object({
+				conversationId: z.string().min(1)
+			})
+			.strict()
+	});
+
 	export const ReceiveMessage = new SocketEventSchema({
 		name: 'conversation:receiveMessage',
 		data: z
