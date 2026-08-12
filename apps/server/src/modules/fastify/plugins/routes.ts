@@ -10,11 +10,21 @@ import type { DefinedController } from '@/modules/router/types/controller.js';
 import type { MountedMiddleware, RouterMiddlewareContext } from '@/modules/router/types/middleware.js';
 import type { MountedRoute } from '@/modules/router/types/route.js';
 
-import type { MemberEntity } from '@/entities/data/workspaces/members.entity.js';
-import type { WorkspaceEntity } from '@/entities/data/workspaces/workspace.entity.js';
+import type {
+	ConversationEntity,
+	ConversationParticipantEntity,
+	IntegrationEntity,
+	MemberEntity,
+	WorkspaceEntity
+} from '@/entities/data/index.js';
 
 export interface RouterState extends Record<PropertyKey, unknown> {
 	userId: string;
+	widgetAuthentication?: {
+		integration: IntegrationEntity;
+		conversation?: ConversationEntity;
+		participant?: ConversationParticipantEntity;
+	};
 	workspaceAccess?: {
 		workspace: WorkspaceEntity;
 		membership: MemberEntity;

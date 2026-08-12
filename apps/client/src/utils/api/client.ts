@@ -21,8 +21,9 @@ export const mainAPI = axios.create({
 
 mainAPI.interceptors.request.use(config => {
 	const authToken = getAuthToken();
+	const isWidgetRequest = config.url?.startsWith('/widget/');
 
-	if (authToken && !config.headers.Authorization) {
+	if (authToken && !isWidgetRequest && !config.headers.Authorization) {
 		config.headers.Authorization = `Bearer ${authToken}`;
 	}
 
@@ -34,9 +35,9 @@ mainAPI.interceptors.response.use(async response => {
 
 	const config = response.config as RetryableRequestConfig;
 	const responseData = response.data as ServerResponse;
-	const isPublicAuthenticationRequest = ['/auth/login', '/auth/register', '/auth/logout'].some(route =>
-		config.url?.endsWith(route)
-	);
+	const isPublicAuthenticationRequest =
+		config.url?.startsWith('/widget/') ||
+		['/auth/login', '/auth/register', '/auth/logout'].some(route => config.url?.endsWith(route));
 
 	if (isPublicAuthenticationRequest) return response;
 

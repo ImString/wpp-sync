@@ -38,6 +38,7 @@ export type MessageSendDocument = {
 	payload?: Prisma.InputJsonValue;
 	externalId?: string;
 	files?: MultipartFile[];
+	excludedSocketId?: string;
 } & (
 	| {
 			type?: Exclude<MessageType, 'SYSTEM'>;
@@ -222,14 +223,22 @@ export class MessageService {
 		]);
 
 		for (const message of messageObjects) {
-			SocketModule.emitTo(
-				SocketRooms.conversation(document.conversation.id),
-				ConversationSocketDTO.ReceiveMessage,
-				{
-					conversation: conversationObject,
-					message
-				}
-			);
+			const room = SocketRooms.conversation(document.conversation.id);
+			const eventData = {
+				conversation: conversationObject,
+				message
+			};
+
+			if (document.excludedSocketId) {
+				SocketModule.emitToExcept(
+					room,
+					document.excludedSocketId,
+					ConversationSocketDTO.ReceiveMessage,
+					eventData
+				);
+			} else {
+				SocketModule.emitTo(room, ConversationSocketDTO.ReceiveMessage, eventData);
+			}
 		}
 
 		return messageEntities;

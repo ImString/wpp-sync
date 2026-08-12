@@ -148,7 +148,7 @@ export class AuthenticationService {
 
 		return (
 			typeof token.id === 'string' &&
-			(token.tokenType === 'auth' || token.tokenType === 'refresh') &&
+			(token.tokenType === 'auth' || token.tokenType === 'refresh' || token.tokenType === 'visitor') &&
 			typeof token.iat === 'number' &&
 			typeof token.exp === 'number'
 		);

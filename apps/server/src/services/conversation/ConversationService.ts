@@ -24,6 +24,7 @@ export type ConversationServiceWhereOptions = {
 	status?: ConversationStatus;
 	integration?: string;
 	workspace?: string;
+	workspaceUID?: string;
 
 	include?: Prisma.ConversationInclude;
 	populate_participants?: boolean;
@@ -106,7 +107,8 @@ export class ConversationService {
 
 			...(options.status && { status: options.status }),
 			...(options.integration && { integrationId: options.integration }),
-			...(options.workspace && { workspaceId: options.workspace })
+			...(options.workspace && { workspaceId: options.workspace }),
+			...(options.workspaceUID && { workspace: { uid: options.workspaceUID } })
 		};
 	}
 

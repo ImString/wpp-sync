@@ -30,7 +30,7 @@ export const App: React.FC = () => {
 	return (
 		<>
 			{content}
-			<SponsoredBadge />
+			{!isWidgetRoute && <SponsoredBadge />}
 		</>
 	);
 };

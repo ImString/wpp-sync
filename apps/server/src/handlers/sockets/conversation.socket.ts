@@ -8,11 +8,13 @@ import { ConversationService, WorkspaceService } from '@/services/index.js';
 
 import { ConversationSocketDTO } from '@/entities/dtos/sockets/conversation.dto.js';
 import { InvalidTokenError } from '@/entities/errors/authentication/InvalidTokenError.js';
+import { ConversationParticipantNotFoundError } from '@/entities/errors/conversation/index.js';
 
 type UserDataSocket = {
 	userID: string;
 	userType: $Enums.ConversationParticipantType;
 	workspaceUID: string;
+	workspaceID?: string;
 };
 
 @SocketHandler()
@@ -30,8 +32,10 @@ export class ConversationSocket {
 
 		if (!token) throw new InvalidTokenError();
 
-		if (this.authenticationService.verifyToken(token, 'auth')?.id) {
-			const userId = this.authenticationService.verifyToken(token, 'auth')?.id;
+		const tokenData = this.authenticationService.verifyToken(token);
+
+		if (tokenData.tokenType === 'auth') {
+			const userId = tokenData.id;
 			const { workspace, membership } = await this.workspaceService.getUserMembership(userId, data.workspaceUID);
 			const dbWorkspaceUID = workspace.data.uid;
 			if (!dbWorkspaceUID) throw new Error('Workspace UID not found.');
@@ -39,13 +43,12 @@ export class ConversationSocket {
 			return {
 				userID: membership.id,
 				userType: 'MEMBER',
+				workspaceID: workspace.id,
 				workspaceUID: dbWorkspaceUID
 			};
-		} else if (this.authenticationService.verifyToken(token, 'visitor')?.id) {
-			const visitorId = this.authenticationService.verifyToken(token, 'visitor')?.id;
-
+		} else if (tokenData.tokenType === 'visitor') {
 			return {
-				userID: visitorId,
+				userID: tokenData.id,
 				userType: 'VISITOR',
 				workspaceUID: data.workspaceUID
 			};
@@ -56,31 +59,26 @@ export class ConversationSocket {
 
 	@SocketListener(ConversationSocketDTO.Join)
 	async join(socket: Socket, data: typeof ConversationSocketDTO.Join.data) {
-		const userData = await this.getUserData(socket, data);
-		if (!userData) {
-			return;
-		}
+		try {
+			const userData = await this.getUserData(socket, data);
+			if (!userData) throw new InvalidTokenError();
 
-		const conversation = await this.conversationService
-			.get({
+			const conversation = await this.conversationService.get({
 				...(data.conversationID && { id: data.conversationID }),
 				...(!data.conversationID && { participantId: userData.userID }),
 				populate_participants: true,
-				workspace: userData.workspaceUID
-			})
-			.catch(() => null);
-		if (!conversation) {
-			return;
-		}
+				...(userData.workspaceID
+					? { workspace: userData.workspaceID }
+					: { workspaceUID: userData.workspaceUID })
+			});
 
-		const checkParticipant = conversation.entities.participants?.items.find(
-			participant => participant.data.type === userData.userType && participant.data.id === userData.userID
-		);
-		if (!checkParticipant) {
-			return;
-		}
+			const checkParticipant = conversation.entities.participants?.items.find(
+				participant => participant.data.type === userData.userType && participant.data.id === userData.userID
+			);
+			if (!checkParticipant) throw new ConversationParticipantNotFoundError();
 
-		await socket.join(SocketRooms.conversation(conversation.id));
+			await socket.join(SocketRooms.conversation(conversation.id));
+		} catch (error) {}
 	}
 
 	@SocketListener(ConversationSocketDTO.Leave)

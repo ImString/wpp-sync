@@ -50,6 +50,15 @@ export class SocketModuleBase extends BaseModule {
 		return this.instance?.to(room).emit(event.name, data) ?? false;
 	}
 
+	emitToExcept<SEvent extends AnySocketEventSchema>(
+		room: string | string[],
+		excludedSocketId: string,
+		event: SEvent,
+		data: SocketEventData<SEvent>
+	): boolean {
+		return this.instance?.to(room).except(excludedSocketId).emit(event.name, data) ?? false;
+	}
+
 	private async preHandler(event: AnySocketEventSchema, data: unknown): Promise<unknown> {
 		const validation = await Validator.validate(event.validator, data);
 
