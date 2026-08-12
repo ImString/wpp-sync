@@ -7,7 +7,7 @@ export namespace ConversationSocketDTO {
 		name: 'conversation:join',
 		data: z
 			.object({
-				conversationID: z.string().min(1),
+				conversationID: z.string().min(1).optional(),
 				workspaceUID: z.string().min(1)
 			})
 			.strict()

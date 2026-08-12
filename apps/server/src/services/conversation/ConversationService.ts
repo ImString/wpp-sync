@@ -18,6 +18,8 @@ export type ConversationServiceWhereOptions = {
 	id?: string;
 	ids?: string[];
 
+	participantId?: string;
+
 	search?: string;
 	status?: ConversationStatus;
 	integration?: string;
@@ -56,6 +58,18 @@ export class ConversationService {
 		return {
 			...(options.id && { id: options.id }),
 			...(options.ids && { id: { in: options.ids } }),
+
+			...(options.participantId && {
+				participants: {
+					some: {
+						OR: [
+							{ id: options.participantId },
+							{ memberId: options.participantId },
+							{ contactId: options.participantId }
+						]
+					}
+				}
+			}),
 
 			...(options.search && {
 				OR: [

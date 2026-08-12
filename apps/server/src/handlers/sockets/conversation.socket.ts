@@ -63,7 +63,8 @@ export class ConversationSocket {
 
 		const conversation = await this.conversationService
 			.get({
-				id: data.conversationID,
+				...(data.conversationID && { id: data.conversationID }),
+				...(!data.conversationID && { participantId: userData.userID }),
 				populate_participants: true,
 				workspace: userData.workspaceUID
 			})
@@ -79,7 +80,7 @@ export class ConversationSocket {
 			return;
 		}
 
-		await socket.join(SocketRooms.conversation(data.conversationID));
+		await socket.join(SocketRooms.conversation(conversation.id));
 	}
 
 	@SocketListener(ConversationSocketDTO.Leave)
