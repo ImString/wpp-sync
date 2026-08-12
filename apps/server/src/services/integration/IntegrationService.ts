@@ -167,10 +167,8 @@ export class IntegrationService {
 
 		await integration.save();
 
-		const workspaceUID = integration.entities.workspace?.data.uid;
-
-		if (workspaceUID) {
-			SocketModule.emitTo(SocketRooms.workspace(workspaceUID), IntegrationSocketDTO.Update, {
+		if (integration.data.workspaceId) {
+			SocketModule.emitTo(SocketRooms.workspace(integration.data.workspaceId), IntegrationSocketDTO.Update, {
 				integrationId: integration.id,
 				...(document.name && { name: document.name }),
 				...(document.status && { status: document.status })

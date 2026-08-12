@@ -299,11 +299,6 @@ export class ConversationService {
 				}
 			},
 			include: {
-				workspace: {
-					select: {
-						uid: true
-					}
-				},
 				integration: true,
 				participants: {
 					include: {
@@ -326,10 +321,9 @@ export class ConversationService {
 			}
 		});
 
-		const { workspace, ...conversationFields } = conversationData;
-		const conversation = new ConversationEntity(conversationFields);
+		const conversation = new ConversationEntity(conversationData);
 
-		SocketModule.emitTo(SocketRooms.workspace(workspace.uid), ConversationSocketDTO.New, {
+		SocketModule.emitTo(SocketRooms.workspace(document.workspace), ConversationSocketDTO.New, {
 			conversation: await conversation.toObject({ sign_files: true })
 		});
 

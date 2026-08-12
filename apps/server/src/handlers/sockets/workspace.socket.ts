@@ -41,7 +41,7 @@ export class WorkspaceSocket {
 		if (!workspaceUid) throw new Error('Workspace UID not found.');
 
 		await this.leaveWorkspaceRooms(socket);
-		await socket.join([SocketRooms.workspace(workspaceUid), SocketRooms.member(membership.id)]);
+		await socket.join([SocketRooms.workspace(workspace.id), SocketRooms.member(membership.id)]);
 
 		socket.data.workspaceUid = workspaceUid;
 		socket.data.memberId = membership.id;
