@@ -296,11 +296,11 @@ export const WorkspacePage: React.FC = () => {
 						className={twMerge(workspaceIconButtonClassName, 'max-[420px]:hidden')}
 						type="button"
 						aria-label="Notificações"
-						onClick={() => setToast('Você possui 2 notificações novas.')}>
+						onClick={() => {}}>
 						<MdNotificationsNone aria-hidden="true" />
-						<span className="absolute top-0.5 right-0.5 grid h-4.25 min-w-4.25 place-items-center rounded-full border-2 border-(--workspace-surface) bg-brand-600 px-1 text-[9px] font-bold text-white">
+						{/* <span className="absolute top-0.5 right-0.5 grid h-4.25 min-w-4.25 place-items-center rounded-full border-2 border-(--workspace-surface) bg-brand-600 px-1 text-[9px] font-bold text-white">
 							2
-						</span>
+						</span> */}
 					</button>
 
 					<div className="relative" ref={userMenuRef}>
