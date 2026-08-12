@@ -3,9 +3,13 @@ import { MessageType, prisma, Prisma } from '@wppsync/database';
 
 import { Provider } from '@/core/index.js';
 
+import { SocketRooms } from '@/modules/index.js';
+import { SocketModule } from '@/modules/modules.js';
+
 import { FilesService } from '@/services/FilesService.js';
 
 import { ConversationEntity, ConversationParticipantEntity, FileEntity, MessageEntity } from '@/entities/data/index.js';
+import { ConversationSocketDTO } from '@/entities/dtos/sockets/conversation.dto.js';
 import {
 	ConversationClosedError,
 	ConversationNotFoundError,
@@ -147,7 +151,7 @@ export class MessageService {
 		return new MessageEntity(data);
 	}
 
-	async sendMessage(document: MessageSendDocument) {
+	async send(document: MessageSendDocument) {
 		if (document.conversation.data.workspaceId !== document.workspace) {
 			throw new ConversationNotFoundError();
 		}
@@ -206,7 +210,8 @@ export class MessageService {
 					];
 
 		try {
-			const messageData = await this.createMessages(document, messages);
+			const messageData = await this.create(document, messages);
+
 			return messageData.map(data => new MessageEntity(data));
 		} catch (error) {
 			await this.deleteUploadedFiles(uploadedFiles);
@@ -214,7 +219,7 @@ export class MessageService {
 		}
 	}
 
-	private async createMessages(document: MessageSendDocument, messages: MessageCreateDocument[]) {
+	private async create(document: MessageSendDocument, messages: MessageCreateDocument[]) {
 		const createdAt = new Date();
 
 		return prisma.$transaction(async transaction => {

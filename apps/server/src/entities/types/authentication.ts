@@ -1,6 +1,6 @@
 import type { JwtPayload } from 'jsonwebtoken';
 
-export type AuthenticationTokenType = 'auth' | 'refresh';
+export type AuthenticationTokenType = 'auth' | 'refresh' | 'visitor';
 
 export interface AuthenticationTokenPayload extends JwtPayload {
 	id: string;

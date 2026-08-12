@@ -1,6 +1,6 @@
 import { Controller, HttpResponse, Post } from '@/modules/index.js';
 
-import { ConversationService, IntegrationService } from '@/services/index.js';
+import { AuthenticationService, ConversationService, IntegrationService } from '@/services/index.js';
 
 import { WidgetDTO } from '@/entities/dtos/widget.dto.js';
 import { ConversationParticipantCreationError } from '@/entities/errors/conversation/index.js';
@@ -11,6 +11,7 @@ import { ConversationParticipantCreationError } from '@/entities/errors/conversa
 export class WidgetController {
 	constructor(
 		private readonly integrationService: IntegrationService,
+		private readonly authenticationService: AuthenticationService,
 		private readonly conversationService: ConversationService
 	) {}
 
@@ -41,8 +42,7 @@ export class WidgetController {
 		if (!visitor) throw new ConversationParticipantCreationError();
 
 		return HttpResponse.success({
-			conversationId: conversation.id,
-			participantId: visitor.id
+			token: this.authenticationService.generateToken(visitor.id, 'visitor')
 		});
 	}
 }

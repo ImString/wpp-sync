@@ -102,9 +102,28 @@ export class AuthenticationService {
 	generateToken(userId: string, tokenType: AuthenticationTokenType): string {
 		const authTokenExpiresIn = process.env.SESSION_TOKEN_AUTH_TIMEOUT || '1h';
 		const refreshTokenExpiresIn = process.env.SESSION_TOKEN_REFRESH_TIMEOUT || '30d';
-		const expiresIn = (
-			tokenType === 'auth' ? authTokenExpiresIn : refreshTokenExpiresIn
-		) as SignOptions['expiresIn'];
+		const visitorTokenExpiresIn = process.env.SESSION_TOKEN_VISITOR_TIMEOUT || '7d';
+
+		let tagToken: 'rt' | 'at' | 'vt';
+		let expiresIn: SignOptions['expiresIn'];
+		switch (tokenType) {
+			case 'auth':
+				expiresIn = authTokenExpiresIn as SignOptions['expiresIn'];
+				tagToken = 'at';
+				break;
+			case 'refresh':
+				expiresIn = refreshTokenExpiresIn as SignOptions['expiresIn'];
+				tagToken = 'rt';
+				break;
+			case 'visitor':
+				expiresIn = visitorTokenExpiresIn as SignOptions['expiresIn'];
+				tagToken = 'vt';
+				break;
+			default:
+				expiresIn = '1d';
+				tagToken = 'at';
+				break;
+		}
 
 		return jwt.sign(
 			{
@@ -116,7 +135,7 @@ export class AuthenticationService {
 				issuer: process.env.CLIENT_FULL_URL,
 				audience: 'WPPSession',
 				algorithm: 'HS256',
-				header: { alg: 'HS256', typ: `${tokenType === 'auth' ? 'at' : 'rt'}-jwt` },
+				header: { alg: 'HS256', typ: `${tagToken}-jwt` },
 				expiresIn
 			}
 		);

@@ -58,7 +58,7 @@ export class ConversationsController {
 			member: membership
 		});
 
-		const messages = await this.messageService.sendMessage({
+		const messages = await this.messageService.send({
 			conversation,
 			files: form?.files,
 			sender,
