@@ -223,7 +223,10 @@ export class MessageService {
 		]);
 
 		for (const message of messageObjects) {
-			const room = SocketRooms.conversation(document.conversation.id);
+			const rooms = [
+				SocketRooms.conversation(document.conversation.id),
+				SocketRooms.workspace(document.workspace)
+			];
 			const eventData = {
 				conversation: conversationObject,
 				message
@@ -231,13 +234,13 @@ export class MessageService {
 
 			if (document.excludedSocketId) {
 				SocketModule.emitToExcept(
-					room,
+					rooms,
 					document.excludedSocketId,
 					ConversationSocketDTO.ReceiveMessage,
 					eventData
 				);
 			} else {
-				SocketModule.emitTo(room, ConversationSocketDTO.ReceiveMessage, eventData);
+				SocketModule.emitTo(rooms, ConversationSocketDTO.ReceiveMessage, eventData);
 			}
 		}
 

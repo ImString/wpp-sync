@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { formatNationalPhone } from '@/utils';
 import { conversationsAPI, getResponseMessage, type ConversationData, type ConversationMessageData } from '@/utils/api';
 
+import { useAuthenticationStore } from '@/stores/auth';
+
 import { formatMessageSummary } from './format-message-summary';
 import type {
 	ChatMessage,
@@ -21,6 +23,7 @@ const MESSAGE_PAGE_SIZE = 30;
 
 let conversationsRequest: AbortController | undefined;
 const messageSendRequests = new Map<string, MessageSendRequest>();
+const realtimeMessageMatches = new Map<string, Set<number>>();
 
 const currentTime = () => {
 	return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
@@ -170,6 +173,50 @@ const mapMessage = (message: ConversationMessageData): ChatMessage => {
 	};
 };
 
+const matchPendingMessageRequest = (conversationId: string, message: ConversationMessageData) => {
+	const currentUserId = useAuthenticationStore.getState().currentUser?.id;
+	if (!currentUserId || message.sender?.member?.user?.id !== currentUserId) return undefined;
+
+	const payload = getPayloadRecord(message.payload);
+	const fileName = getPayloadString(payload, ['name', 'filename', 'fileName']);
+	const mimeType = getPayloadString(payload, ['mimeType', 'mimetype']);
+	const size = getPayloadNumber(payload, 'size');
+
+	for (const request of messageSendRequests.values()) {
+		if (request.conversationId !== conversationId) continue;
+
+		const matchedIndexes = realtimeMessageMatches.get(request.requestId) || new Set<number>();
+		if (request.files.length === 0) {
+			if (
+				matchedIndexes.has(0) ||
+				(message.type && message.type !== 'TEXT') ||
+				request.text !== message.text?.trim()
+			) {
+				continue;
+			}
+
+			matchedIndexes.add(0);
+			realtimeMessageMatches.set(request.requestId, matchedIndexes);
+			return request.requestId;
+		}
+
+		const fileIndex = request.files.findIndex(
+			(file, index) =>
+				!matchedIndexes.has(index) &&
+				file.name === fileName &&
+				file.size === size &&
+				(file.type || 'application/octet-stream') === (mimeType || 'application/octet-stream')
+		);
+		if (fileIndex === -1) continue;
+
+		matchedIndexes.add(fileIndex);
+		realtimeMessageMatches.set(request.requestId, matchedIndexes);
+		return request.requestId;
+	}
+
+	return undefined;
+};
+
 const createRequestId = () => {
 	if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
 	return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -232,6 +279,7 @@ export const getMessageSendRequest = (requestId: string) => messageSendRequests.
 
 const releaseMessageSendRequest = (request: MessageSendRequest) => {
 	messageSendRequests.delete(request.requestId);
+	realtimeMessageMatches.delete(request.requestId);
 	window.setTimeout(
 		() => {
 			for (const message of request.optimisticMessages) {
@@ -337,6 +385,37 @@ const hydrateMessages = (
 	return { messages: nextMessages, messagesPagination: nextPagination };
 };
 
+const sortConversationsByActivity = (conversations: Conversation[]) => {
+	return [...conversations].sort((left, right) => {
+		return (
+			(parseDate(right.lastActivityAt)?.getTime() || 0) -
+			(parseDate(left.lastActivityAt)?.getTime() || 0)
+		);
+	});
+};
+
+const mergeConversationSnapshot = (loaded: Conversation, current: Conversation) => {
+	const loadedActivity = parseDate(loaded.lastActivityAt)?.getTime() || 0;
+	const currentActivity = parseDate(current.lastActivityAt)?.getTime() || 0;
+	const latest = currentActivity >= loadedActivity ? current : loaded;
+
+	return {
+		...current,
+		...loaded,
+		preview: latest.preview,
+		time: latest.time,
+		type: latest.type,
+		unread: latest.unread,
+		lastActivityAt: latest.lastActivityAt
+	};
+};
+
+const mergeChatMessages = (base: ChatMessage[], incoming: ChatMessage[]) => {
+	const messagesById = new Map(base.map(message => [message.id, message]));
+	for (const message of incoming) messagesById.set(message.id, message);
+	return [...messagesById.values()];
+};
+
 export const useChatStore = create<ChatStore>((set, get) => ({
 	activeFilter: 'all',
 	activeSection: 'chats',
@@ -406,13 +485,44 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 			const normalized = response.data.items.map(normalizeConversation);
 			const hydrated = hydrateMessages({}, {}, normalized);
 
-			set({
-				conversations: normalized.map(item => item.conversation),
-				conversationsHasMore: normalized.length < response.data.total,
-				conversationsPage: 1,
-				conversationsStatus: 'ready',
-				conversationsTotal: response.data.total,
-				...hydrated
+			set(state => {
+				if (state.workspaceUid !== workspaceUid) return state;
+
+				const conversationsById = new Map(
+					normalized.map(item => [item.conversation.id, item.conversation])
+				);
+				for (const conversation of state.conversations) {
+					const loadedConversation = conversationsById.get(conversation.id);
+					conversationsById.set(
+						conversation.id,
+						loadedConversation
+							? mergeConversationSnapshot(loadedConversation, conversation)
+							: conversation
+					);
+				}
+
+				const conversations = sortConversationsByActivity([...conversationsById.values()]);
+				const messages = { ...hydrated.messages };
+				for (const [conversationId, currentMessages] of Object.entries(state.messages)) {
+					messages[conversationId] = mergeChatMessages(messages[conversationId] || [], currentMessages);
+				}
+
+				const messagesPagination = { ...hydrated.messagesPagination };
+				for (const [conversationId, pagination] of Object.entries(state.messagesPagination)) {
+					if (!(conversationId in messagesPagination)) messagesPagination[conversationId] = pagination;
+				}
+
+				const conversationsTotal = Math.max(response.data!.total, conversations.length);
+
+				return {
+					conversations,
+					conversationsHasMore: conversations.length < conversationsTotal,
+					conversationsPage: 1,
+					conversationsStatus: 'ready',
+					conversationsTotal,
+					messages,
+					messagesPagination
+				};
 			});
 		} catch (error) {
 			if (controller.signal.aborted || get().workspaceUid !== workspaceUid) return;
@@ -566,6 +676,118 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 	openContactPanel: () => set({ contactPanelOpen: true, mobileView: 'contact' }),
 	openNewConversation: () => set({ newConversationOpen: true }),
 	openSidebar: () => set({ sidebarOpen: true }),
+	receiveNewConversation: (workspaceUid, data) =>
+		set(state => {
+			if (state.workspaceUid !== workspaceUid || !data.id) return state;
+
+			const normalized = normalizeConversation(data);
+			const currentConversation = state.conversations.find(
+				conversation => conversation.id === data.id
+			);
+			const conversation = currentConversation
+				? mergeConversationSnapshot(normalized.conversation, currentConversation)
+				: normalized.conversation;
+
+			return {
+				conversations: sortConversationsByActivity([
+					conversation,
+					...state.conversations.filter(item => item.id !== data.id)
+				]),
+				conversationsTotal: currentConversation
+					? state.conversationsTotal
+					: state.conversationsTotal + 1,
+				messages:
+					data.id in state.messages
+						? state.messages
+						: { ...state.messages, [data.id]: normalized.messages },
+				messagesPagination:
+					data.id in state.messagesPagination
+						? state.messagesPagination
+						: {
+								...state.messagesPagination,
+								[data.id]: normalized.pagination
+							}
+			};
+		}),
+	receiveConversationMessage: (workspaceUid, data, messageData) =>
+		set(state => {
+			if (state.workspaceUid !== workspaceUid || !data.id || !messageData.id) return state;
+
+			const conversationId = data.id;
+			const currentMessages = state.messages[conversationId] || [];
+			const alreadyReceived = currentMessages.some(message => message.id === messageData.id);
+			const matchedRequestId = alreadyReceived
+				? undefined
+				: matchPendingMessageRequest(conversationId, messageData);
+			const message = {
+				...mapMessage(messageData),
+				...(matchedRequestId && { requestId: matchedRequestId })
+			};
+			const messages = alreadyReceived ? currentMessages : [...currentMessages, message];
+			const currentConversation = state.conversations.find(
+				conversation => conversation.id === conversationId
+			);
+			const normalizedConversation = currentConversation
+				? currentConversation
+				: normalizeConversation({
+						...data,
+						lastActivityAt: messageData.createdAt || data.lastActivityAt,
+						messages: [messageData]
+					}).conversation;
+			const isSelected = state.selectedConversationId === conversationId;
+			const isIncoming = Boolean(messageData.sender && messageData.sender.type !== 'MEMBER');
+			const isMemberMessage = messageData.sender?.type === 'MEMBER';
+			const isCurrentMemberMessage =
+				isMemberMessage &&
+				messageData.sender?.member?.user?.id === useAuthenticationStore.getState().currentUser?.id;
+			let type = normalizedConversation.type;
+			let unread = normalizedConversation.unread;
+
+			if (!alreadyReceived && isIncoming) {
+				unread = isSelected ? undefined : (currentConversation?.unread || 0) + 1;
+				if (normalizedConversation.type !== 'groups') type = isSelected ? 'waiting' : 'unread';
+			} else if (!alreadyReceived && isCurrentMemberMessage) {
+				unread = undefined;
+				if (normalizedConversation.type !== 'groups') type = 'all';
+			} else if (!alreadyReceived && isMemberMessage && normalizedConversation.type === 'waiting') {
+				type = 'all';
+			}
+
+			const lastActivityAt = messageData.createdAt || data.lastActivityAt || normalizedConversation.lastActivityAt;
+			const conversation: Conversation = {
+				...normalizedConversation,
+				preview: formatMessageSummary(messageData),
+				time: formatConversationTime(lastActivityAt),
+				type,
+				unread,
+				...(lastActivityAt && { lastActivityAt })
+			};
+			const hasPagination = conversationId in state.messagesPagination;
+
+			return {
+				conversations: sortConversationsByActivity([
+					conversation,
+					...state.conversations.filter(item => item.id !== conversationId)
+				]),
+				conversationsTotal: currentConversation
+					? state.conversationsTotal
+					: state.conversationsTotal + 1,
+				messages: {
+					...state.messages,
+					[conversationId]: messages
+				},
+				...(!hasPagination && {
+					messagesPagination: {
+						...state.messagesPagination,
+						[conversationId]: {
+							hasMore: comparePositions('1', messageData.position) < 0,
+							isLoading: false,
+							...(messageData.position && { nextCursor: messageData.position })
+						}
+					}
+				})
+			};
+		}),
 	selectConversation: selectedConversationId =>
 		set({ contactPanelOpen: false, selectedConversationId, mobileView: 'chat' }),
 	startConversation: contact => {
@@ -621,6 +843,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 		return conversationId;
 	},
 	sendMessage: async request => {
+		realtimeMessageMatches.delete(request.requestId);
+
 		try {
 			const response = await conversationsAPI.sendMessage(request.workspaceUid, request.conversationId, {
 				text: request.text,

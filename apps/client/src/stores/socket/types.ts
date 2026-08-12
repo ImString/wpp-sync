@@ -1,5 +1,7 @@
 import type { Socket } from 'socket.io-client';
 
+import type { ConversationData, ConversationMessageData } from '@/utils/api';
+
 export type SocketConnectionState = 'connected' | 'connecting' | 'disconnected' | 'error';
 
 export interface JoinWorkspaceData {
@@ -13,7 +15,18 @@ export interface IntegrationUpdateData {
 	type?: 'WHATSAPP' | 'WEB';
 }
 
+export interface ConversationNewData {
+	conversation: ConversationData;
+}
+
+export interface ConversationReceiveMessageData {
+	conversation: ConversationData;
+	message: ConversationMessageData;
+}
+
 export interface ServerToClientEvents {
+	'conversation:new': (data: ConversationNewData) => void;
+	'conversation:receiveMessage': (data: ConversationReceiveMessageData) => void;
 	'integration:update': (data: IntegrationUpdateData) => void;
 }
 

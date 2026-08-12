@@ -1,3 +1,5 @@
+import type { ConversationData, ConversationMessageData } from '@/utils/api';
+
 export type ConversationFilter = 'all' | 'unread' | 'waiting' | 'groups';
 export type ConversationChannel = 'WHATSAPP' | 'WEB' | 'INSTAGRAM' | 'MESSENGER';
 export type MobileView = 'conversations' | 'chat' | 'contact';
@@ -120,6 +122,12 @@ export interface ChatStore {
 	openContactPanel: () => void;
 	openNewConversation: () => void;
 	openSidebar: () => void;
+	receiveConversationMessage: (
+		workspaceUid: string,
+		conversation: ConversationData,
+		message: ConversationMessageData
+	) => void;
+	receiveNewConversation: (workspaceUid: string, conversation: ConversationData) => void;
 	selectConversation: (conversationId: string) => void;
 	startConversation: (contact: ConversationContact) => string;
 	sendMessage: (request: MessageSendRequest) => Promise<void>;
