@@ -209,14 +209,30 @@ export class MessageService {
 						}
 					];
 
-		try {
-			const messageData = await this.create(document, messages);
-
-			return messageData.map(data => new MessageEntity(data));
-		} catch (error) {
+		const createdData = await this.create(document, messages).catch(async error => {
 			await this.deleteUploadedFiles(uploadedFiles);
 			throw error;
+		});
+
+		const conversation = new ConversationEntity(createdData.conversation, document.conversation.entities);
+		const messageEntities = createdData.messages.map(data => new MessageEntity(data));
+		const [conversationObject, messageObjects] = await Promise.all([
+			conversation.toObject({ sign_files: true }),
+			Promise.all(messageEntities.map(message => message.toObject({ sign_files: true })))
+		]);
+
+		for (const message of messageObjects) {
+			SocketModule.emitTo(
+				SocketRooms.conversation(document.conversation.id),
+				ConversationSocketDTO.ReceiveMessage,
+				{
+					conversation: conversationObject,
+					message
+				}
+			);
 		}
+
+		return messageEntities;
 	}
 
 	private async create(document: MessageSendDocument, messages: MessageCreateDocument[]) {
@@ -240,7 +256,7 @@ export class MessageService {
 				}
 			}
 
-			const conversationUpdate = await transaction.conversation.updateMany({
+			const [updatedConversation] = await transaction.conversation.updateManyAndReturn({
 				where: {
 					id: document.conversation.id,
 					workspaceId: document.workspace,
@@ -251,7 +267,7 @@ export class MessageService {
 				}
 			});
 
-			if (conversationUpdate.count === 0) {
+			if (!updatedConversation) {
 				throw new ConversationClosedError();
 			}
 
@@ -278,7 +294,10 @@ export class MessageService {
 				);
 			}
 
-			return createdMessages;
+			return {
+				conversation: updatedConversation,
+				messages: createdMessages
+			};
 		});
 	}
 

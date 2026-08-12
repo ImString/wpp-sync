@@ -18,6 +18,15 @@ export namespace ConversationSocketDTO {
 		data: z.object({}).strict()
 	});
 
+	export const New = new SocketEventSchema({
+		name: 'conversation:new',
+		data: z
+			.object({
+				conversation: z.object({})
+			})
+			.strict()
+	});
+
 	export const ReceiveMessage = new SocketEventSchema({
 		name: 'conversation:receiveMessage',
 		data: z

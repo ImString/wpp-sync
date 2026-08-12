@@ -2,7 +2,11 @@ import { applyPrismaPagination, ConversationStatus, PaginationOptions, prisma, P
 
 import { Provider } from '@/core/index.js';
 
+import { SocketRooms } from '@/modules/index.js';
+import { SocketModule } from '@/modules/modules.js';
+
 import { ContactEntity, ConversationEntity, IntegrationEntity, MemberEntity } from '@/entities/data/index.js';
+import { ConversationSocketDTO } from '@/entities/dtos/sockets/conversation.dto.js';
 import { ContactNotFoundError } from '@/entities/errors/contact/ContactNotFoundError.js';
 import { ConversationNotFoundError } from '@/entities/errors/conversation/ConversationNotFoundError.js';
 import { InvalidConversationParticipantError } from '@/entities/errors/conversation/index.js';
@@ -279,6 +283,11 @@ export class ConversationService {
 				}
 			},
 			include: {
+				workspace: {
+					select: {
+						uid: true
+					}
+				},
 				integration: true,
 				participants: {
 					include: {
@@ -301,6 +310,13 @@ export class ConversationService {
 			}
 		});
 
-		return new ConversationEntity(conversationData);
+		const { workspace, ...conversationFields } = conversationData;
+		const conversation = new ConversationEntity(conversationFields);
+
+		SocketModule.emitTo(SocketRooms.workspace(workspace.uid), ConversationSocketDTO.New, {
+			conversation: await conversation.toObject({ sign_files: true })
+		});
+
+		return conversation;
 	}
 }
