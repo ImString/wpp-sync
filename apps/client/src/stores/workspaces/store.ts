@@ -1,9 +1,12 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { getResponseMessage, workspaceAPI } from '@/utils/api';
 
 import type { Workspace, WorkspaceStore } from './types';
+
+if (typeof window !== 'undefined') {
+	window.localStorage.removeItem('WppSyncWorkspaces');
+}
 
 const getErrorMessage = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
@@ -16,8 +19,8 @@ const upsertWorkspace = (workspaces: Workspace[], workspace: Workspace) => {
 };
 
 export const useWorkspaceStore = create<WorkspaceStore>()(
-	persist(
-		(set, get) => ({
+	(set, get) => {
+		return {
 			workspaces: [],
 			total: 0,
 			listStatus: 'idle',
@@ -102,15 +105,6 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 					error: null,
 					activeWorkspaceUid: null
 				})
-		}),
-		{
-			name: 'WppSyncWorkspaces',
-			storage: createJSONStorage(() => localStorage),
-			version: 2,
-			migrate: () => ({ activeWorkspaceUid: null }),
-			partialize: state => ({
-				activeWorkspaceUid: state.activeWorkspaceUid
-			})
-		}
-	)
+		};
+	}
 );
