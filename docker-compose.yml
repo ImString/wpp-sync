@@ -28,9 +28,63 @@ services:
         networks:
             - chat-network
 
+    redis:
+        image: redis:8-alpine
+        container_name: chat-redis
+        restart: unless-stopped
+
+        environment:
+            REDIS_DB: ${REDIS_DB}
+            REDIS_BULL_DB: ${REDIS_BULL_DB}
+            REDIS_USERNAME: ${REDIS_USERNAME}
+            REDIS_PASSWORD: ${REDIS_PASSWORD}
+            TZ: America/Sao_Paulo
+
+        command:
+            - /bin/sh
+            - -c
+            - |
+                set -- redis-server --appendonly yes
+
+                if [ -n "$${REDIS_USERNAME}" ] && [ "$${REDIS_USERNAME}" != "default" ]; then
+                    set -- "$$@" --user default off
+
+                    if [ -n "$${REDIS_PASSWORD}" ]; then
+                        set -- "$$@" --user "$${REDIS_USERNAME}" on ">$${REDIS_PASSWORD}" "~*" "&*" "+@all"
+                    else
+                        set -- "$$@" --user "$${REDIS_USERNAME}" on nopass "~*" "&*" "+@all"
+                    fi
+                elif [ -n "$${REDIS_PASSWORD}" ]; then
+                    set -- "$$@" --requirepass "$${REDIS_PASSWORD}"
+                fi
+
+                exec "$$@"
+
+        ports:
+            - '${REDIS_HOST}:${REDIS_PORT}:6379'
+
+        volumes:
+            - redis_data:/data
+
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'if [ -n "$${REDIS_USERNAME}" ]; then REDISCLI_AUTH="$${REDIS_PASSWORD}" redis-cli --user "$${REDIS_USERNAME}" ping; elif [ -n "$${REDIS_PASSWORD}" ]; then REDISCLI_AUTH="$${REDIS_PASSWORD}" redis-cli ping; else redis-cli ping; fi'
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 5s
+
+        networks:
+            - chat-network
+
 volumes:
     postgres_data:
         name: chat-postgres-data
+    redis_data:
+        name: chat-redis-data
 
 networks:
     chat-network:
