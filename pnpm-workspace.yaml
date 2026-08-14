@@ -8,7 +8,9 @@ minimumReleaseAgeExclude:
 allowBuilds:
   '@prisma/engines': true
   '@swc/core': true
+  baileys: true
   bcrypt: true
   esbuild: true
   msgpackr-extract: false
   prisma: true
+  protobufjs: true

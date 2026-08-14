@@ -1,5 +1,5 @@
 {
-	"name": "@wppsync/shared",
+	"name": "@wppsync/whatsapp-contracts",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -9,30 +9,16 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js",
 			"default": "./dist/index.js"
-		},
-		"./contact-stages": {
-			"types": "./dist/constants/contact-stages.d.ts",
-			"import": "./dist/constants/contact-stages.js",
-			"default": "./dist/constants/contact-stages.js"
 		}
 	},
-	"files": [
-		"dist"
-	],
+	"files": ["dist"],
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
 		"build:dev": "tsc -p tsconfig.json",
 		"check-types": "tsc -p tsconfig.json --noEmit"
 	},
 	"devDependencies": {
-		"@types/node": "^26.1.1",
 		"@wppsync/config": "workspace:*",
 		"typescript": "^7.0.2"
-	},
-	"dependencies": {
-		"@fastify/cors": "^11.3.0",
-		"class-transformer": "^0.5.1",
-		"class-validator": "^0.14.3",
-		"zod": "^3.24.1"
 	}
 }

@@ -1,4 +1,4 @@
-import { HttpResponse } from '@/modules/router/index.js';
+import { HttpResponse } from '@wppsync/backend';
 
 import { ApplicationError, type ApplicationErrorCode } from '@/entities/errors/index.js';
 

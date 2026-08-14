@@ -16,6 +16,7 @@
 		"@fastify/cors": "^11.3.0",
 		"@fastify/helmet": "^13.1.0",
 		"@fastify/multipart": "^10.1.0",
+		"@wppsync/backend": "workspace:*",
 		"@wppsync/database": "workspace:*",
 		"@wppsync/shared": "workspace:*",
 		"ansicolor": "^2.0.3",

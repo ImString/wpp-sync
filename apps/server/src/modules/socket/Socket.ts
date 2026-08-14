@@ -2,9 +2,7 @@ import { FileSystem, Terminal, Validator, type ValidationErrorDetail } from '@wp
 import { fileURLToPath } from 'node:url';
 import { Server as SocketIOServer, type Socket } from 'socket.io';
 
-import type { Core } from '@/core/Core.js';
-
-import { BaseModule } from '@/modules/Base.js';
+import { BaseModule, type Core } from '@wppsync/backend';
 import { ServerModule } from '@/modules/fastify/Server.js';
 import type { AnySocketEventSchema, SocketEventData } from '@/modules/socket/EventSchema.js';
 import {
@@ -159,6 +157,15 @@ export class SocketModuleBase extends BaseModule {
 		this.initHandlers();
 
 		Terminal.success('SOCKET', `Socket.IO initialized with ${this.listeners.length} listener(s).`);
+	}
+
+	async shutdown(): Promise<void> {
+		if (this.instance) {
+			await new Promise<void>(resolve => this.instance?.close(() => resolve()));
+		}
+
+		this.instance = undefined;
+		this.listeners.length = 0;
 	}
 }
 

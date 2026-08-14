@@ -1,0 +1,19 @@
+{
+	"extends": "@wppsync/config/typescript/base.json",
+	"compilerOptions": {
+		"outDir": "dist",
+		"rootDir": "src",
+		"sourceMap": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules", "dist"],
+	"tsc-alias": {
+		"resolveFullPaths": true,
+		"resolveFullExtension": ".js"
+	}
+}

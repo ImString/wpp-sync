@@ -3,9 +3,7 @@ import ansicolor from 'ansicolor';
 import { type Job, Queue, Worker } from 'bullmq';
 import { fileURLToPath } from 'node:url';
 
-import type { Core } from '@/core/Core.js';
-
-import { BaseModule } from '@/modules/Base.js';
+import { BaseModule, type Core } from '@wppsync/backend';
 import type { AnyBullJobSchema, BullJobData } from '@/modules/bull/JobSchema.js';
 import {
 	getBullListeners,
@@ -164,6 +162,15 @@ export class QueueModuleBase extends BaseModule {
 			'BULLMQ',
 			`Successfully initialized queues. ${ansicolor.cyan(`(${this.jobsInstances.length} queue(s) found)`)} `
 		);
+	}
+
+	async shutdown(): Promise<void> {
+		for (const job of [...this.jobsInstances].reverse()) {
+			await job.worker?.close();
+			await job.queue.close();
+		}
+
+		this.jobsInstances.length = 0;
 	}
 }
 

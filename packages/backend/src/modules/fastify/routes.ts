@@ -1,6 +1,7 @@
 import { Validator } from '@wppsync/shared';
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply, FastifyRequest, FastifySchema } from 'fastify';
 
+import type { RouterState } from '@/index.js';
 import { ProvidersService } from '@/core/services/Providers.js';
 
 import { RouterModule, type RouterModuleOptions } from '@/modules/router/Module.js';
@@ -10,28 +11,7 @@ import type { DefinedController } from '@/modules/router/types/controller.js';
 import type { MountedMiddleware, RouterMiddlewareContext } from '@/modules/router/types/middleware.js';
 import type { MountedRoute } from '@/modules/router/types/route.js';
 
-import type {
-	ConversationEntity,
-	ConversationParticipantEntity,
-	IntegrationEntity,
-	MemberEntity,
-	WorkspaceEntity
-} from '@/entities/data/index.js';
-
-export interface RouterState extends Record<PropertyKey, unknown> {
-	userId: string;
-	widgetAuthentication?: {
-		integration: IntegrationEntity;
-		conversation?: ConversationEntity;
-		participant?: ConversationParticipantEntity;
-	};
-	workspaceAccess?: {
-		workspace: WorkspaceEntity;
-		membership: MemberEntity;
-	};
-}
-
-declare module '@/modules/router/components/RouteSchema.js' {
+declare module '../router/components/RouteSchema.js' {
 	interface RouterGlobalInputs {
 		request: FastifyRequest;
 		response: FastifyReply;
@@ -42,8 +22,6 @@ declare module '@/modules/router/components/RouteSchema.js' {
 export interface FastifyRoutesOptions extends RouterModuleOptions {
 	providers?: ProvidersService;
 }
-
-type ValidationSource = 'body' | 'query' | 'params';
 
 function joinRoutePaths(controllerPath: string, routePath: string): string {
 	const path = [controllerPath, routePath]
@@ -58,9 +36,7 @@ function createContext(request: FastifyRequest, reply: FastifyReply): RouterMidd
 	return {
 		request,
 		response: reply,
-		state: {
-			userId: ''
-		},
+		state: {} as RouterState,
 		body: request.body,
 		query: request.query,
 		params: request.params

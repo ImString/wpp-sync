@@ -8,7 +8,7 @@
 	"scripts": {
 		"start": "turbo start",
 		"build": "turbo build",
-		"dev": "turbo dev",
+		"dev": "turbo dev --filter=!@wppsync/whatsapp-instance",
 		"dev:client": "turbo dev --filter @wppsync/client",
 		"dev:server": "turbo dev --filter @wppsync/server",
 		"db:generate": "turbo db:generate",

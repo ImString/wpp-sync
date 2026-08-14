@@ -1,4 +1,4 @@
-import { Middleware, RouterMiddleware, type RouterMiddlewareContext } from '@/modules/router/index.js';
+import { Middleware, RouterMiddleware, type RouterMiddlewareContext } from '@/modules/index.js';
 
 import { AuthenticationService } from '@/services/index.js';
 

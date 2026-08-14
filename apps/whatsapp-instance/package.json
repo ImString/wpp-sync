@@ -1,0 +1,29 @@
+{
+	"name": "@wppsync/whatsapp-instance",
+	"type": "module",
+	"private": true,
+	"main": "./dist/core/index.js",
+	"scripts": {
+		"build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+		"check-types": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@fastify/helmet": "^13.1.0",
+		"@fastify/multipart": "^10.1.0",
+		"@hapi/boom": "^10.0.1",
+		"@wppsync/backend": "workspace:*",
+		"@wppsync/shared": "workspace:*",
+		"@wppsync/whatsapp-contracts": "workspace:*",
+		"baileys": "7.0.0-rc13",
+		"kafkajs": "^2.2.4",
+		"pino": "^9.7.0",
+		"zod": "^3.24.1"
+	},
+	"devDependencies": {
+		"@types/node": "^26.1.1",
+		"@wppsync/config": "workspace:*",
+		"tsc-alias": "1.8.16",
+		"tsx": "^4.23.1",
+		"typescript": "^7.0.2"
+	}
+}
