@@ -2,7 +2,7 @@
 
 set -Eeuo pipefail
 
-readonly APP_DIR='/opt/wpp-sync'
+readonly APP_DIR='/home/wpp-sync'
 readonly APP_USER='wppsync'
 readonly APP_HOME='/var/lib/wppsync'
 readonly APP_SERVICE='wppsync.service'

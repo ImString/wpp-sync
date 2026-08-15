@@ -1,0 +1,48 @@
+name: Deploy Production
+
+on:
+    push:
+        branches:
+            - main
+
+    workflow_dispatch:
+
+concurrency:
+    group: wppsync-production
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+jobs:
+    deploy:
+        name: Deploy to VPS
+        runs-on: ubuntu-24.04
+        environment: production
+        timeout-minutes: 20
+
+        steps:
+            - name: Configure SSH
+              env:
+                  SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+                  SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+              run: |
+                  install -d -m 700 "$HOME/.ssh"
+                  printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+                  printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+                  chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+
+            - name: Deploy exact commit
+              env:
+                  VPS_HOST: ${{ secrets.VPS_HOST }}
+                  VPS_USER: ${{ secrets.VPS_USER }}
+                  DEPLOY_SHA: ${{ github.sha }}
+              run: |
+                  ssh \
+                    -i "$HOME/.ssh/id_ed25519" \
+                    -o BatchMode=yes \
+                    -o IdentitiesOnly=yes \
+                    -o StrictHostKeyChecking=yes \
+                    -o ConnectTimeout=15 \
+                    "$VPS_USER@$VPS_HOST" \
+                    "deploy $DEPLOY_SHA"
