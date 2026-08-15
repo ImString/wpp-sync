@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
 import type { ConversationData, ConversationMessageData } from '@/utils/api';
-import { apiUrl } from '@/utils/api/config';
+import { socketPath, socketUrl } from '@/utils/api/config';
 
 export type WidgetSocketConnectionState = 'connected' | 'connecting' | 'disconnected' | 'error';
 
@@ -41,9 +41,10 @@ export const useWidgetSocket = ({ workspaceUid, token, onConversationClosed, onM
 			return;
 		}
 
-		const socket = io(apiUrl, {
+		const socket = io(socketUrl, {
 			autoConnect: false,
 			forceNew: true,
+			path: socketPath,
 			transports: ['websocket', 'polling'],
 			auth: {
 				token

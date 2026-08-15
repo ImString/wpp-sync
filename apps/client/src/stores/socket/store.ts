@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 import { create } from 'zustand';
 
-import { apiUrl } from '@/utils/api/config';
+import { socketPath, socketUrl } from '@/utils/api/config';
 
 import { useAuthenticationStore } from '@/stores/auth';
 
@@ -25,8 +25,9 @@ export const useSocketStore = create<SocketStore>()((set, get) => ({
 			currentSocket.disconnect();
 		}
 
-		const socket: ApplicationSocket = io(apiUrl, {
+		const socket: ApplicationSocket = io(socketUrl, {
 			autoConnect: false,
+			path: socketPath,
 			transports: ['websocket', 'polling'],
 			auth: cb => cb({ token: useAuthenticationStore.getState().authToken || authToken })
 		});
