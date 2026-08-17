@@ -9,7 +9,11 @@ import { Provider } from '@/core/index.js';
 import { MemberEntity } from '@/entities/data/workspaces/members.entity.js';
 import { WorkspaceEntity } from '@/entities/data/workspaces/workspace.entity.js';
 import type { WorkspaceDTO } from '@/entities/dtos/workspace/workspace.dto.js';
-import { MemberNotFoundError, WorkspaceNotFoundError } from '@/entities/errors/workspace/index.js';
+import {
+	MemberNotFoundError,
+	WorkspaceLimitReachedError,
+	WorkspaceNotFoundError
+} from '@/entities/errors/workspace/index.js';
 import { MemberAlreadyOwnerError } from '@/entities/errors/workspace/members/MemberAlreadyOwnerError.js';
 
 import { FilesService } from '../FilesService.js';
@@ -138,6 +142,25 @@ export class WorkspaceService {
 	}
 
 	async create(userId: string, document: WorkspaceDTO.CreateDocument, avatar?: MultipartFile) {
+		const existingWorkspacesCount = await prisma.workspace.count({
+			where: {
+				disabled: false,
+				OR: [
+					{ ownerId: userId },
+					{
+						members: {
+							some: {
+								userId,
+								disabled: false
+							}
+						}
+					}
+				]
+			}
+		});
+
+		if (existingWorkspacesCount >= 2) throw new WorkspaceLimitReachedError();
+
 		const sqids = new Sqids();
 		const uid = sqids.encode([Date.now(), Math.floor(Math.random() * 1000)]);
 		let uploadedAvatar;

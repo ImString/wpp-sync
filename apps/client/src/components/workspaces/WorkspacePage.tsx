@@ -127,6 +127,7 @@ export const WorkspacePage: React.FC = () => {
 		if (!normalizedSearch) return workspaces;
 		return workspaces.filter(workspace => normalizeSearch(workspace.name).includes(normalizedSearch));
 	}, [search, workspaces]);
+	const workspaceLimitReached = totalWorkspaces >= 2;
 
 	const loadReceivedInvites = useCallback(async (signal?: AbortSignal) => {
 		setReceivedInvitesStatus('loading');
@@ -408,6 +409,8 @@ export const WorkspacePage: React.FC = () => {
 							<button
 								className={workspacePrimaryButtonClassName}
 								type="button"
+								disabled={workspaceLimitReached}
+								title={workspaceLimitReached ? 'Sua conta atingiu o limite de duas áreas.' : undefined}
 								onClick={() => setCreateModalOpen(true)}>
 								<MdAdd aria-hidden="true" />
 								Nova área
@@ -436,7 +439,7 @@ export const WorkspacePage: React.FC = () => {
 								<WorkspaceCard key={workspace.id} workspace={workspace} onSelect={selectWorkspace} />
 							))}
 
-							{!search && (
+							{!search && !workspaceLimitReached && (
 								<button
 									className="relative cursor-pointer flex min-h-34.5 min-w-0 flex-col items-center justify-center gap-2 rounded-[17px] border border-dashed border-(--workspace-border) bg-(--workspace-surface-muted) p-3.75 text-center text-(--workspace-muted) transition duration-150 hover:-translate-y-0.75 hover:border-brand-500 hover:bg-(--workspace-surface-hover) hover:text-(--workspace-text) max-[680px]:min-h-36.5"
 									type="button"
