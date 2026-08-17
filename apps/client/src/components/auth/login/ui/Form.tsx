@@ -1,10 +1,12 @@
 import { Form, Formik } from 'formik';
 import type { FormikHelpers } from 'formik';
+import { useState } from 'react';
 import { MdLockOutline, MdOutlineEmail } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
 import { authAPI, getResponseErrors, getResponseMessage, renewAuthToken } from '@/utils/api';
+import { saveGoogleOAuthRequest } from '@/utils/auth';
 
 import { Button } from '@/components/buttons';
 import { TextInput } from '@/components/inputs';
@@ -26,6 +28,7 @@ export const LoginForm: React.FC = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const toast = useAuthToast();
+	const [googleLoading, setGoogleLoading] = useState(false);
 	const { setCurrentUser, clearAuthentication } = useAuthenticationStore(
 		useShallow(state => ({
 			setCurrentUser: state.setCurrentUser,
@@ -33,6 +36,26 @@ export const LoginForm: React.FC = () => {
 		}))
 	);
 	const locationState = location.state as LoginLocationState | null;
+
+	const handleGoogleLogin = async () => {
+		setGoogleLoading(true);
+
+		try {
+			const response = await authAPI.getGoogleAuthUrl();
+
+			if (!response.success || !response.data?.url || !response.data.state) {
+				toast.showToast(getResponseMessage(response, 'Não foi possível iniciar o login com Google.'), 'error');
+				setGoogleLoading(false);
+				return;
+			}
+
+			saveGoogleOAuthRequest(response.data.state, locationState?.from);
+			window.location.assign(response.data.url);
+		} catch {
+			toast.showToast('Não foi possível conectar ao servidor. Tente novamente.', 'error');
+			setGoogleLoading(false);
+		}
+	};
 
 	const handleSubmit = async (values: LoginFormData, helpers: FormikHelpers<LoginFormData>) => {
 		try {
@@ -108,7 +131,9 @@ export const LoginForm: React.FC = () => {
 			</Formik>
 
 			<AuthDivider>ou continue com</AuthDivider>
-			<AuthGoogleButton>Entrar com Google</AuthGoogleButton>
+			<AuthGoogleButton onClick={handleGoogleLogin} loading={googleLoading}>
+				Entrar com Google
+			</AuthGoogleButton>
 			<AuthSwitchLink message="Ainda não possui uma conta?" label="Criar conta" to="/auth/register" />
 			<AuthToast message={toast.message} isVisible={toast.isVisible} variant={toast.variant} />
 		</>

@@ -16,6 +16,8 @@ import type { AuthenticationTokenPayload, AuthenticationTokenType } from '@/enti
 export class AuthenticationService {
 	private bcryptCost: number = 12;
 	private secretToken = process.env.JWT_SECRET || '';
+	private tokenIssuer = process.env.JWT_ISSUER || process.env.CLIENT_FULL_URL || 'WppSync';
+	private tokenAudience = process.env.JWT_AUDIENCE || 'WPPSession';
 
 	async login(document: { email: string; password: string }) {
 		const userFromEmail = await prisma.user.findFirst({
@@ -30,9 +32,13 @@ export class AuthenticationService {
 		const isPasswordValid = await bcrypt.compare(document.password, userFromEmail.password);
 		if (!isPasswordValid) throw new InvalidCredentialsError();
 
+		return this.createSession(userFromEmail.id);
+	}
+
+	createSession(userId: string) {
 		return {
-			token: this.generateToken(userFromEmail.id, 'auth'),
-			refreshToken: this.generateToken(userFromEmail.id, 'refresh')
+			token: this.generateToken(userId, 'auth'),
+			refreshToken: this.generateToken(userId, 'refresh')
 		};
 	}
 
@@ -72,8 +78,8 @@ export class AuthenticationService {
 		try {
 			payload = jwt.verify(token, this.secretToken, {
 				algorithms: ['HS256'],
-				issuer: process.env.JWT_ISSUER,
-				audience: process.env.JWT_AUDIENCE
+				issuer: this.tokenIssuer,
+				audience: this.tokenAudience
 			});
 		} catch {
 			throw new InvalidTokenError();
@@ -132,8 +138,8 @@ export class AuthenticationService {
 			},
 			this.secretToken,
 			{
-				issuer: process.env.CLIENT_FULL_URL,
-				audience: 'WPPSession',
+				issuer: this.tokenIssuer,
+				audience: this.tokenAudience,
 				algorithm: 'HS256',
 				header: { alg: 'HS256', typ: `${tagToken}-jwt` },
 				expiresIn

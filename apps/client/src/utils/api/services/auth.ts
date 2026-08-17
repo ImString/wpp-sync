@@ -9,7 +9,23 @@ export interface LoginRequest {
 }
 
 export interface LoginData {
+	token: string;
 	refreshToken: string;
+}
+
+export interface GoogleAuthUrlData {
+	url: string;
+	state: string;
+}
+
+export interface GoogleLoginRequest {
+	code?: string;
+	token?: string;
+	state: string;
+}
+
+export interface GoogleLoginData extends LoginData {
+	isNewIntegration: boolean;
 }
 
 export interface RegisterRequest {
@@ -27,6 +43,16 @@ export const authAPI = {
 
 	register: async (data: RegisterRequest) => {
 		const response = await mainAPI.post<ServerResponse<AuthUser>>('/auth/register', data);
+		return response.data;
+	},
+
+	getGoogleAuthUrl: async () => {
+		const response = await mainAPI.get<ServerResponse<GoogleAuthUrlData>>('/auth/google/url');
+		return response.data;
+	},
+
+	googleLogin: async (data: GoogleLoginRequest) => {
+		const response = await mainAPI.post<ServerResponse<GoogleLoginData>>('/auth/google/login', data);
 		return response.data;
 	},
 

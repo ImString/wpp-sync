@@ -38,10 +38,7 @@ export class AuthenticationGoogleService {
 	cachePrefix = 'google:auth';
 
 	async generateAuthUrl(): Promise<GoogleAuthAdapterUrlData> {
-		const authUrlData = this.generateUrl('offline', [
-			'https://www.googleapis.com/auth/userinfo.profile',
-			'https://www.googleapis.com/auth/userinfo.email'
-		]);
+		const authUrlData = this.generateUrl('online', ['openid', 'email', 'profile']);
 
 		await RedisModule.client?.setex(`${this.cachePrefix}:${authUrlData.state}`, 15 * 60, 'true');
 
@@ -71,49 +68,54 @@ export class AuthenticationGoogleService {
 
 		const payload = ticket.getPayload();
 
-		if (!payload) throw new InvalidGoogleIdTokenPayloadError();
+		if (!payload?.sub || !payload.email) throw new InvalidGoogleIdTokenPayloadError();
 		if (!payload.email_verified) throw new GoogleEmailNotVerifiedError();
 
 		let user: UserEntity | null = null;
-		let finalEmail = payload.email;
 
 		const existingIntegration = await prisma.userIntegration.findFirst({
 			where: {
 				providerId: payload.sub,
-				provider: UserIntegrationType.GOOGLE
+				type: UserIntegrationType.GOOGLE
 			}
 		});
 
 		if (existingIntegration) {
-			user = await this.userService.get({ id: existingIntegration.userId });
+			user = await this.userService.get({ id: existingIntegration.userId }).catch(() => null);
 
 			if (!user) throw new GoogleIntegrationUserNotFoundError();
 
 			return { user, isNewIntegration: false };
 		}
 
-		if (finalEmail) {
-			const emailUser = await this.userService.get({ email: finalEmail });
-			if (emailUser) {
-				const hasOtherIntegration = await prisma.userIntegration.findFirst({
-					where: {
-						userId: emailUser.id,
-						type: UserIntegrationType.GOOGLE
+		const emailUser = await this.userService.get({ email: payload.email }).catch(() => null);
+		if (emailUser) {
+			const emailIntegration = await prisma.userIntegration.findFirst({
+				where: {
+					userId: emailUser.id,
+					type: UserIntegrationType.GOOGLE
+				}
+			});
+
+			if (emailIntegration) {
+				await prisma.userIntegration.update({
+					where: { id: emailIntegration.id },
+					data: {
+						providerId: payload.sub,
+						providerName: payload.name || emailIntegration.providerName
 					}
 				});
-				if (hasOtherIntegration) {
-					user = null;
-					finalEmail = undefined;
-				} else {
-					user = emailUser;
-				}
+
+				return { user: emailUser, isNewIntegration: false };
 			}
+
+			user = emailUser;
 		}
 
 		if (!user) {
 			user = await this.userService.create({
-				name: payload.name!,
-				email: finalEmail!
+				name: payload.name || payload.email.split('@')[0],
+				email: payload.email
 			});
 		}
 
@@ -129,8 +131,8 @@ export class AuthenticationGoogleService {
 
 	private createClient(): OAuth2Client {
 		const GoogleAuthClient = new OAuth2Client({
-			client_id: process.env.GOOGLE_CLIENT_ID,
-			client_secret: process.env.GOOGLE_CLIENT_SECRET,
+			clientId: process.env.GOOGLE_CLIENT_ID,
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
 			redirectUri: `${process.env.CLIENT_FULL_URL}/auth/google/callback`
 		});
 
@@ -141,13 +143,15 @@ export class AuthenticationGoogleService {
 		return randomUUID();
 	}
 
-	private generateUrl(access_type: string, scope: string[]): GoogleAuthAdapterUrlData {
+	private generateUrl(access_type: 'online' | 'offline', scope: string[]): GoogleAuthAdapterUrlData {
 		const state = this.generateStateCode();
 
 		const client = this.createClient();
 		const url = client.generateAuthUrl({
 			access_type,
-			scope
+			scope,
+			state,
+			prompt: 'select_account'
 		});
 
 		return { url, state };

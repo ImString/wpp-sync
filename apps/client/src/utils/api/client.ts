@@ -37,6 +37,7 @@ mainAPI.interceptors.response.use(async response => {
 	const responseData = response.data as ServerResponse;
 	const isPublicAuthenticationRequest =
 		config.url?.startsWith('/widget/') ||
+		config.url?.startsWith('/auth/google/') ||
 		['/auth/login', '/auth/register', '/auth/logout'].some(route => config.url?.endsWith(route));
 
 	if (isPublicAuthenticationRequest) return response;

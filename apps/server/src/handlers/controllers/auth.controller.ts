@@ -45,12 +45,17 @@ export class AuthController {
 
 	@Post('/google/login', AuthenticationDTO.OAuthGoogleLogin)
 	async googleLogin(context: typeof AuthenticationDTO.OAuthGoogleLogin.context) {
-		const output = await this.authenticationGoogleService.loginWithGoogle({
+		const { user, isNewIntegration } = await this.authenticationGoogleService.loginWithGoogle({
 			code: context.body.code,
 			token: context.body.token,
 			state: context.body.state
 		});
+		const session = this.authenticationService.createSession(user.id);
 
-		return HttpResponse.success(output);
+		return HttpResponse.success({
+			...session,
+			isNewIntegration,
+			user: await user.toObject()
+		});
 	}
 }
