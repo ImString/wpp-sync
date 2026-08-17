@@ -1,12 +1,12 @@
 import { Core } from '@wppsync/backend';
 
-import { BullModule, ServerModule, SocketModule } from '../modules/modules.js';
+import { BullModule, RedisModule, ServerModule, SocketModule } from '../modules/modules.js';
 
 export * from '@wppsync/backend';
 
 const init = async () => {
 	const core = new Core({
-		modules: [BullModule, ServerModule, SocketModule]
+		modules: [BullModule, RedisModule, ServerModule, SocketModule]
 	});
 
 	await core.init();

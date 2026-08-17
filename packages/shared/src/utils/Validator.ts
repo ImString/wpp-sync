@@ -9,7 +9,11 @@ type ClassConstructor<T = any> = { new (...args: any[]): T };
 
 export type ValidatorSchema = ZodLikeSchema | ClassConstructor;
 
-export type InferSchemaType<T> = T extends z.ZodTypeAny ? z.output<T> : T extends ClassConstructor<infer U> ? U : never;
+export type InferSchemaType<T> = T extends z.ZodType
+	? z.output<T>
+	: T extends ClassConstructor<infer U>
+		? U
+		: never;
 
 export interface ValidationErrorDetail {
 	path: string;

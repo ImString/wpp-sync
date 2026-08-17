@@ -26,6 +26,7 @@ export const AuthRoutes = () => {
 					</RouteManagerRoute>
 				}
 			/>
+			<Route path="/google/callback" />
 			<Route path="*" element={<Navigate to="/auth/login" replace />} />
 		</Routes>
 	);

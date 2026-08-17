@@ -1,6 +1,6 @@
-import { Controller, HttpResponse, Post } from '@/modules/index.js';
+import { Controller, Get, HttpResponse, Post } from '@/modules/index.js';
 
-import { AuthenticationService } from '@/services/index.js';
+import { AuthenticationService, AuthenticationGoogleService } from '@/services/index.js';
 
 import { AuthenticationDTO } from '@/entities/dtos/authentication.dto.js';
 
@@ -8,7 +8,10 @@ import { AuthenticationDTO } from '@/entities/dtos/authentication.dto.js';
 	path: '/auth'
 })
 export class AuthController {
-	constructor(private readonly authenticationService: AuthenticationService) {}
+	constructor(
+		private readonly authenticationService: AuthenticationService,
+		private readonly authenticationGoogleService: AuthenticationGoogleService
+	) {}
 
 	@Post('/login', AuthenticationDTO.Login)
 	async login(context: typeof AuthenticationDTO.Login.context) {
@@ -32,5 +35,22 @@ export class AuthController {
 		const session = this.authenticationService.refreshToken(refresh_token);
 
 		return HttpResponse.success(session);
+	}
+
+	@Get('/google/url')
+	async getGoogleAuthUrl() {
+		const response = await this.authenticationGoogleService.generateAuthUrl();
+		return HttpResponse.success(response);
+	}
+
+	@Post('/google/login', AuthenticationDTO.OAuthGoogleLogin)
+	async googleLogin(context: typeof AuthenticationDTO.OAuthGoogleLogin.context) {
+		const output = await this.authenticationGoogleService.loginWithGoogle({
+			code: context.body.code,
+			token: context.body.token,
+			state: context.body.state
+		});
+
+		return HttpResponse.success(output);
 	}
 }

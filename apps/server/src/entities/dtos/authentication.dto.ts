@@ -27,4 +27,12 @@ export namespace AuthenticationDTO {
 			refresh_token: z.string()
 		})
 	});
+
+	export const OAuthGoogleLogin = new RouteSchema({
+		body: z.object({
+			code: z.string().optional(),
+			token: z.string().optional(),
+			state: z.uuid()
+		})
+	});
 }

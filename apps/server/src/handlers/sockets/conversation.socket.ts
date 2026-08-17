@@ -3,8 +3,7 @@ import { Socket } from 'socket.io';
 
 import { SocketHandler, SocketListener, SocketRooms } from '@/modules/index.js';
 
-import { AuthenticationService } from '@/services/AuthenticationService.js';
-import { ConversationService, WorkspaceService } from '@/services/index.js';
+import { AuthenticationService, ConversationService, WorkspaceService } from '@/services/index.js';
 
 import { ConversationSocketDTO } from '@/entities/dtos/sockets/conversation.dto.js';
 import { InvalidTokenError } from '@/entities/errors/authentication/InvalidTokenError.js';

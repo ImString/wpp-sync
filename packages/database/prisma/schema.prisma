@@ -32,16 +32,35 @@ model User {
     avatar     Files?  @relation(fields: [filesId], references: [id])
     phone      String?
     enterprise String?
-    password   String  @map("password_hash")
+    password   String? @map("password_hash")
 
-    createdAt  DateTime    @default(now()) @map("created_at")
-    updatedAt  DateTime    @updatedAt @map("updated_at")
-    filesId    String?
-    members    Member[]
-    invites    Invite[]
-    workspaces Workspace[]
+    createdAt        DateTime          @default(now()) @map("created_at")
+    updatedAt        DateTime          @updatedAt @map("updated_at")
+    filesId          String?
+    members          Member[]
+    invites          Invite[]
+    workspaces       Workspace[]
+    userIntegrations UserIntegration[]
 
     @@map("users")
+}
+
+enum UserIntegrationType {
+    GOOGLE
+}
+
+model UserIntegration {
+    id String @id @default(cuid())
+
+    user User                @relation(fields: [userId], references: [id])
+    type UserIntegrationType
+
+    providerId   String
+    providerName String
+    userId       String
+
+    @@unique([userId])
+    @@map("user_integrations")
 }
 
 enum Role {

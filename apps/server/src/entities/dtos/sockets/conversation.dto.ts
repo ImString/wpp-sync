@@ -22,7 +22,7 @@ export namespace ConversationSocketDTO {
 		name: 'conversation:new',
 		data: z
 			.object({
-				conversation: z.object({})
+				conversation: z.looseObject({})
 			})
 			.strict()
 	});
@@ -40,8 +40,8 @@ export namespace ConversationSocketDTO {
 		name: 'conversation:receiveMessage',
 		data: z
 			.object({
-				conversation: z.object({}),
-				message: z.object({})
+				conversation: z.looseObject({}),
+				message: z.looseObject({})
 			})
 			.strict()
 	});

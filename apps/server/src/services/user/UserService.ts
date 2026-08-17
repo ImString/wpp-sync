@@ -8,11 +8,12 @@ import { UserEntity } from '@/entities/data/others/user.entity.js';
 import type { UserDTO } from '@/entities/dtos/user.dto.js';
 import { UserNotFoundError } from '@/entities/errors/user/index.js';
 
-import { FilesService } from './FilesService.js';
+import { FilesService } from '../FilesService.js';
 
 export type UserServiceWhereInput = Prisma.UserWhereInput;
 export type UserServiceWhereOptions = {
 	id?: string;
+	email?: string;
 
 	include?: Prisma.UserInclude;
 };
@@ -21,12 +22,26 @@ export type UserServiceWhereOptions = {
 export class UserService {
 	private mountWhere(options: UserServiceWhereOptions): UserServiceWhereInput {
 		return {
-			...(options.id && { id: options.id })
+			...(options.id && { id: options.id }),
+			...(options.email && { email: options.email })
 		};
 	}
 
 	async get(options: UserServiceWhereOptions): Promise<UserEntity> {
 		return await this.getEntity(options);
+	}
+
+	async create(document: { name: string; email: string }) {
+		const user = await prisma.user.create({
+			data: {
+				name: document.name,
+				email: document.email
+			}
+		});
+
+		const userEntity = new UserEntity(user);
+
+		return userEntity;
 	}
 
 	async updateProfile(id: string, document: UserDTO.UpdateProfileDocument, avatar?: MultipartFile) {
