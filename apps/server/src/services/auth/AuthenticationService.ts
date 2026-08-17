@@ -5,11 +5,12 @@ import jwt, { type SignOptions } from 'jsonwebtoken';
 import { Provider } from '@/core/index.js';
 
 import {
+	CurrentPasswordIncorrectError,
 	InvalidCredentialsError,
 	InvalidTokenError,
 	SocialLoginRequiredError
 } from '@/entities/errors/authentication/index.js';
-import { UserEmailAlreadyExistsError } from '@/entities/errors/user/index.js';
+import { UserEmailAlreadyExistsError, UserNotFoundError } from '@/entities/errors/user/index.js';
 import type { AuthenticationTokenPayload, AuthenticationTokenType } from '@/entities/types/authentication.js';
 
 @Provider()
@@ -70,6 +71,26 @@ export class AuthenticationService {
 				updatedAt: true
 			}
 		});
+	}
+
+	async updatePassword(userId: string, document: { currentPassword?: string; newPassword: string }) {
+		const user = await prisma.user.findUnique({ where: { id: userId } });
+		if (!user) throw new UserNotFoundError();
+
+		if (user.password) {
+			const isCurrentPasswordValid =
+				Boolean(document.currentPassword) && (await bcrypt.compare(document.currentPassword!, user.password));
+
+			if (!isCurrentPasswordValid) throw new CurrentPasswordIncorrectError();
+		}
+
+		const passwordHash = await bcrypt.hash(document.newPassword, this.bcryptCost);
+		await prisma.user.update({
+			where: { id: userId },
+			data: { password: passwordHash }
+		});
+
+		return { hasPassword: true };
 	}
 
 	verifyToken(token: string, expectedTokenType?: AuthenticationTokenType): AuthenticationTokenPayload {

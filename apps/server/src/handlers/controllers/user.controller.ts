@@ -1,6 +1,6 @@
 import { Controller, Get, HttpResponse, Put, type RouteSchemaContext } from '@/modules/index.js';
 
-import { UserService } from '@/services/index.js';
+import { AuthenticationService, UserService } from '@/services/index.js';
 
 import { UserDTO } from '@/entities/dtos/user.dto.js';
 
@@ -11,7 +11,10 @@ import { AuthenticationMiddleware } from '../middlewares/authentication.js';
 	middlewares: [AuthenticationMiddleware]
 })
 export class UserController {
-	constructor(private readonly userService: UserService) {}
+	constructor(
+		private readonly userService: UserService,
+		private readonly authenticationService: AuthenticationService
+	) {}
 
 	@Get('/me')
 	async getProfile(context: RouteSchemaContext) {
@@ -30,5 +33,12 @@ export class UserController {
 		const user = await this.userService.updateProfile(userId, form.fields, avatar);
 
 		return HttpResponse.success(user);
+	}
+
+	@Put('/password', UserDTO.UpdatePassword)
+	async updatePassword(context: typeof UserDTO.UpdatePassword.context) {
+		const result = await this.authenticationService.updatePassword(context.state.userId, context.body);
+
+		return HttpResponse.success(result);
 	}
 }

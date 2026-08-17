@@ -23,6 +23,7 @@ export interface UserEntityObject {
 	avatarId?: string | null;
 	avatar?: FileEntityObject;
 	avatarUrl?: string | null;
+	hasPassword: boolean;
 	createdAt?: Date;
 	updatedAt?: Date;
 }
@@ -56,6 +57,7 @@ export class UserEntity extends Entity<UserEntityRaw, UserEntityExtra, UserEntit
 			...(this.data.phone && { phone: this.data.phone }),
 			...(this.data.enterprise && { enterprise: this.data.enterprise }),
 			avatarUrl: avatar?.url ?? undefined,
+			hasPassword: Boolean(this.data.password),
 			createdAt: this.data.createdAt,
 			updatedAt: this.data.updatedAt
 		};

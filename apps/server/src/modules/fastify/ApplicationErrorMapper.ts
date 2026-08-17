@@ -3,6 +3,7 @@ import { HttpResponse } from '@wppsync/backend';
 import { ApplicationError, type ApplicationErrorCode } from '@/entities/errors/index.js';
 
 const APPLICATION_ERROR_STATUS = {
+	CURRENT_PASSWORD_INCORRECT: 400,
 	EMAIL_NOT_VERIFIED: 401,
 	EXPIRED_GOOGLE_AUTH_STATE: 401,
 	GOOGLE_AUTH_CREDENTIALS_REQUIRED: 400,

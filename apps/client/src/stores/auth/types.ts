@@ -8,6 +8,7 @@ export interface AuthUser {
 	phone?: string | null;
 	enterprise?: string | null;
 	role?: string;
+	hasPassword: boolean;
 }
 
 export interface AuthenticationStore {

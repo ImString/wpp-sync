@@ -30,5 +30,14 @@ export namespace UserDTO {
 		}
 	});
 
+	export const UpdatePassword = new RouteSchema({
+		body: z
+			.object({
+				currentPassword: z.string().min(1).max(64).optional(),
+				newPassword: z.string().min(8).max(64)
+			})
+			.strict()
+	});
+
 	export type UpdateProfileDocument = z.infer<typeof UpdateProfileFields>;
 }

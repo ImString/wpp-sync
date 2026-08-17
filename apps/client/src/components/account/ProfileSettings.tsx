@@ -17,6 +17,7 @@ import { Button } from '@/components/buttons';
 import { Image } from '@/components/shared/Image';
 import { useAuthenticationStore } from '@/stores';
 
+import { PasswordSettings } from './PasswordSettings';
 import type { SettingsFeedback } from './types';
 
 interface ProfileSettingsProps {
@@ -190,7 +191,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 
 	return (
 		<div className="grid items-start gap-5 wide:grid-cols-[minmax(0,1fr)_270px]">
-			<section className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-panel dark:border-[#223138] dark:bg-[#0e181e]">
+			<section className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-panel dark:border-[#223138] dark:bg-[#0e181e] wide:col-start-1 wide:row-start-1">
 				<header className="border-b border-slate-200 px-5 py-4.5 dark:border-[#223138] mobile:px-6">
 					<h2 className="m-0 text-sm font-bold text-slate-900 dark:text-white">Informações pessoais</h2>
 					<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -345,7 +346,9 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onFeedback }) 
 				</form>
 			</section>
 
-			<aside className="grid gap-4">
+			<PasswordSettings onFeedback={onFeedback} />
+
+			<aside className="grid gap-4 wide:col-start-2 wide:row-span-2 wide:row-start-1">
 				<section className="overflow-hidden rounded-[20px] border border-emerald-900/40 bg-[radial-gradient(circle_at_top_right,rgba(37,211,102,.17),transparent_46%),linear-gradient(145deg,#073b32,#04251f)] p-5 text-emerald-50 shadow-panel">
 					<span className="text-[9px] font-extrabold uppercase tracking-[.12em] text-brand-400">
 						Prévia do perfil
