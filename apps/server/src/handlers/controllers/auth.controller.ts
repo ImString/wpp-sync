@@ -1,6 +1,6 @@
 import { Controller, Get, HttpResponse, Post } from '@/modules/index.js';
 
-import { AuthenticationService, AuthenticationGoogleService } from '@/services/index.js';
+import { AuthenticationService, AuthenticationGoogleService, TurnstileService } from '@/services/index.js';
 
 import { AuthenticationDTO } from '@/entities/dtos/authentication.dto.js';
 
@@ -10,12 +10,14 @@ import { AuthenticationDTO } from '@/entities/dtos/authentication.dto.js';
 export class AuthController {
 	constructor(
 		private readonly authenticationService: AuthenticationService,
-		private readonly authenticationGoogleService: AuthenticationGoogleService
+		private readonly authenticationGoogleService: AuthenticationGoogleService,
+		private readonly turnstileService: TurnstileService
 	) {}
 
 	@Post('/login', AuthenticationDTO.Login)
 	async login(context: typeof AuthenticationDTO.Login.context) {
-		const { email, password } = context.body;
+		const { email, password, turnstileToken } = context.body;
+		await this.turnstileService.verify({ token: turnstileToken, action: 'login', remoteIp: context.request.ip });
 		const session = await this.authenticationService.login({ email, password });
 
 		return HttpResponse.success(session);
@@ -23,10 +25,16 @@ export class AuthController {
 
 	@Post('/register', AuthenticationDTO.Register)
 	async register(context: typeof AuthenticationDTO.Register.context) {
-		const { name, email, phone, password } = context.body;
+		const { name, email, phone, password, turnstileToken } = context.body;
+		await this.turnstileService.verify({ token: turnstileToken, action: 'register', remoteIp: context.request.ip });
 		const user = await this.authenticationService.register({ name, email, phone, password });
 
 		return HttpResponse.created(user);
+	}
+
+	@Get('/turnstile/config')
+	async getTurnstileConfiguration() {
+		return HttpResponse.success(this.turnstileService.getPublicConfiguration());
 	}
 
 	@Post('/refresh-token', AuthenticationDTO.Refresh)
