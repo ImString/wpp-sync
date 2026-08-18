@@ -1,6 +1,6 @@
 import { Form, Formik } from 'formik';
 import type { FormikHelpers } from 'formik';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { MdLockOutline, MdOutlineEmail } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
@@ -13,7 +13,8 @@ import { TextInput } from '@/components/inputs';
 import { useAuthenticationStore } from '@/stores';
 
 import { AuthToast } from '../../feedback';
-import { AuthDivider, AuthGoogleButton, AuthSwitchLink } from '../../form';
+import { AuthDivider, AuthGoogleButton, AuthSwitchLink, AuthTurnstile } from '../../form';
+import type { AuthTurnstileHandle } from '../../form';
 import { useAuthToast } from '../../hooks';
 import { LoginFormSchema } from '../model/schema';
 import type { LoginFormData } from '../model/types';
@@ -28,6 +29,8 @@ export const LoginForm: React.FC = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const toast = useAuthToast();
+	const turnstileRef = useRef<AuthTurnstileHandle>(null);
+	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 	const [googleLoading, setGoogleLoading] = useState(false);
 	const { setCurrentUser, clearAuthentication } = useAuthenticationStore(
 		useShallow(state => ({
@@ -58,8 +61,19 @@ export const LoginForm: React.FC = () => {
 	};
 
 	const handleSubmit = async (values: LoginFormData, helpers: FormikHelpers<LoginFormData>) => {
+		if (!turnstileToken) {
+			toast.showToast('Conclua a verificação de segurança para continuar.', 'error');
+			return;
+		}
+
+		let completed = false;
+
 		try {
-			const response = await authAPI.login({ email: values.email, password: values.password });
+			const response = await authAPI.login({
+				email: values.email,
+				password: values.password,
+				turnstileToken
+			});
 
 			if (!response.success || !response.data?.refreshToken) {
 				const errors = getResponseErrors(response);
@@ -88,10 +102,13 @@ export const LoginForm: React.FC = () => {
 
 			setCurrentUser(userResponse.data);
 			toast.showToast('Login realizado com sucesso.');
+			completed = true;
 			navigate(locationState?.from || '/', { replace: true });
 		} catch {
 			clearAuthentication();
 			toast.showToast('Não foi possível conectar ao servidor. Tente novamente.', 'error');
+		} finally {
+			if (!completed) turnstileRef.current?.reset();
 		}
 	};
 
@@ -123,7 +140,12 @@ export const LoginForm: React.FC = () => {
 						/>
 
 						<LoginOptions />
-						<Button type="submit" className="submit-button" loading={formikProps.isSubmitting}>
+						<AuthTurnstile ref={turnstileRef} action="login" onTokenChange={setTurnstileToken} />
+						<Button
+							type="submit"
+							className="submit-button"
+							loading={formikProps.isSubmitting}
+							disabled={!turnstileToken}>
 							Entrar
 						</Button>
 					</Form>

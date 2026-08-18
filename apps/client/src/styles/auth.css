@@ -650,6 +650,60 @@ html.dark .checkbox-label a {
 	fill: currentColor;
 }
 
+.auth-turnstile {
+	display: grid;
+	min-width: 0;
+	gap: 6px;
+}
+
+.auth-turnstile__widget {
+	display: flex;
+	width: 100%;
+	min-height: 65px;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	border-radius: 9px;
+}
+
+.auth-turnstile__widget > div,
+.auth-turnstile__widget iframe {
+	max-width: 100%;
+}
+
+.auth-turnstile__status {
+	display: flex;
+	min-height: 14px;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+	color: var(--auth-muted);
+	font-size: 10px;
+	text-align: center;
+}
+
+.auth-turnstile.is-verified .auth-turnstile__status {
+	color: var(--auth-brand-700);
+}
+
+html.dark .auth-turnstile.is-verified .auth-turnstile__status {
+	color: var(--auth-brand-400);
+}
+
+.auth-turnstile.is-error .auth-turnstile__status {
+	color: var(--auth-danger);
+}
+
+.auth-turnstile__status button {
+	padding: 0;
+	color: inherit;
+	background: transparent;
+	font-size: inherit;
+	font-weight: 750;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
 .auth-divider {
 	display: grid;
 	grid-template-columns: 1fr auto 1fr;

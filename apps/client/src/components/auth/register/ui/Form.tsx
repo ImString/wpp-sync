@@ -1,5 +1,6 @@
 import { Form, Formik } from 'formik';
 import type { FormikHelpers } from 'formik';
+import { useRef, useState } from 'react';
 import { MdLockOutline, MdOutlineBusiness, MdOutlineEmail, MdOutlinePerson } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,7 +10,8 @@ import { Button } from '@/components/buttons';
 import { TextInput } from '@/components/inputs';
 
 import { AuthToast } from '../../feedback';
-import { AuthSwitchLink } from '../../form';
+import { AuthSwitchLink, AuthTurnstile } from '../../form';
+import type { AuthTurnstileHandle } from '../../form';
 import { useAuthToast } from '../../hooks';
 import { RegisterFormSchema } from '../model/schema';
 import type { RegisterFormData } from '../model/types';
@@ -19,14 +21,24 @@ import { RegisterTerms } from './Terms';
 export const RegisterForm: React.FC = () => {
 	const navigate = useNavigate();
 	const toast = useAuthToast();
+	const turnstileRef = useRef<AuthTurnstileHandle>(null);
+	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
 	const handleSubmit = async (values: RegisterFormData, helpers: FormikHelpers<RegisterFormData>) => {
+		if (!turnstileToken) {
+			toast.showToast('Conclua a verificação de segurança para continuar.', 'error');
+			return;
+		}
+
+		let completed = false;
+
 		try {
 			const response = await authAPI.register({
 				name: values.name,
 				company: values.company || undefined,
 				email: values.email,
-				password: values.password
+				password: values.password,
+				turnstileToken
 			});
 
 			if (!response.success) {
@@ -44,9 +56,12 @@ export const RegisterForm: React.FC = () => {
 
 			toast.showToast('Conta criada. Agora faça seu login.');
 			await new Promise(resolve => window.setTimeout(resolve, 650));
+			completed = true;
 			navigate('/auth/login', { replace: true, state: { registeredEmail: values.email } });
 		} catch {
 			toast.showToast('Não foi possível conectar ao servidor. Tente novamente.', 'error');
+		} finally {
+			if (!completed) turnstileRef.current?.reset();
 		}
 	};
 
@@ -114,7 +129,12 @@ export const RegisterForm: React.FC = () => {
 						</div>
 
 						<RegisterTerms />
-						<Button type="submit" className="submit-button" loading={formikProps.isSubmitting}>
+						<AuthTurnstile ref={turnstileRef} action="register" onTokenChange={setTurnstileToken} />
+						<Button
+							type="submit"
+							className="submit-button"
+							loading={formikProps.isSubmitting}
+							disabled={!turnstileToken}>
 							Criar minha conta
 						</Button>
 					</Form>

@@ -6,6 +6,7 @@ import type { ServerResponse } from '../types';
 export interface LoginRequest {
 	email: string;
 	password: string;
+	turnstileToken: string;
 }
 
 export interface LoginData {
@@ -33,6 +34,11 @@ export interface RegisterRequest {
 	company?: string;
 	email: string;
 	password: string;
+	turnstileToken: string;
+}
+
+export interface TurnstileConfigurationData {
+	siteKey: string;
 }
 
 export const authAPI = {
@@ -43,6 +49,11 @@ export const authAPI = {
 
 	register: async (data: RegisterRequest) => {
 		const response = await mainAPI.post<ServerResponse<AuthUser>>('/auth/register', data);
+		return response.data;
+	},
+
+	getTurnstileConfiguration: async () => {
+		const response = await mainAPI.get<ServerResponse<TurnstileConfigurationData>>('/auth/turnstile/config');
 		return response.data;
 	},
 
