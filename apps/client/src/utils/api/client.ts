@@ -31,10 +31,11 @@ mainAPI.interceptors.request.use(config => {
 });
 
 mainAPI.interceptors.response.use(async response => {
-	if (response.status !== 401) return response;
-
 	const config = response.config as RetryableRequestConfig;
 	const responseData = response.data as ServerResponse;
+
+	if (response.status !== 401 && responseData?.code !== 'INVALID_TOKEN') return response;
+
 	const isPublicAuthenticationRequest =
 		config.url?.startsWith('/widget/') ||
 		config.url?.startsWith('/auth/google/') ||

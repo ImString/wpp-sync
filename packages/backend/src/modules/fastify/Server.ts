@@ -8,6 +8,7 @@ import fastify, {
 } from 'fastify';
 
 import type { Core } from '@/core/Core.js';
+
 import { BaseModule } from '@/modules/Base.js';
 
 import { ServerError, ServerResponse } from './models/index.js';
@@ -19,11 +20,7 @@ export interface FastifyServerModuleOptions {
 	router?: FastifyRoutesOptions;
 	dependencies?: BaseModule[];
 	configure?: (server: FastifyInstance, core: Core) => void | Promise<void>;
-	errorHandler?: (
-		error: FastifyError,
-		request: FastifyRequest,
-		reply: FastifyReply
-	) => unknown | Promise<unknown>;
+	errorHandler?: (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => unknown | Promise<unknown>;
 	notFoundHandler?: (request: FastifyRequest, reply: FastifyReply) => unknown | Promise<unknown>;
 	onListening?: (server: FastifyInstance) => void | Promise<void>;
 }
@@ -71,12 +68,14 @@ export class FastifyServerModule extends BaseModule {
 		this.server = fastify(this.options.server);
 
 		await this.options.configure?.(this.server, core);
+
+		this.configureHandlers();
+
 		await this.server.register(routes, {
 			...this.options.router,
 			providers: this.options.router?.providers ?? core.providers
 		});
 
-		this.configureHandlers();
 		await this.server.listen(this.options.listen);
 		await this.options.onListening?.(this.server);
 	}
